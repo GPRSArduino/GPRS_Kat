@@ -18,12 +18,39 @@ the commented section below at the end of the setup() function.
 */
 #include "SIM800C_FONA.h"
 #include <SoftwareSerial.h>
+#include <OneWire.h> 
+#include <DallasTemperature.h>
+#include <avr/pgmspace.h>
+#include <EEPROM.h>
+
+static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
+
+
 
 #define FONA_RX 7
 #define FONA_TX 8
 #define FONA_RST 6
 #define PWR_On           5                          // Включение питания модуля SIM800
 #define LED13           13                          // Индикация светодиодом
+
+#define NETLIGHT         3                          // Индикация NETLIGHT
+#define STATUS           9                          // Индикация STATUS
+
+#define port1           11                          // Порт управления внешними устройствами (незадействован)
+#define port2           12                          // Порт управления внешними устройствами (незадействован)
+
+// Подключить  к выводу 8 сигнал TX модуля GPRS. Установить в библиотеке SIM800.h  
+// Подключить  к выводу 7 сигнал RX модуля GPRS. Установить в библиотеке SIM800.h
+//#define COMMON_ANODE
+#define LED_RED      10                             // Индикация светодиодом RED
+#define LED_BLUE     15                             // Индикация светодиодом BLUE
+#define LED_GREEN    14                             // Индикация светодиодом GREEN
+
+#define COLOR_NONE LOW, LOW, LOW
+#define COLOR_RED HIGH, LOW, LOW
+#define COLOR_GREEN LOW, HIGH, LOW
+#define COLOR_BLUE LOW, LOW, HIGH
+
 
 char replybuffer[255];   // this is a large buffer for replies
 char imei[15] = { 0 }; // MUST use a 15 character buffer for IMEI!
@@ -34,6 +61,151 @@ SIM800C_FONA fona = SIM800C_FONA(FONA_RST);
 
 uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
 uint8_t type;
+
+uint32_t count = 0;
+uint32_t errors = 0;
+String string_imei = "";
+String CSQ = "";                                    // Уровень сигнала приема
+String SMS_center = "";
+String zero_tel = "";
+//String imei = "861445030362268";                  // Тест IMEI
+//#define DELIM "&"
+#define DELIM "@"
+//char mydata[] = "t1=861445030362268@04/01/02,15:22:52 00@24.50@25.60";
+// тел Мегафон +79258110171
+
+unsigned long time;                                 // Переменная для суточного сброса
+unsigned long time_day = 86400;                     // Переменная секунд в сутках
+unsigned long previousMillis = 0;
+unsigned long interval = 10;                        // Интервал передачи данных 10 секунд
+													//unsigned long interval = 300;                     // Интервал передачи данных 5 минут
+bool time_set = false;                              // Фиксировать интервал заданный СМС
+
+
+int Address_tel1 = 100;                         // Адрес в EEPROM телефона 1
+int Address_tel2 = 120;                         // Адрес в EEPROM телефона 2
+int Address_tel3 = 140;                         // Адрес в EEPROM телефона 3
+int Address_errorAll = 160;                         // Адрес в EEPROM счетчика общих ошибок
+int Address_port1 = 180;                         // Адрес в EEPROM порт данных (незадействован)
+int Address_port2 = 190;                         // Адрес в EEPROM порт данных (незадействован)
+int Address_interval = 200;                         // Адрес в EEPROM величины интервала
+int Address_SMS_center = 220;                         // Адрес в EEPROM SMS центра
+
+char data_tel[13];                                  // Буфер для номера телефоа
+
+int dataport1 = 0;                                  // порт данных (незадействован)
+int dataport2 = 0;                                  // порт данных (незадействован)
+
+
+uint8_t oneWirePins[] = { 16, 17, 4 };                     //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
+														   // Сейчас первым идет внутренний датчик.
+uint8_t oneWirePinsCount = sizeof(oneWirePins) / sizeof(int);
+
+OneWire ds18x20_1(oneWirePins[0]);
+OneWire ds18x20_2(oneWirePins[1]);
+OneWire ds18x20_3(oneWirePins[2]);
+DallasTemperature sensor1(&ds18x20_1);
+DallasTemperature sensor2(&ds18x20_2);
+DallasTemperature sensor3(&ds18x20_3);
+
+void(*resetFunc) (void) = 0;                         // объявляем функцию reset
+
+void setColor(bool red, bool green, bool blue)       // Включение цвета свечения трехцветного светодиода.
+{
+#ifdef COMMON_ANODE
+	red = !red;
+	green = !green;
+	blue = !blue;
+#endif
+	digitalWrite(LED_RED, red);
+	digitalWrite(LED_GREEN, green);
+	digitalWrite(LED_BLUE, blue);
+}
+
+void sendTemps()
+{
+	Serial.println(F("\nTemp"));
+	sensor1.requestTemperatures();
+	sensor2.requestTemperatures();
+	sensor3.requestTemperatures();
+	float t1 = sensor1.getTempCByIndex(0);
+	float t2 = sensor2.getTempCByIndex(0);
+	float t3 = sensor3.getTempCByIndex(0);
+	float tsumma = t1 + t2 + t3 + 88.88;
+	int signal = get_rssi();
+	int error_All = 0;
+	EEPROM.get(Address_errorAll, error_All);
+	//String toSend = formHeader()+DELIM+"temp1="+String(t1)+DELIM+"temp2="+String(t2)+DELIM+"tempint="+String(t3)+ DELIM+"slevel="+String(signal)+DELIM+"ecs="+String(errors)+DELIM+"ec="+String(error_All)+formEnd();
+	String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
+
+	Serial.println(F("String length: "));
+	Serial.println(toSend.length());
+	//gprs_send(toSend);
+}
+
+String formHeader()
+{
+	String uptime = "17/01/01,10:10:10 00";
+	string_imei = String(imei);
+	//GSM_LOCATION loc;                               // Получить время из интернета
+	//if (gprs.getLocation(&loc))
+	//{
+	//	uptime = String(loc.year) + '/' + String(loc.month) + '/' + String(loc.day) + ',' + String(loc.hour) + ':' + String(loc.minute) + ':' + String(loc.second) + " 00";
+	//	//  uptime  = "date="+ String(loc.year)+'_'+ String(loc.month)+'_'+ String(loc.day)+','+String(loc.hour)+':'+ String(loc.minute)+':'+String(loc.second)+"00";
+	//}
+	// return "imei=" + imei + DELIM + uptime;
+	return "t1=" + string_imei + DELIM + uptime;
+}
+String formEnd()
+{
+	char buf[13];
+
+	EEPROM.get(Address_tel1, buf);
+	String master_tel1(buf);
+	Serial.println(master_tel1);
+
+	EEPROM.get(Address_tel2, buf);
+	String master_tel2(buf);
+	Serial.println(master_tel2);
+
+	EEPROM.get(Address_tel3, buf);
+	String master_tel3(buf);
+	Serial.println(master_tel3);
+
+	//EEPROM.get(Address_tel1, master_tel1); 
+	//EEPROM.get(Address_tel2, master_tel3); 
+	//EEPROM.get(Address_tel2, master_tel3); 
+
+
+	EEPROM.get(Address_SMS_center, SMS_center);   //Получить из EEPROM СМС центр
+
+
+	if (EEPROM.read(Address_port1))
+	{
+
+	}
+	else
+	{
+		//dataport1 = digitalRead(port1);
+		//Serial.println(dataport1);
+	}
+
+	if (EEPROM.read(Address_port2))
+	{
+
+	}
+	else
+	{
+		/*dataport2 = digitalRead(port2);
+		Serial.println(dataport2);*/
+	}
+	String mytel = "mytel=" + master_tel1;
+	String tel1 = "tel1=" + master_tel2;
+	String tel2 = "tel2=" + master_tel3;
+
+	//return DELIM + mytel + DELIM +tel1 + DELIM + tel2;
+	return DELIM + master_tel1 + DELIM + master_tel2 + DELIM + master_tel3 + DELIM + SMS_center;
+}
 
 
 void printMenu(void) 
@@ -165,7 +337,7 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout)
 
 void init_SIM800C()
 {
-	Serial.println(F("Initializing....(May take 3 seconds)"));
+	Serial.println(F("Initializing....(May take 6 seconds)"));
 	digitalWrite(FONA_RST, LOW);               // Сигнал сброс в исходное состояние
 	digitalWrite(LED13, LOW);
 	digitalWrite(PWR_On, HIGH);                // Кратковременно отключаем питание модуля GPRS
@@ -209,6 +381,27 @@ void init_SIM800C()
 		Serial.print(F("SIM CCID = ")); Serial.println(ccid);
 	}
 }
+
+int get_rssi()
+{
+	// read the RSSI
+	uint8_t n = fona.getRSSI();
+	int8_t r;
+	 
+	Serial.print(F("RSSI = ")); Serial.print(n); Serial.print(": ");
+	if (n == 0) r = -115;
+	if (n == 1) r = -111;
+	if (n == 31) r = -52;
+	if ((n >= 2) && (n <= 30)) {
+	r = map(n, 2, 30, -110, -54);
+	}
+	Serial.print(r); Serial.println(F(" dBm"));
+	return r;
+}
+
+
+
+
   
 void setup() {
   while (!Serial);
@@ -218,8 +411,34 @@ void setup() {
   pinMode(FONA_RST, OUTPUT);
   pinMode(LED13,    OUTPUT);
   pinMode(PWR_On,   OUTPUT);
+  pinMode(LED_RED, OUTPUT);
+  pinMode(LED_BLUE, OUTPUT);
+  pinMode(LED_GREEN, OUTPUT);
+  pinMode(NETLIGHT, INPUT);                      // Индикация NETLIGHT
+  pinMode(STATUS, INPUT);                        // Индикация STATUS
+
+  setColor(COLOR_RED);
+  delay(300);
+  setColor(COLOR_GREEN);
+  delay(300);
+  setColor(COLOR_BLUE);
+  delay(300);
+  setColor(COLOR_RED);
+
+  DeviceAddress deviceAddress;
+  sensor1.setOneWire(&ds18x20_1);
+  sensor2.setOneWire(&ds18x20_2);
+  sensor3.setOneWire(&ds18x20_3);
+  sensor1.begin();
+  sensor2.begin();
+  sensor3.begin();
+  if (sensor1.getAddress(deviceAddress, 0)) sensor1.setResolution(deviceAddress, 12);
+  if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
+  if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
+
   init_SIM800C();
 
+ 
   // Optionally configure a GPRS APN, username, and password.
   // You might need to do this to access your network's GPRS/data
   // network.  Contact your provider for the exact APN, username,
@@ -246,19 +465,21 @@ void setup() {
 }
 void loop() {
 	Serial.print(F("SM800C > "));
-	while (!Serial.available()) 
-	{
-		if (fona.available()) 
-		{
-			Serial.write(fona.read());
-		}
-	}
+	//while (!Serial.available()) 
+	//{
+	//	if (fona.available()) 
+	//	{
+	//		Serial.write(fona.read());
+	//	}
+	//}
 	flushSerial();
  	 while (fona.available())
 	 {
 		Serial.write(fona.read());
+		sendTemps();
 	 }
-
+	 sendTemps();
+	 delay(10000);
 }
 
   //char command = Serial.read();
