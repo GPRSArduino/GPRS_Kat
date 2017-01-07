@@ -10,11 +10,11 @@
 
 // change this to the pin connect with SIM800 reset pin
 #define PIN_TX           7                             // Подключить  к выводу 7 сигнал RX модуля GPRS
-#define PIN_RX           8                             // Подключить  к выводу 8 сигнал TX модуля GPRS
+#define PIN_RX           8                              // Подключить  к выводу 8 сигнал TX модуля GPRS
 
 
 // define DEBUG to one serial UART to enable debug information output
-//#define DEBUG Serial
+#define DEBUG Serial
 
 
 const char  txt_AT[]                 PROGMEM  = "ATE0";
@@ -142,7 +142,7 @@ class CGPRS_SIM800 {
 public:
     CGPRS_SIM800():httpState(HTTP_DISABLED) {}
     // initialize the module
-    bool init(int PWR_On,int SIM800_RESET_PIN,int LED13);
+    bool init(int PWR_On,int SIM800_RESET_PIN,int LED13, long speed_serial);
     // setup network
     byte setup();
 	// byte setup(const char* apn, const char* user, const char* pwd);

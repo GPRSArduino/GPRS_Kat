@@ -1,17 +1,53 @@
-/*************************************************************************
-* Test sketch for SIM800 library
-* Distributed under GPL v2.0
-*
-*************************************************************************/
+/*
+Программа передачи данных по каналу GPRS
+06.01.2017г.
+
+Замечания:
+1) Есть ощущение, что при старте устройство «не чувствует», подцепилась ли сеть ,или нет.
+Бывают ситуации, при которых светодиод белый около СИМ800 сначала моргает быстро (ищет сеть), а затем просто гаснет.
+Потом основной светодиод загорается синим, но при этом белый светодиод СИМ800 не горит, что означает, что передача через СИМ800 не идет.
+Наверняка у сим800 есть команды, чтобы спросить модуль, подключен ли он сейчас к сети, имеется ли выход в интернет.
+Может быть, стоит делать такую проверку перед передачей данных (нет смысла пытаться передать данные, если нет подключения к сети). Это возможно?
+
+2) А если светодиод белый вообще не горит? Что это означает? Неоднократно наблюдал такой режим после "моргает средне"
+
+3) Устройство работает сейчас не сильно стабильно, ежедневно "связь пропадает", и потом в течение часа восстанавливается.
+Т.е., получается что оно 3-4 часа находится вне зоны доступа. Сейчас там стоит 20 ошибок и интервал от сайта - 10 минут. 20*10 = 200 минут. Т.е., 3,3 часа. 
+Получается, что теряется связь, а потом происходит перезагрузка по счетчику ошибок.
+Почему так происходит - постараюсь сейчас проанализировать (по строкам) и пришлю информацию в следующем письме
+
+4) По программе, осталось у нас буквальное несколько доработок, чтобы устройства заработали как дистанционные термометры: 
+
+1.  Чтобы не коцать еепром при каждой загрузке, либо установить интервал в 1 минуту между первой и второй отсылкой данных на сервер;
+либо уже после 1й отсылки данных на сервер читать приходящий интервал (сейчас только со 2й отправки читает интервал ,
+соответственно если интервал стоит например сутки – назад он никогда уже не поменяется). 
+
+2.  Сделать индикацию неудачной отправки данных при первом обращении к серверу. Насколько я понимаю,
+сейчас 1я отправка сидит в сетапе, а 2я и далее – в лупе. Может, если есть ошибка, сделать так, 
+чтобы устройство не выходило из сетапа, а мигало красным скажем 3-5 раз, делая паузу в несколько секунд, и уходило назад,
+в место кода «до первой отправки данных». Иными словами, пока хотя бы один раз устройство не законнектится и не получит ответ от сервера, в LOOP не уходит. 
+
+3.   Перейти на новую строку
+
+4.  Научить устройство понимать сразу несколько параметров , приходящих с севера, и по очереди их анализировать.
+Те.. чтобы сервер отправлял назад строку вида 0150@05@06+79852517615@07TempRemote и так далее
+
+
+
+
+
+
+*/
 
 #include "SIM800.h"
 #include <SoftwareSerial.h>
-#include <OneWire.h>
+#include <OneWire.h> 
 #include <DallasTemperature.h>
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
 
 #define con Serial
+#define speed_Serial 19200
 static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
 
 
@@ -24,10 +60,9 @@ static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
 #define port1           11                          // Порт управления внешними устройствами (незадействован)
 #define port2           12                          // Порт управления внешними устройствами (незадействован)
 
-
+                                                    // Подключить  к выводу 8 сигнал TX модуля GPRS. Установить в библиотеке SIM800.h  
                                                     // Подключить  к выводу 7 сигнал RX модуля GPRS. Установить в библиотеке SIM800.h
 //#define COMMON_ANODE
-                                                    // Подключить  к выводу 8 сигнал TX модуля GPRS. Установить в библиотеке SIM800.h  
 #define LED_RED      10                             // Индикация светодиодом RED
 #define LED_BLUE     15                             // Индикация светодиодом BLUE
 #define LED_GREEN    14                             // Индикация светодиодом GREEN
@@ -86,76 +121,6 @@ DallasTemperature sensor1(&ds18x20_1);
 DallasTemperature sensor2(&ds18x20_2);
 DallasTemperature sensor3(&ds18x20_3);
 
-const char  txt_zero_tel[]                 PROGMEM  = "+79990000000";  
-const char  txt_SMS_center[]               PROGMEM  = "SMS.RU";
-const char  txt_String_length[]            PROGMEM  = "String length: ";  
-const char  txt_uptime[]                   PROGMEM  = "17/01/01,10:10:10 00";
-const char  txt_Requesting[]               PROGMEM  = "Requesting ";
-const char  txt_Payload[]                  PROGMEM  = "[Payload] ";
-const char  txt_nocompare[]                PROGMEM  = "no compare";
-const char  txt_Total[]                    PROGMEM  = "Total:";
-const char  txt_Errors[]                   PROGMEM  = " Errors:";
-const char  txt_Timeset[]                  PROGMEM  = "Timeset";
-const char  txt_Restart[]                  PROGMEM  = "Restart";
-const char  txt_Timeoff[]                  PROGMEM  = "Timeoff";
-const char  txt_setup_start[]              PROGMEM  = " SIM800 setup start";
-const char  txt_Resetting[]                PROGMEM  = "Resetting...";
-const char  txt_OK1[]                      PROGMEM  = "OK";
-const char  txt_Setting_up_network[]       PROGMEM  = "Setting up network...";
-const char  txt_ERROR1[]                   PROGMEM  = "ERROR";
-const char  txt_Start_clear_EEPROM[]       PROGMEM  = "Start clear EEPROM";
-const char  txt_Clear_EEPROM_End[]         PROGMEM  = "Clear EEPROM End";
-const char  txt_mytel[]                    PROGMEM  = "+79162632701";
-const char  txt_Interval[]                 PROGMEM  = "\nInterval: ";
-const char  txt_setup_end[]                PROGMEM  = "\nSIM800 setup end";
-const char  txt_SMS[]                      PROGMEM  = "SMS:";
-const char  txt_CMT[]                      PROGMEM  = "+CMT";
-const char  txt_Interval_sec[]             PROGMEM  = "Interval sec:";
-const char  txt_free_memory[]              PROGMEM  = "\nfree memory: ";
-const char  txt_No_internet_con[]          PROGMEM  = "No internet connection";
-const char  txt_phone_ignored[]            PROGMEM  =  "phone ignored";
-const char  txt_commandTel1[]              PROGMEM  = "Commanda tel1";
-const char  txt_commandTel2[]              PROGMEM  = "Commanda tel2";
-const char  txt_Unknown_command[]          PROGMEM  = "Unknown command";
-
-
-const char* const table_message2[] PROGMEM =
-{
- txt_zero_tel,                // 0 "+79990000000";    
- txt_SMS_center,              // 1 "SMS.RU";
- txt_String_length,           // 2 "String length: ";  
- txt_uptime,                  // 3 "17/01/01,10:10:10 00";
- txt_Requesting,              // 4 "Requesting ";
- txt_Payload,                 // 5 "[Payload] ";
- txt_nocompare,               // 6 "no compare";
- txt_Total,                   // 7 "Total:";
- txt_Errors,                  // 8 " Errors:";
- txt_Timeset,                 // 9 "Timeset";
- txt_Restart,                 // 10 "Restart";
- txt_Timeoff,                 // 11 "Timeoff";
- txt_setup_start,             // 12 " SIM800 setup start";
- txt_Resetting,               // 13 "Resetting...";
- txt_OK1,                     // 14 "OK";
- txt_Setting_up_network,      // 15 "Setting up network...";
- txt_ERROR1,                  // 16 "ERROR";
- txt_Start_clear_EEPROM,      // 17 "Start clear EEPROM";
- txt_Clear_EEPROM_End,        // 18 "Clear EEPROM End";
- txt_mytel,                   // 19 "+79162632701";
- txt_Interval,                // 20 "\nInterval: ";
- txt_setup_end,               // 21 "\nSIM800 setup end";
- txt_SMS,                     // 22 "SMS:";
- txt_CMT,                     // 23 "+CMT";
- txt_Interval_sec,            // 24 "Interval sec:";
- txt_free_memory,             // 25 "\nfree memory: ";
- txt_No_internet_con,         // 26 "No internet connection";
- txt_phone_ignored,           // 27 "phone ignored";
- txt_commandTel1,             // 28 "Commanda tel1";
- txt_commandTel2,             // 29 "Commanda tel2";
- txt_Unknown_command          // 30 "Unknown command"
-};
-
-char bufmessage[30];
-
 
 void(* resetFunc) (void) = 0;                         // объявляем функцию reset
 
@@ -168,16 +133,16 @@ void(* resetFunc) (void) = 0;                         // объявляем функцию reset
       #endif
       digitalWrite(LED_RED, red);
       digitalWrite(LED_GREEN, green);
-      digitalWrite(LED_BLUE, blue);  
+      digitalWrite(LED_BLUE, blue);    
  }
 
 
 void sendTemps() 
 {
-	//Serial.println("\nTemp");
+	con.println(F("\nTemp"));
 	sensor1.requestTemperatures();
 	sensor2.requestTemperatures();
-	sensor3.requestTemperatures();
+	sensor3.requestTemperatures();  
 	float t1 = sensor1.getTempCByIndex(0);
 	float t2 = sensor2.getTempCByIndex(0);
 	float t3 = sensor3.getTempCByIndex(0);
@@ -187,18 +152,15 @@ void sendTemps()
 	EEPROM.get(Address_errorAll, error_All);
 	//String toSend = formHeader()+DELIM+"temp1="+String(t1)+DELIM+"temp2="+String(t2)+DELIM+"tempint="+String(t3)+ DELIM+"slevel="+String(signal)+DELIM+"ecs="+String(errors)+DELIM+"ec="+String(error_All)+formEnd();
 	String toSend = formHeader()+DELIM+String(t1)+DELIM+String(t2)+DELIM+String(t3)+ DELIM+String(signal)+DELIM+String(errors)+DELIM+String(error_All)+formEnd()+DELIM+String(tsumma);
-//	Serial.println(toSend);
 
-	strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[2])));
-    Serial.print(bufmessage);
+	con.println(F("String length: "));
 	Serial.println(toSend.length());
 	gprs_send(toSend);
 }
 
 String formHeader() 
 {
-  strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[3])));
-  String uptime = bufmessage;
+  String uptime = "17/01/01,10:10:10 00";
   GSM_LOCATION loc;                               // Получить время из интернета
   if (gprs.getLocation(&loc)) 
   {
@@ -214,15 +176,15 @@ String formEnd()
 
 	EEPROM.get(Address_tel1, buf);
 	String master_tel1(buf);
-	//Serial.println(master_tel1);
+	con.println(master_tel1);
 
 	EEPROM.get(Address_tel2, buf);
 	String master_tel2(buf);
-	//Serial.println(master_tel2);
+	con.println(master_tel2);
 	
 	EEPROM.get(Address_tel3, buf);
 	String master_tel3(buf);
-	//Serial.println(master_tel3);
+	con.println(master_tel3);
 
 	 //EEPROM.get(Address_tel1, master_tel1); 
 	 //EEPROM.get(Address_tel2, master_tel3); 
@@ -264,9 +226,7 @@ return DELIM + master_tel1 + DELIM + master_tel2 + DELIM + master_tel3 + DELIM +
 
 void gprs_send(String data) 
 {
-
-  strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[4])));
-  con.print(bufmessage);               //con.print("Requesting ");
+  con.print(F("Requesting "));               //con.print("Requesting ");
   con.print(url1);
   con.print('?');
   con.println(data);
@@ -286,7 +246,7 @@ void gprs_send(String data)
   }
   if (gprs.httpState == HTTP_ERROR) 
   {
-  //  con.println("Connect error");
+    con.println(F("Connect error"));
 if(start_error)                        // Корректируем ошибку при первом запуске
 {
     errors++;
@@ -322,8 +282,7 @@ if(start_error)                        // Корректируем ошибку при первом запуске
   }
 
   // Теперь мы получили сообщение от сайта.
-   strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[5])));
-   con.print(bufmessage);                              //con.print("[Payload] ");
+   con.print(F("[Payload] "));                              //con.print("[Payload] ");
    con.println(gprs.buffer);
    String command = gprs.buffer;                       // Получить строку данных с сервера
    String commEXE = command.substring(0, 2);           // Выделить строку с командой
@@ -355,9 +314,7 @@ if(start_error)                        // Корректируем ошибку при первом запуске
 		String num_tel(data_tel);
 		if (command != num_tel)                        // Если информиция не изменилась - не писать в EEPROM
 		{
-			 strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[6])));
-
-			 Serial.println(bufmessage);               //Serial.println("no compare");
+			 con.println(F("no compare"));               //Serial.println("no compare");
 			for(int i=0;i<13;i++)
 			{
 				EEPROM.write(i+Address_tel1,command[i]);
@@ -372,7 +329,7 @@ if(start_error)                        // Корректируем ошибку при первом запуске
 		String num_tel(data_tel);
 		if (command != num_tel)                        // Если информиция не изменилась - не писать в EEPROM
 		{
-			//Serial.println("no compare");
+			con.println(F("no compare"));
 			for(int i=0;i<13;i++)
 			{
 				EEPROM.write(i+Address_tel2,command[i]);
@@ -386,7 +343,7 @@ if(start_error)                        // Корректируем ошибку при первом запуске
 		String num_tel(data_tel);
 		if (command != num_tel)                        // Если информиция не изменилась - не писать в EEPROM
 		{
-			//Serial.println("no compare");
+			con.println(F("no compare"));
 			for(int i=0;i<13;i++)
 			{
 				EEPROM.write(i+Address_tel3,command[i]);
@@ -425,14 +382,11 @@ if(start_error)                        // Корректируем ошибку при первом запуске
 	}
 	
   // Показать статистику
-  strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[7])));
-  con.print(bufmessage);                  //con.print("Total:");
+  con.print(F("Total:"));                  //con.print("Total:");
   con.print(count);
   if (errors) 
   {
-
-    strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[8])));
-    con.print(bufmessage); //con.print(" Errors:");
+    con.print(F(" Errors:")); //con.print(" Errors:");
     con.print(errors);
   }
   con.println();
@@ -455,39 +409,36 @@ int freeRam ()
 
 void setTime(String val, String f_phone)
 {
-   strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[9])));
+//   strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[9])));
 
-  if (val.indexOf(bufmessage) > -1)         // (val.indexOf("Timeset") > -1) 
+  if (val.indexOf(F("Timeset")) > -1)         // (val.indexOf("Timeset") > -1) 
   {
      interval = 20;                                     // Установить интервал 20 секунд
 	 time_set = true;                                   // Установить фиксацию интервала заданного СМС
 	 Serial.println(interval);
   } 
-  else if (val.indexOf("Restart") > -1) 
+  else if (val.indexOf(F("Restart")) > -1) 
   {
-	  strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[10])));
 	  Serial.print(f_phone);
 	  Serial.print("..");
-	  Serial.println(bufmessage);
+	  Serial.println(F("Restart"));
 	  delay(1000);
       resetFunc();                                        //вызываем reset
   } 
-  else if (val.indexOf("Timeoff") > -1) 
+  else if (val.indexOf(F("Timeoff")) > -1) 
   {
      time_set = false;                              // Снять фиксацию интервала заданного СМС
   } 
   else
   {
-	   strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[30])));
-	   Serial.println(bufmessage);         // Serial.println("Unknown command");
+	   Serial.println(F("Unknown command"));         // Serial.println("Unknown command");
   }
 }
 
 void setup()
 {
-	con.begin(19200);
-	strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[12])));
-	con.println(bufmessage);            // con.println(" SIM800 setup start");     
+	con.begin(speed_Serial);
+	con.println(F("\n SIM800 setup start"));           
 	pinMode(LED_RED,  OUTPUT);
 	pinMode(LED_BLUE, OUTPUT);
 	pinMode(LED_GREEN,OUTPUT);
@@ -513,28 +464,31 @@ void setup()
 	if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 	if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 
-	 strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[13])));
-
 	for (;;) 
 	{
-		con.print(bufmessage);           // "Resetting...";
-		while (!gprs.init(PWR_On, SIM800_RESET_PIN, LED13))
+		con.print(F("\nResetting  "));          
+		while (!gprs.init(PWR_On, SIM800_RESET_PIN, LED13, speed_Serial))
 	    {
 		    con.write('.');
 	    }
-	     strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[14])));
-	    con.println(bufmessage);             // con.println("OK");
+	    con.println(F("OK"));             // con.println("OK");
 
-	    delay(20000);                           // Ожидаем подключения к станции
-	    strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[15])));
-	    con.print(bufmessage);        // con.print("Setting up network...");
+		for (int i = 0; i < 20; i++)           // Ожидаем подключения к станции
+		{
+			setColor(COLOR_GREEN);
+			delay(500);                        // Ожидаем подключения к станции
+			setColor(COLOR_RED);
+			delay(500);                        // Ожидаем подключения к станции
+		}
+
+	    con.print(F("Setting up network..."));       
 
 	    if (gprs.getIMEI())                     // Получить IMEI
 	    {
-		//con.print("\nIMEI:");
+		con.print(F("\nIMEI:"));
 		imei = gprs.buffer;
 		gprs.cleanStr(imei);
-		//con.println(imei);
+		con.println(imei);
 	    }
 		byte ret = gprs.setup();
 		if (ret == 0) 
@@ -542,32 +496,29 @@ void setup()
 	    	setColor(COLOR_GREEN);  // Включить светодиод
 			break;
 		}
-	  /*	con.print("Error code:");
+	  	con.print("Error code:");
 		con.println(ret);
-		con.println(gprs.buffer);*/
+		con.println(gprs.buffer);
 		delay(2000);
 		if (ret == 4 ||ret == 5) 
 		{
             setColor(COLOR_RED);
-			//con.print("The network is not defined");
+			con.print(F("The network is not defined"));
 			delay(1000);
 			resetFunc();             //вызываем reset при отсутствии регистрации в сети
 		}
 	}
 
-	strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[14])));
-  con.println(bufmessage);           // con.println("OK");
+  con.println(F("OK"));           // con.println("OK");
  for (;;) 
   {
         if (gprs.httpInit()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
         con.print(">");
         con.println(gprs.buffer);                          // Не получилось, ("ERROR") 
         String stringError = gprs.buffer;             
-        strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[16])));   \\ экономим оперативную память 
-        if (stringError.indexOf(bufmessage) > -1)                   // if (stringError.indexOf("ERROR") > -1)
+        if (stringError.indexOf(F("ERROR")) > -1)          
            {
-               strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[26])));
-               con.print(bufmessage);                      //con.print("No internet connection");
+               con.print(F("\nNo internet connection"));     
                delay(1000);
                resetFunc();                                //вызываем reset при отсутствии доступа к серверу
            }
@@ -577,45 +528,35 @@ void setup()
 
  if(EEPROM.read(0)!=31)
  {
-	 strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[17])));
-	 Serial.println (bufmessage);               //  Serial.println ("Start clear EEPROM");
+	 con.println (F("Start clear EEPROM"));               //  
 	 for(int i = 0; i<1023;i++)
 	 {
 		 EEPROM.write(i,0);
 	 }
 	  EEPROM.write(0,31);
 	  EEPROM.put(Address_interval, interval);                     // строка начальной установки интервалов
-	  strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[0])));
-	  EEPROM.put(Address_tel1,bufmessage);   
-	  EEPROM.put(Address_tel2,bufmessage);   
-	  EEPROM.put(Address_tel3,bufmessage); 
-	  EEPROM.put(Address_SMS_center, bufmessage); 
-	  strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[18])));
-	  Serial.println (bufmessage);                                //  Serial.println ("Clear EEPROM End");
-
+	  EEPROM.put(Address_tel1, "+79990000000");
+	  EEPROM.put(Address_tel2, "+79990000000");
+	  EEPROM.put(Address_tel3, "+79990000000");
+	  EEPROM.put(Address_SMS_center, "+79990000000");
+	  con.println (F("Clear EEPROM End"));                              
  }
-     strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[1])));
-     SMS_center = bufmessage;                                     //  SMS_center = "SMS.RU";
- 	// EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
-     EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
-	 strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[19])));
-    // EEPROM.put(Address_tel3, bufmessage);                      //  EEPROM.put(Address_tel3, "+79162632701");   
 
- 	 EEPROM.get(Address_interval, interval);                      //Получить из EEPROM интервал
-	 EEPROM.get(Address_SMS_center, SMS_center);                  //Получить из EEPROM СМС центр
+	SMS_center = "SMS.RU";                                   //  SMS_center = "SMS.RU";
+	// EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
+	EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
+	EEPROM.get(Address_interval, interval);                      //Получить из EEPROM интервал
+	EEPROM.get(Address_SMS_center, SMS_center);                  //Получить из EEPROM СМС центр
 
-	 strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[20])));
-	 con.print(bufmessage);                                       //  con.print("\nInterval: ");
-	 con.println(interval);
-
-	 con.println(SMS_center);
+	con.print(F("Interval sec:"));
+	con.println(interval);
+	con.println(SMS_center);
 	 
 	setColor(COLOR_BLUE);
 	sendTemps();
 	setColor(COLOR_GREEN);
-	strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[21])));
-	con.println(bufmessage);                                     // con.println("\nSIM800 setup end");
-	time = millis();                                             // Старт отсчета суток
+	con.println(F("\nSIM800 setup end"));                        
+	time = millis();                                              // Старт отсчета суток
 }
 
 void loop()
@@ -623,11 +564,9 @@ void loop()
 
  if (gprs.checkSMSU()) 
   {
-	strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[22])));
-    con.print(bufmessage);                    //  con.print("SMS:");
+    con.print(F("SMS:"));                    //  con.print("SMS:");
     con.println(gprs.val);
-	//strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[23])));
-	if (gprs.val.indexOf("+CMT") > -1)  //если обнаружен СМС (для определения звонка вместо "+CMT" вписать "RING", трубку он не берет, но реагировать на факт звонка можно)
+	if (gprs.val.indexOf(F("+CMT")) > -1)  //если обнаружен СМС (для определения звонка вместо "+CMT" вписать "RING", трубку он не берет, но реагировать на факт звонка можно)
 	{    
 	//------------- поиск кодового слова в СМС 
 	char buf[13] ;
@@ -641,31 +580,27 @@ void loop()
 
       if (gprs.val.indexOf(master_tel2) > -1)                              //если СМС от хозяина 1
 	  {   
-		strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[28])));
-		Serial.println(bufmessage);
+		con.println(F("Commanda tel1"));
 		setTime(gprs.val, master_tel2);
       }
 	  else if(gprs.val.indexOf(master_tel3) > -1)                          //если СМС от хозяина 2
 	  {
-      	strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[29])));
-		Serial.println(bufmessage);
+ 		con.println(F("Commanda tel2"));
 		setTime(gprs.val, master_tel3);
       }
 	  else if(gprs.val.indexOf(master_SMS_center) > -1)                    //если СМС от хозяина 2
 	  {
- 		Serial.println("SMS centr");
+ 		con.println(F("SMS centr"));
 		setTime(gprs.val, master_SMS_center);
       }
 	  else
 	  {
-		  strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[27])));
-		  Serial.println(bufmessage);            //   Serial.println("phone ignored");
+		  con.println(F("phone ignored"));            
 	  }
      }
 	    
 		gprs.val = "";
   }
-
 
  
 	unsigned long currentMillis = millis();
@@ -675,16 +610,14 @@ void loop()
 	}
 	if ((unsigned long)(currentMillis - previousMillis) >= interval*1000) 
 	{
-        strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[24])));
-		Serial.print(bufmessage);                                         // Serial.print("Interval sec:"); 
-		Serial.println((currentMillis-previousMillis)/1000);
+		con.print(F("Interval sec:"));                                       
+		con.println((currentMillis-previousMillis)/1000);
 		setColor(COLOR_BLUE);
 		previousMillis = currentMillis;
 		sendTemps();
 		setColor(COLOR_GREEN);
-		strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[25])));
-		Serial.print(bufmessage);                                  // Serial.print("\nfree memory: ");
-		Serial.println(freeRam());
+		con.print(F("\nfree memory: "));                                 
+		con.println(freeRam());
 	}
 
     if(millis() - time > time_day*1000) resetFunc();                       //вызываем reset интервалом в сутки
