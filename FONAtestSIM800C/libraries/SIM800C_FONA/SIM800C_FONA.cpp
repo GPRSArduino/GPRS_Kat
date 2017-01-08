@@ -78,6 +78,23 @@ boolean SIM800C_FONA::begin(Stream &port)
   // turn on hangupitude
   sendCheckReply(F("AT+CVHU=0"), ok_reply);
 
+  // turn off Echo!
+  sendCheckReply(F("AT+CFUN=1"), ok_reply);           // 1 Ц нормальный режим(по умолчанию).¬торой параметр 1 Ц перезагрузить(доступно только в нормальном режиме, т.е.параметры = 1, 1)
+  delay(100);
+
+  //if (!sendCheckReply(F("AT+CFUN=1"), ok_reply))
+  //{
+	 // //return false;
+  //}
+
+  sendCheckReply(F("AT+CMGF=1"), ok_reply);          // режим кодировки —ћ— - текстовый
+  delay(100);
+  sendCheckReply(F("AT+CLIP=1"), ok_reply);          // включаем јќЌ
+  delay(100);
+  sendCheckReply(F("AT+CSCS=\"GSM\""), ok_reply);    // режим кодировки текста
+  delay(100);
+  sendCheckReply(F("AT+CNMI=2,2"), ok_reply);        // отображение смс в терминале сразу после приема (без этого сообщени€ молча падают в пам€ть)tln("AT+CSCS=\"GSM\""); 
+
   delay(100);
   flushInput();
 
@@ -103,12 +120,7 @@ boolean SIM800C_FONA::begin(Stream &port)
     readline(500, true);
 
   DEBUG_PRINT (F("\t<--- ")); DEBUG_PRINTLN(replybuffer);
-
-
-    if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800 R14.18")) != 0)
-	{
-      _type = FONA800C;
-    }
+  
   }
 
 #if defined(FONA_PREF_SMS_STORAGE)
@@ -883,8 +895,7 @@ boolean SIM800C_FONA::HTTP_term() {
   return sendCheckReply(F("AT+HTTPTERM"), ok_reply);
 }
 
-void SIM800C_FONA::HTTP_para_start(FONAFlashStringPtr parameter,
-                                    boolean quoted) {
+void SIM800C_FONA::HTTP_para_start(FONAFlashStringPtr parameter, boolean quoted) {
   flushInput();
 
 
@@ -911,22 +922,19 @@ boolean SIM800C_FONA::HTTP_para_end(boolean quoted) {
   return expectReply(ok_reply);
 }
 
-boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter,
-                                 const char *value) {
+boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter, const char *value) {
   HTTP_para_start(parameter, true);
   mySerial->print(value);
   return HTTP_para_end(true);
 }
 
-boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter,
-                                 FONAFlashStringPtr value) {
+boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter, FONAFlashStringPtr value) {
   HTTP_para_start(parameter, true);
   mySerial->print(value);
   return HTTP_para_end(true);
 }
 
-boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter,
-                                 int32_t value) {
+boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter, int32_t value) {
   HTTP_para_start(parameter, false);
   mySerial->print(value);
   return HTTP_para_end(false);
@@ -951,8 +959,7 @@ boolean SIM800C_FONA::HTTP_data(uint32_t size, uint32_t maxTime) {
   return expectReply(F("DOWNLOAD"));
 }
 
-boolean SIM800C_FONA::HTTP_action(uint8_t method, uint16_t *status,
-                                   uint16_t *datalen, int32_t timeout) {
+boolean SIM800C_FONA::HTTP_action(uint8_t method, uint16_t *status, uint16_t *datalen, int32_t timeout) {
   // Send request.
   if (! sendCheckReply(F("AT+HTTPACTION="), method, ok_reply))
     return false;

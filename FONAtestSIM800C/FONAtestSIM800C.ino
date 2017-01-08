@@ -15,6 +15,30 @@ the commented section below at the end of the setup() function.
 Обратите внимание, что если вам нужно установить GPRS APN, имя пользователя и пароль прокрутки вниз
 комментируемого раздел ниже в конце функции настройки ().
 
+
+ Optionally configure a GPRS APN, username, and password.
+ You might need to do this to access your network's GPRS/data
+ network.  Contact your provider for the exact APN, username,
+ and password values.  Username and password are optional and
+ can be removed, but APN is required.
+fona.setGPRSNetworkSettings(F("your APN"), F("your username"), F("your password"));
+
+ Optionally configure HTTP gets to follow redirects over SSL.
+ Default is not to follow SSL redirects, however if you uncomment
+ the following line then redirects over SSL will be followed.
+fona.setHTTPSRedirect(true);
+
+ При необходимости настроить GPRS APN, имя пользователя и пароль.
+ Возможно, придется сделать это, чтобы получить доступ к GPRS вашей сети / данные
+ Сеть. Обратитесь к поставщику для точного APN, имя пользователя,
+ И значения пароля. Имя пользователя и пароль не являются обязательными и
+ Может быть удален, но имя точки доступа требуется.
+fona.setGPRSNetworkSettings(F("your APN "), F (" Ваше имя пользователя "), F (" Ваш пароль "));
+
+ При необходимости настройки HTTP получает следовать переадресовывает над SSL.
+ По умолчанию не следовать SSL переадресовывает, однако, если вы раскомментировать
+ Следующая строка затем перенаправляет через SSL будет сопровождаться.
+ fona.setHTTPSRedirect(true);
 */
 #include "SIM800C_FONA.h"
 #include <SoftwareSerial.h>
@@ -22,9 +46,9 @@ the commented section below at the end of the setup() function.
 #include <DallasTemperature.h>
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
+#include <MemoryFree.h>
 
 static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
-
 
 
 #define FONA_RX 7
@@ -337,17 +361,17 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout)
 
 void init_SIM800C()
 {
-	Serial.println(F("Initializing....(May take 6 seconds)"));
+	Serial.println(F("Initializing....(May take 5 seconds)"));
 	digitalWrite(FONA_RST, LOW);               // Сигнал сброс в исходное состояние
 	digitalWrite(LED13, LOW);
 	digitalWrite(PWR_On, HIGH);                // Кратковременно отключаем питание модуля GPRS
 	delay(2000);
 	digitalWrite(LED13, HIGH);
 	digitalWrite(PWR_On, LOW);
-	delay(1500);
-	//  digitalWrite(FONA_RST,   HIGH);            // Производим сброс модема после включения питания
-	//  delay(1200);
-	//  digitalWrite(FONA_RST,   LOW);               
+	//delay(1500);
+	//digitalWrite(FONA_RST,   HIGH);            // Производим сброс модема после включения питания
+	//delay(1200);
+	//digitalWrite(FONA_RST,   LOW);               
 	delay(3000);
 
 	fonaSerial->begin(19200);
@@ -356,26 +380,14 @@ void init_SIM800C()
 		Serial.println(F("Couldn't find SIM80C"));
 		while (1);
 	}
-	type = fona.type();
 	Serial.println(F("SIM800C is OK"));
-	Serial.print(F("Found "));
-	switch (type)
-	{
-	case FONA800C:
-		Serial.println(F("SIM800C")); break;
-	default:
-		Serial.println(F("???")); break;
-	}
 
-	// Print module IMEI number.
-//	char imei[15] = { 0 }; // MUST use a 16 character buffer for IMEI!
 	uint8_t imeiLen = fona.getIMEI(imei);
 	if (imeiLen > 0)
 	{
-		Serial.print("Module IMEI: "); Serial.println(imei);
+		Serial.print("Module IMEI: "); Serial.println(imei); // Print module IMEI number.
 	}
-	// read the CCID
-	uint8_t ccidLen = fona.getSIMCCID(ccid);  // make sure replybuffer is at least 21 bytes!
+	uint8_t ccidLen = fona.getSIMCCID(ccid);                 // read the CCID make sure replybuffer is at least 21 bytes!
 	if (ccidLen > 0)
 	{
 		Serial.print(F("SIM CCID = ")); Serial.println(ccid);
@@ -392,8 +404,9 @@ int get_rssi()
 	if (n == 0) r = -115;
 	if (n == 1) r = -111;
 	if (n == 31) r = -52;
-	if ((n >= 2) && (n <= 30)) {
-	r = map(n, 2, 30, -110, -54);
+	if ((n >= 2) && (n <= 30)) 
+	{
+		r = map(n, 2, 30, -110, -54);
 	}
 	Serial.print(r); Serial.println(F(" dBm"));
 	return r;
@@ -438,30 +451,61 @@ void setup() {
 
   init_SIM800C();
 
- 
-  // Optionally configure a GPRS APN, username, and password.
-  // You might need to do this to access your network's GPRS/data
-  // network.  Contact your provider for the exact APN, username,
-  // and password values.  Username and password are optional and
-  // can be removed, but APN is required.
-  //fona.setGPRSNetworkSettings(F("your APN"), F("your username"), F("your password"));
+  Serial.println(F("OK"));           // con.println("OK");
+  for (;;)
+  {  
+	  if (fona.HTTP_init()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
+	  Serial.print(">");
+	  while (fona.available())
+	  {
+		  Serial.write(fona.read());
+	  }
+	//  Serial.println(gprs.buffer);                          // Не получилось, ("ERROR") 
+	  //String stringError = fona.read();
+	  //if (stringError.indexOf(F("ERROR")) > -1)
+	  //{
+		 // Serial.print(F("\nNo internet connection"));
+		 // delay(1000);
+		 // resetFunc();                                //вызываем reset при отсутствии доступа к серверу
+	  //}
+	  fona.HTTP_init();                                  // Не получилось, попробовать снова 
+	  delay(1000);
+  }
 
-  // Optionally configure HTTP gets to follow redirects over SSL.
-  // Default is not to follow SSL redirects, however if you uncomment
-  // the following line then redirects over SSL will be followed.
-  //fona.setHTTPSRedirect(true);
+  if (EEPROM.read(0) != 31)
+  {
+	  Serial.println(F("Start clear EEPROM"));               //  
+	  for (int i = 0; i<1023; i++)
+	  {
+		  EEPROM.write(i, 0);
+	  }
+	  EEPROM.write(0, 31);
+	  EEPROM.put(Address_interval, interval);                     // строка начальной установки интервалов
+	  EEPROM.put(Address_tel1, "+79990000000");
+	  EEPROM.put(Address_tel2, "+79990000000");
+	  EEPROM.put(Address_tel3, "+79990000000");
+	  EEPROM.put(Address_SMS_center, "+79990000000");
+	  Serial.println(F("Clear EEPROM End"));
+  }
 
-  // При необходимости настроить GPRS APN, имя пользователя и пароль.
-  // Возможно, придется сделать это, чтобы получить доступ к GPRS вашей сети / данные
-  // Сеть. Обратитесь к поставщику для точного APN, имя пользователя,
-  // И значения пароля. Имя пользователя и пароль не являются обязательными и
-  // Может быть удален, но имя точки доступа требуется.
-  //fona.setGPRSNetworkSettings(F("your APN "), F (" Ваше имя пользователя "), F (" Ваш пароль "));
+  SMS_center = "SMS.RU";                                   //  SMS_center = "SMS.RU";
+														   // EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
+  EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
+  EEPROM.get(Address_interval, interval);                      //Получить из EEPROM интервал
+  EEPROM.get(Address_SMS_center, SMS_center);                  //Получить из EEPROM СМС центр
 
-  // При необходимости настройки HTTP получает следовать переадресовывает над SSL.
-  // По умолчанию не следовать SSL переадресовывает, однако, если вы раскомментировать
-  // Следующая строка затем перенаправляет через SSL будет сопровождаться.
-  // fona.setHTTPSRedirect(true);
+  Serial.print(F("Interval sec:"));
+  Serial.println(interval);
+  Serial.println(SMS_center);
+
+  setColor(COLOR_BLUE);
+  sendTemps();
+  setColor(COLOR_GREEN);
+  Serial.println(F("\nSIM800 setup end"));
+  time = millis();                                              // Старт отсчета суток
+
+
+
 }
 void loop() {
 	Serial.print(F("SM800C > "));
@@ -472,14 +516,41 @@ void loop() {
 	//		Serial.write(fona.read());
 	//	}
 	//}
-	flushSerial();
+	//flushSerial();
  	 while (fona.available())
 	 {
-		Serial.write(fona.read());
-		sendTemps();
+	//	Serial.write(fona.read());
+		//sendTemps();
 	 }
-	 sendTemps();
-	 delay(10000);
+	/* sendTemps();
+	 delay(10000);*/
+
+	 unsigned long currentMillis = millis();
+	 if (!time_set)                                                               // 
+	 {
+		 EEPROM.get(Address_interval, interval);                               // Получить интервал из EEPROM Address_interval
+	 }
+	 if ((unsigned long)(currentMillis - previousMillis) >= interval * 1000)
+	 {
+		 Serial.print(F("Interval sec:"));
+		 Serial.println((currentMillis - previousMillis) / 1000);
+		 setColor(COLOR_BLUE);
+		 previousMillis = currentMillis;
+		 sendTemps();
+		 setColor(COLOR_GREEN);
+		 Serial.print(F("\nfree memory: "));
+		 Serial.println(freeMemory());
+	 }
+	 flushSerial();
+	 if (millis() - time > time_day * 1000) resetFunc();                       //вызываем reset интервалом в сутки
+	 delay(500);
+
+
+
+
+
+
+
 }
 
   //char command = Serial.read();
