@@ -155,6 +155,15 @@ boolean SIM800C_FONA::enableRTC(uint8_t i) {
 /*********** OPERATOR ***********************************************/
 boolean SIM800C_FONA::getOperator()
 {
+
+	//while (!sendCheckReply(F("AT+COPS?"), ok_reply))
+	//{
+	//	return sendCheckReply(replybuffer, ok_reply);
+	//}
+
+
+
+
 	//getReply(F("AT+COPS?"));
 	//sendCheckReply(F("AT+COPS?"), ok_reply)
 	//if (sendCheckReply(F("AT+COPS?"), ok_reply)

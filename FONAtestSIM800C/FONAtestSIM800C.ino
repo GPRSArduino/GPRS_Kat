@@ -57,7 +57,11 @@ static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
 #define PWR_On           5                          // Включение питания модуля SIM800
 #define LED13           13                          // Индикация светодиодом
 
-#define NETLIGHT         3                          // Индикация NETLIGHT
+#define NETLIGHT         3                          // Индикация NETLIGHT подключение к оператору 
+                                                    // 64ms On/ 800ms Off   Not registered the network.        Не зарегистрирован в сети
+                                                    // 64ms On/ 3000ms Off  Registered to the network.         Зарегистрировано в сети
+                                                    // 64ms On/ 300ms Off   GPRS communication is established. GPRS связь установлена
+
 #define STATUS           9                          // Индикация STATUS
 
 #define port1           11                          // Порт управления внешними устройствами (незадействован)
@@ -74,6 +78,7 @@ static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
 #define COLOR_RED HIGH, LOW, LOW
 #define COLOR_GREEN LOW, HIGH, LOW
 #define COLOR_BLUE LOW, LOW, HIGH
+volatile int state = LOW;
 
 
 char replybuffer[255];   // this is a large buffer for replies
@@ -102,9 +107,10 @@ unsigned long time;                                 // Переменная дл
 unsigned long time_day = 86400;                     // Переменная секунд в сутках
 unsigned long previousMillis = 0;
 unsigned long interval = 10;                        // Интервал передачи данных 10 секунд
-													//unsigned long interval = 300;                     // Интервал передачи данных 5 минут
+													 //unsigned long interval = 300;                     // Интервал передачи данных 5 минут
 bool time_set = false;                              // Фиксировать интервал заданный СМС
-
+volatile int metering_NETLIGHT = 0;
+volatile unsigned long metering_temp = 0;
 
 int Address_tel1 = 100;                         // Адрес в EEPROM телефона 1
 int Address_tel2 = 120;                         // Адрес в EEPROM телефона 2
@@ -401,8 +407,8 @@ void init_SIM800C()
 	}
 	//delay(20000);
 
-	uint8_t operatorLen = fona.getOperator();
-	if (operatorLen > 0)
+//	uint8_t operatorLen = fona.getOperator();
+	if (fona.getOperator())
 	{
 		//char get_operator[] = "";
 		//char *p = strstr(replybuffer, ",\"");
@@ -438,6 +444,34 @@ int get_rssi()
 	return n;
 }
 
+void blink()
+{
+	/*unsigned long current_M = millis();
+	if ((unsigned long)(current_M - metering_temp) >= 3060)
+	{
+		Serial.println((current_M - metering_temp) );
+		setColor(COLOR_BLUE);
+		metering_temp = current_M;
+	}
+	else if ((unsigned long)(current_M - metering_temp) >= 860)
+	{
+		Serial.println((current_M - metering_temp));
+		setColor(COLOR_BLUE);
+		metering_temp = current_M;
+	}*/
+
+	Serial.println("digitalPinToInterrupt");
+
+	/*state = !state;
+	if(!state)
+	{
+		metering_NETLIGHT = 
+		metering_temp = millis();
+	}*/
+	//metering_temp = millis();
+	//digitalWrite(LED13, state);
+
+}
 
 
 
@@ -453,7 +487,7 @@ void setup() {
   pinMode(LED_RED, OUTPUT);
   pinMode(LED_BLUE, OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
-  pinMode(NETLIGHT, INPUT);                      // Индикация NETLIGHT
+ // pinMode(NETLIGHT, INPUT);                      // Индикация NETLIGHT
   pinMode(STATUS, INPUT);                        // Индикация STATUS
 
   setColor(COLOR_RED);
@@ -474,6 +508,8 @@ void setup() {
   if (sensor1.getAddress(deviceAddress, 0)) sensor1.setResolution(deviceAddress, 12);
   if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
   if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
+
+  attachInterrupt(NETLIGHT, blink, CHANGE);
 
   init_SIM800C();
 
@@ -534,7 +570,7 @@ void setup() {
 
 }
 void loop() {
-	Serial.print(F("SM800C > "));
+	//Serial.print(F("SM800C > "));
 	//while (!Serial.available()) 
 	//{
 	//	if (fona.available()) 
@@ -551,25 +587,25 @@ void loop() {
 	/* sendTemps();
 	 delay(10000);*/
 
-	 unsigned long currentMillis = millis();
-	 if (!time_set)                                                               // 
-	 {
-		 EEPROM.get(Address_interval, interval);                               // Получить интервал из EEPROM Address_interval
-	 }
-	 if ((unsigned long)(currentMillis - previousMillis) >= interval * 1000)
-	 {
-		 Serial.print(F("Interval sec:"));
-		 Serial.println((currentMillis - previousMillis) / 1000);
-		 setColor(COLOR_BLUE);
-		 previousMillis = currentMillis;
-		 sendTemps();
-		 setColor(COLOR_GREEN);
-		 Serial.print(F("\nfree memory: "));
-		 Serial.println(freeMemory());
-	 }
-	 flushSerial();
-	 if (millis() - time > time_day * 1000) resetFunc();                       //вызываем reset интервалом в сутки
-	 delay(1000);
+	 //unsigned long currentMillis = millis();
+	 //if (!time_set)                                                               // 
+	 //{
+		// EEPROM.get(Address_interval, interval);                               // Получить интервал из EEPROM Address_interval
+	 //}
+	 //if ((unsigned long)(currentMillis - previousMillis) >= interval * 1000)
+	 //{
+		// Serial.print(F("Interval sec:"));
+		// Serial.println((currentMillis - previousMillis) / 1000);
+		// setColor(COLOR_BLUE);
+		// previousMillis = currentMillis;
+		// sendTemps();
+		// setColor(COLOR_GREEN);
+		// Serial.print(F("\nfree memory: "));
+		// Serial.println(freeMemory());
+	 //}
+	 //flushSerial();
+	 //if (millis() - time > time_day * 1000) resetFunc();                       //вызываем reset интервалом в сутки
+	 //delay(1000);
 
 }
 
