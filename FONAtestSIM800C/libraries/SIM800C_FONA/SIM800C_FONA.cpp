@@ -152,6 +152,36 @@ boolean SIM800C_FONA::enableRTC(uint8_t i) {
   return sendCheckReply(F("AT&W"), ok_reply);
 }
 
+/*********** OPERATOR ***********************************************/
+boolean SIM800C_FONA::getOperator()
+{
+	//getReply(F("AT+COPS?"));
+	//sendCheckReply(F("AT+COPS?"), ok_reply)
+	//if (sendCheckReply(F("AT+COPS?"), ok_reply)
+	/*while (prog_char_strcmp(replybuffer, (prog_char*)F("MTS")) == 0) {*/
+		//flushInput();
+		//readline();
+
+	//if(sendCheckReply(F("AT+COPS?"), ok_reply)
+	//{
+	//	return sendCheckReply(replybuffer, ok_reply);
+	//}
+
+	//if (sendCheckReply(F("AT+COPS?"), ok_reply))
+	//{
+	///*	char *p = strstr(replybuffer, ",\"");
+	//	if (p)
+	//	{
+	//		p += 2;
+	//		char *s = strchr(p, '\"');
+	//		if (s) *s = 0;
+	//		strcpy(get_operator, p);*/
+	//		return sendCheckReply(replybuffer, ok_reply);
+	//		//return get_operator;
+	//	//}
+	//}
+	return false;
+}
 
 /********* BATTERY & ADC ********************************************/
 

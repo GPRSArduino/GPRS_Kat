@@ -161,7 +161,7 @@ void sendTemps()
 	EEPROM.get(Address_errorAll, error_All);
 	//String toSend = formHeader()+DELIM+"temp1="+String(t1)+DELIM+"temp2="+String(t2)+DELIM+"tempint="+String(t3)+ DELIM+"slevel="+String(signal)+DELIM+"ecs="+String(errors)+DELIM+"ec="+String(error_All)+formEnd();
 	String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
-
+	Serial.println(toSend);
 	Serial.println(F("String length: "));
 	Serial.println(toSend.length());
 	//gprs_send(toSend);
@@ -171,6 +171,12 @@ String formHeader()
 {
 	String uptime = "17/01/01,10:10:10 00";
 	string_imei = String(imei);
+	char buffer[23];
+	
+	fona.getTime(buffer, 23);  // make sure replybuffer is at least 23 bytes!
+	Serial.print(F("Time = ")); Serial.println(buffer);
+
+
 	//GSM_LOCATION loc;                               // Получить время из интернета
 	//if (gprs.getLocation(&loc))
 	//{
@@ -368,13 +374,14 @@ void init_SIM800C()
 	delay(2000);
 	digitalWrite(LED13, HIGH);
 	digitalWrite(PWR_On, LOW);
-	//delay(1500);
+	delay(1500);
 	//digitalWrite(FONA_RST,   HIGH);            // Производим сброс модема после включения питания
 	//delay(1200);
 	//digitalWrite(FONA_RST,   LOW);               
 	delay(3000);
 
 	fonaSerial->begin(19200);
+
 	if (!fona.begin(*fonaSerial))
 	{
 		Serial.println(F("Couldn't find SIM80C"));
@@ -391,6 +398,25 @@ void init_SIM800C()
 	if (ccidLen > 0)
 	{
 		Serial.print(F("SIM CCID = ")); Serial.println(ccid);
+	}
+	//delay(20000);
+
+	uint8_t operatorLen = fona.getOperator();
+	if (operatorLen > 0)
+	{
+		//char get_operator[] = "";
+		//char *p = strstr(replybuffer, ",\"");
+		//if (p)
+		//{
+		//	p += 2;
+		//	char *s1 = strchr(p, '\"');
+		//	//if (s) *s = 0;
+		//	//strcpy(replybuffer, p);
+		//	//return sendCheckReply(get_operator, ok_reply);
+		//	//Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
+		//}
+
+		Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
 	}
 }
 
@@ -409,7 +435,7 @@ int get_rssi()
 		r = map(n, 2, 30, -110, -54);
 	}
 	Serial.print(r); Serial.println(F(" dBm"));
-	return r;
+	return n;
 }
 
 
@@ -451,26 +477,28 @@ void setup() {
 
   init_SIM800C();
 
-  Serial.println(F("OK"));           // con.println("OK");
-  for (;;)
-  {  
-	  if (fona.HTTP_init()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
-	  Serial.print(">");
-	  while (fona.available())
-	  {
-		  Serial.write(fona.read());
-	  }
-	//  Serial.println(gprs.buffer);                          // Не получилось, ("ERROR") 
-	  //String stringError = fona.read();
-	  //if (stringError.indexOf(F("ERROR")) > -1)
-	  //{
-		 // Serial.print(F("\nNo internet connection"));
-		 // delay(1000);
-		 // resetFunc();                                //вызываем reset при отсутствии доступа к серверу
-	  //}
-	  fona.HTTP_init();                                  // Не получилось, попробовать снова 
-	  delay(1000);
-  }
+ 
+
+ // Serial.println(F("OK"));           // con.println("OK");
+ // for (;;)
+ // {  
+	//  if (fona.HTTP_init()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
+	//  Serial.print(">");
+	//  while (fona.available())
+	//  {
+	//	  Serial.write(fona.read());
+	//  }
+	////  Serial.println(gprs.buffer);                          // Не получилось, ("ERROR") 
+	//  //String stringError = fona.read();
+	//  //if (stringError.indexOf(F("ERROR")) > -1)
+	//  //{
+	//	 // Serial.print(F("\nNo internet connection"));
+	//	 // delay(1000);
+	//	 // resetFunc();                                //вызываем reset при отсутствии доступа к серверу
+	//  //}
+	//  fona.HTTP_init();                                  // Не получилось, попробовать снова 
+	//  delay(1000);
+ // }
 
   if (EEPROM.read(0) != 31)
   {
@@ -499,12 +527,10 @@ void setup() {
   Serial.println(SMS_center);
 
   setColor(COLOR_BLUE);
-  sendTemps();
+ // sendTemps();
   setColor(COLOR_GREEN);
   Serial.println(F("\nSIM800 setup end"));
   time = millis();                                              // Старт отсчета суток
-
-
 
 }
 void loop() {
@@ -517,11 +543,11 @@ void loop() {
 	//	}
 	//}
 	//flushSerial();
- 	 while (fona.available())
-	 {
-	//	Serial.write(fona.read());
-		//sendTemps();
-	 }
+ //	 while (fona.available())
+	// {
+	////	Serial.write(fona.read());
+	//	//sendTemps();
+	// }
 	/* sendTemps();
 	 delay(10000);*/
 
@@ -543,13 +569,7 @@ void loop() {
 	 }
 	 flushSerial();
 	 if (millis() - time > time_day * 1000) resetFunc();                       //вызываем reset интервалом в сутки
-	 delay(500);
-
-
-
-
-
-
+	 delay(1000);
 
 }
 
