@@ -79,7 +79,12 @@ static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
 #define COLOR_GREEN LOW, HIGH, LOW
 #define COLOR_BLUE LOW, LOW, HIGH
 volatile int state = LOW;
-
+volatile int state_device = 0;                     // Состояние модуля при запуске 
+                                                   // 1 - Не зарегистрирован в сети, поиск
+                                                   // 2 - Зарегистрировано в сети
+                                                   // 3 - GPRS связь установлена
+volatile int metering_NETLIGHT = 0;
+volatile unsigned long metering_temp = 0;
 
 char replybuffer[255];   // this is a large buffer for replies
 char imei[15] = { 0 }; // MUST use a 15 character buffer for IMEI!
@@ -109,8 +114,7 @@ unsigned long previousMillis = 0;
 unsigned long interval = 10;                        // Интервал передачи данных 10 секунд
 													 //unsigned long interval = 300;                     // Интервал передачи данных 5 минут
 bool time_set = false;                              // Фиксировать интервал заданный СМС
-volatile int metering_NETLIGHT = 0;
-volatile unsigned long metering_temp = 0;
+
 
 int Address_tel1       = 100;                         // Адрес в EEPROM телефона 1
 int Address_tel2       = 120;                         // Адрес в EEPROM телефона 2
@@ -374,18 +378,26 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout)
 void init_SIM800C()
 {
 	Serial.println(F("Initializing....(May take 5 seconds)"));
-	digitalWrite(FONA_RST, LOW);               // Сигнал сброс в исходное состояние
+//	digitalWrite(FONA_RST, LOW);               // Сигнал сброс в исходное состояние
 	digitalWrite(LED13, LOW);
 	digitalWrite(PWR_On, HIGH);                // Кратковременно отключаем питание модуля GPRS
 	delay(2000);
 	digitalWrite(LED13, HIGH);
 	digitalWrite(PWR_On, LOW);
 	delay(1500);
-	//digitalWrite(FONA_RST,   HIGH);            // Производим сброс модема после включения питания
-	//delay(1200);
-	//digitalWrite(FONA_RST,   LOW);               
-	delay(3000);
 
+	digitalWrite(FONA_RST, HIGH);
+	delay(10);
+	digitalWrite(FONA_RST, LOW);
+	delay(100);
+	digitalWrite(FONA_RST, HIGH);
+
+	while (digitalRead(STATUS) == LOW) 
+	{
+	  // Уточнить программу перезапуска  если модуль не включился
+	}
+	delay(2000);
+	Serial.println(F("Power SIM800 On"));
 	fonaSerial->begin(19200);
 
 	if (!fona.begin(*fonaSerial))
@@ -405,7 +417,16 @@ void init_SIM800C()
 	{
 		Serial.print(F("SIM CCID = ")); Serial.println(ccid);
 	}
-	//delay(15000);
+
+
+	while (state_device != 2)  // Ожидание регистрации в сети
+	{
+		delay(1000);
+		// Уточнить программу перезапуска  если модуль не зарегистрировался
+	}
+
+	delay(1500);
+	Serial.print(F("Registered to the network ... "));
 
 //	uint8_t operatorLen = fona.getOperator();
 	//if (fona.getOperator())
@@ -450,31 +471,43 @@ void blink()
 
 	metering_NETLIGHT = current_M - metering_temp;
 	metering_temp = current_M;
-	Serial.println(metering_NETLIGHT);
-
 	if (metering_NETLIGHT > 3055 && metering_NETLIGHT < 3070)
 	{
-
+		state_device = 2;                 // 2 - Зарегистрировано в сети
 	}
 	else if (metering_NETLIGHT > 855 && metering_NETLIGHT < 870)
 	{
-
+		state_device = 1;                // 1 Не зарегистрирован в сети, поиск
 	}
 	else if (metering_NETLIGHT > 355 && metering_NETLIGHT < 370)
 	{
-
+		state_device = 3;                // 3 - GPRS связь установлена
 	}
-
-	state = !state;
-	if(!state)
+	if (state_device == 1)
 	{
-		setColor(COLOR_RED);
-	}
-	else
-	{
-		setColor(COLOR_GREEN);
+		state = !state;
+		if (!state)
+		{
+			setColor(COLOR_RED);
+		}
+		else
+		{
+			setColor(COLOR_GREEN);
+		}
 	}
 
+	if (state_device == 2)
+	{
+		state = !state;
+		if (!state)
+		{
+			setColor(COLOR_RED);
+		}
+		else
+		{
+			setColor(COLOR_BLUE);
+		}
+	}
 }
 
 
@@ -513,11 +546,9 @@ void setup() {
 	if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 	if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 
-	//attachInterrupt(NETLIGHT, blink, RISING);
+	attachInterrupt(1, blink, RISING);            // Включить прерывания. Индикация состояния модема
 
 	init_SIM800C();
-
-	attachInterrupt(1, blink, RISING);
 
 	// Serial.println(F("OK"));           // con.println("OK");
 	// for (;;)
