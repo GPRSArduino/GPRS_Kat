@@ -290,7 +290,7 @@ void gprs_send(String data)
   }
 
   // Теперь мы получили сообщение от сайта.
-   con.print(F("[Payload] "));                              //con.print("[Payload] ");
+   con.print(F("[Payload] "));                            //con.print("[Payload] ");
    con.println(gprs.buffer);
    String command = gprs.buffer;                          // Получить строку данных с сервера
    String commEXE = command.substring(0, 2);              // Выделить строку с командой
