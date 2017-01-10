@@ -109,8 +109,8 @@ class SIM800C_FONA : public FONAStreamType
   uint8_t GPRSstate(void);
   boolean getGSMLoc(uint16_t *replycode, char *buff, uint16_t maxlen);
   boolean getGSMLoc(float *lat, float *lon);
-  void setGPRSNetworkSettings(FONAFlashStringPtr apn, FONAFlashStringPtr username=0, FONAFlashStringPtr password=0);
-
+ // void setGPRSNetworkSettings(FONAFlashStringPtr apn, FONAFlashStringPtr username=0, FONAFlashStringPtr password=0);
+  void setGPRSNetworkSettings(char* apn, char* username, char* password);
   // TCP raw connections
   boolean TCPconnect(char *server, uint16_t port);
   boolean TCPclose(void);

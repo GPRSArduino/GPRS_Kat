@@ -14,7 +14,7 @@
 
 
 // define DEBUG to one serial UART to enable debug information output
-#define DEBUG Serial
+//#define DEBUG Serial
 
 
 const char  txt_AT[]                 PROGMEM  = "ATE0";
@@ -143,6 +143,7 @@ public:
     CGPRS_SIM800():httpState(HTTP_DISABLED) {}
     // initialize the module
     bool init(int PWR_On,int SIM800_RESET_PIN,int LED13, long speed_serial);
+	bool begin(long speed_serial);
     // setup network
     byte setup();
 	// byte setup(const char* apn, const char* user, const char* pwd);

@@ -166,7 +166,7 @@ void sendTemps()
 	float t2 = sensor2.getTempCByIndex(0);
 	float t3 = sensor3.getTempCByIndex(0);
 	float tsumma = t1 + t2 + t3 + 88.88;
-	int signal = get_rssi();
+	int signal = 20;// get_rssi();
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
 	//String toSend = formHeader()+DELIM+"temp1="+String(t1)+DELIM+"temp2="+String(t2)+DELIM+"tempint="+String(t3)+ DELIM+"slevel="+String(signal)+DELIM+"ecs="+String(errors)+DELIM+"ec="+String(error_All)+formEnd();
@@ -435,35 +435,52 @@ void init_SIM800C()
 	//	//char *p = strstr(replybuffer, ",\"");
 	//	//if (p)
 	//	//{
-	//	//	p += 2;
-	//	//	char *s1 = strchr(p, '\"');
+	//	//	//p += 2;
+	//	//	//char *s = strchr(p, '\"');
 	//	//	//if (s) *s = 0;
-	//	//	//strcpy(replybuffer, p);
+	//	//	//strcpy(get_operator, p);
 	//	//	//return sendCheckReply(get_operator, ok_reply);
 	//	//	//Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
 	//	//}
 
-	//	Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
+	//	//Serial.print(F("Operator: ")); Serial.println(get_operator); // 
 	//}
+
+	char apn[] = "MTS";
+	char user[] = "mts";
+	char pass[] = "mts";
+
+	fona.setGPRSNetworkSettings(apn, user, pass);
+//	fona.setGPRSNetworkSettings(F("your APN"), F("your username"), F("your password"));
+
+	delay(1500);
+	if (!fona.enableGPRS(true))
+		Serial.println(F("Failed to turn on"));
+
+
+
+
+
+
 }
 
-int get_rssi()
-{
-	// read the RSSI
-	uint8_t n = fona.getRSSI();
-	int8_t r;
-
-	Serial.print(F("RSSI = ")); Serial.print(n); Serial.print(": ");
-	if (n == 0) r = -115;
-	if (n == 1) r = -111;
-	if (n == 31) r = -52;
-	if ((n >= 2) && (n <= 30))
-	{
-		r = map(n, 2, 30, -110, -54);
-	}
-	Serial.print(r); Serial.println(F(" dBm"));
-	return n;
-}
+//int get_rssi()
+//{
+//	// read the RSSI
+//	uint8_t n = fona.getRSSI();
+//	int8_t r;
+//
+//	Serial.print(F("RSSI = ")); Serial.print(n); Serial.print(": ");
+//	if (n == 0) r = -115;
+//	if (n == 1) r = -111;
+//	if (n == 31) r = -52;
+//	if ((n >= 2) && (n <= 30))
+//	{
+//		r = map(n, 2, 30, -110, -54);
+//	}
+//	Serial.print(r); Serial.println(F(" dBm"));
+//	return n;
+//}
 
 void blink()
 {
@@ -471,6 +488,7 @@ void blink()
 
 	metering_NETLIGHT = current_M - metering_temp;
 	metering_temp = current_M;
+	Serial.println(metering_NETLIGHT);
 	if (metering_NETLIGHT > 3055 && metering_NETLIGHT < 3070)
 	{
 		state_device = 2;                 // 2 - Зарегистрировано в сети
@@ -479,7 +497,7 @@ void blink()
 	{
 		state_device = 1;                // 1 Не зарегистрирован в сети, поиск
 	}
-	else if (metering_NETLIGHT > 355 && metering_NETLIGHT < 370)
+	else if (metering_NETLIGHT > 350 && metering_NETLIGHT < 370)
 	{
 		state_device = 3;                // 3 - GPRS связь установлена
 	}
@@ -508,6 +526,8 @@ void blink()
 			setColor(COLOR_BLUE);
 		}
 	}
+
+
 }
 
 
@@ -597,12 +617,14 @@ void setup() {
 	Serial.println(interval);
 	Serial.println(SMS_center);
 
-	setColor(COLOR_BLUE);
+	//setColor(COLOR_BLUE);
 	// sendTemps();
-	setColor(COLOR_GREEN);
+//	setColor(COLOR_GREEN);
 	Serial.println(F("\nSIM800 setup end"));
+	Serial.println(state_device);
 	time = millis();                                              // Старт отсчета суток
-
+	delay(1000);
+	setColor(COLOR_GREEN);
 }
 void loop() {
 	//Serial.print(F("SM800C > "));

@@ -13,9 +13,11 @@ SIM800C_FONA::SIM800C_FONA(int8_t rst)
 {
   _rstpin = rst;
 
-  apn = F("FONAnet");
-  apnusername = 0;
-  apnpassword = 0;
+  apn = F("MTS");
+  apnusername = F("mts");
+  apnpassword = F("mts");
+ /* apnusername = 0;
+  apnpassword = 0;*/
   mySerial = 0;
   httpsredirect = false;
   useragent = F("FONA");
@@ -30,12 +32,12 @@ boolean SIM800C_FONA::begin(Stream &port)
 {
   mySerial = &port;
 
-  pinMode(_rstpin, OUTPUT);
+ /* pinMode(_rstpin, OUTPUT);
   digitalWrite(_rstpin, HIGH);
   delay(10);
   digitalWrite(_rstpin, LOW);
   delay(100);
-  digitalWrite(_rstpin, HIGH);
+  digitalWrite(_rstpin, HIGH);*/
 
   DEBUG_PRINTLN(F("Attempting to open comm with ATs"));
   // give 7 seconds to reboot
@@ -171,10 +173,10 @@ boolean SIM800C_FONA::getOperator()
 		//flushInput();
 		//readline();
 
-	//if(sendCheckReply(F("AT+COPS?"), ok_reply)
-	//{
-	//	return sendCheckReply(replybuffer, ok_reply);
-	//}
+	if(sendCheckReply(F("AT+COPS?"), ok_reply))
+	{
+		return sendCheckReply(replybuffer, ok_reply);
+	}
 
 	//if (sendCheckReply(F("AT+COPS?"), ok_reply))
 	//{
@@ -757,11 +759,17 @@ uint8_t SIM800C_FONA::GPRSstate(void) {
   return state;
 }
 
-void SIM800C_FONA::setGPRSNetworkSettings(FONAFlashStringPtr apn,
-              FONAFlashStringPtr username, FONAFlashStringPtr password) {
-  this->apn = apn;
-  this->apnusername = username;
-  this->apnpassword = password;
+//void SIM800C_FONA::setGPRSNetworkSettings(FONAFlashStringPtr apn,
+//              FONAFlashStringPtr username, FONAFlashStringPtr password) {
+//  this->apn = apn;
+//  this->apnusername = username;
+//  this->apnpassword = password;
+//}
+
+void SIM800C_FONA::setGPRSNetworkSettings(char* apn,	char* username, char* password) {
+	this->apn = apn;
+	this->apnusername = username;
+	this->apnpassword = password;
 }
 
 boolean SIM800C_FONA::getGSMLoc(uint16_t *errorcode, char *buff, uint16_t maxlen) {

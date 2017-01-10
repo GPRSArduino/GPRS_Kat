@@ -1,5 +1,5 @@
-C:\Users\moseichuk\AppData\Local\Temp\VMBuilds\SIM800C1_2\nano_atmega328\Debug\SIM800C1_2.cpp.o: \
- C:\Users\moseichuk\AppData\Local\Temp\VMBuilds\SIM800C1_2\nano_atmega328\Debug\SIM800C1_2.cpp \
+C:\Users\Александр\AppData\Local\Temp\VMBuilds\SIM800C1_2\nano_atmega328\Debug\SIM800C1_2.cpp.o: \
+ C:\Users\Александр\AppData\Local\Temp\VMBuilds\SIM800C1_2\nano_atmega328\Debug\SIM800C1_2.cpp \
  C:\arduino-1.6.13\hardware\arduino\avr\cores\arduino/arduino.h \
  C:\arduino-1.6.13\hardware\arduino\avr\cores\arduino/binary.h \
  C:\arduino-1.6.13\hardware\arduino\avr\cores\arduino/WCharacter.h \
@@ -12,10 +12,10 @@ C:\Users\moseichuk\AppData\Local\Temp\VMBuilds\SIM800C1_2\nano_atmega328\Debug\S
  C:\arduino-1.6.13\hardware\arduino\avr\cores\arduino/Arduino.h \
  C:\arduino-1.6.13\hardware\arduino\avr\variants\eightanaloginputs/pins_arduino.h \
  C:\arduino-1.6.13\hardware\arduino\avr\variants\eightanaloginputs/../standard/pins_arduino.h \
- F:\2\ SVN\ GPRS_Kat\trunk\SIM800C1_2\libraries\SIM800/SIM800.h \
+ D:\2\ SVN\ GPRS_Kat\trunk\SIM800C1_2\libraries\SIM800/SIM800.h \
  C:\arduino-1.6.13\hardware\arduino\avr\cores\arduino/Arduino.h \
  C:\arduino-1.6.13\hardware\arduino\avr\libraries\SoftwareSerial\src/SoftwareSerial.h \
  C:\arduino-1.6.13\hardware\arduino\avr\cores\arduino/Stream.h \
- F:\2\ SVN\ GPRS_Kat\trunk\SIM800C1_2\libraries\OneWire/OneWire.h \
- F:\2\ SVN\ GPRS_Kat\trunk\SIM800C1_2\libraries\DallasTemperature/DallasTemperature.h \
+ D:\2\ SVN\ GPRS_Kat\trunk\SIM800C1_2\libraries\OneWire/OneWire.h \
+ D:\2\ SVN\ GPRS_Kat\trunk\SIM800C1_2\libraries\DallasTemperature/DallasTemperature.h \
  C:\arduino-1.6.13\hardware\arduino\avr\libraries\EEPROM\src/EEPROM.h

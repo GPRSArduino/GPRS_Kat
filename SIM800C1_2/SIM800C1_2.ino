@@ -72,16 +72,24 @@ static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
 #define COLOR_GREEN LOW, HIGH, LOW
 #define COLOR_BLUE LOW, LOW, HIGH
 
+volatile int state = LOW;
+volatile int state_device = 0;                     // Состояние модуля при запуске 
+												   // 1 - Не зарегистрирован в сети, поиск
+												   // 2 - Зарегистрировано в сети
+												   // 3 - GPRS связь установлена
+volatile int metering_NETLIGHT = 0;
+volatile unsigned long metering_temp = 0;
+
 bool start_error = false;                         // флаг компенсации первой ошибки при старте.
 
 CGPRS_SIM800 gprs;
 uint32_t count  = 0;
 uint32_t errors = 0;
-String imei = "";
+//String imei = "";
 String CSQ = "";                                    // Уровень сигнала приема
 String SMS_center = "";
 String zero_tel   = "";
-//String imei = "861445030362268";                  // Тест IMEI
+String imei = "861445030362268";                  // Тест IMEI
 //#define DELIM "&"
 #define DELIM "@"
 //char mydata[] = "t1=861445030362268@04/01/02,15:22:52 00@24.50@25.60";
@@ -247,11 +255,11 @@ void gprs_send(String data)
   if (gprs.httpState == HTTP_ERROR) 
   {
     con.println(F("Connect error"));
-if(start_error)                        // Корректируем ошибку при первом запуске
-{
-    errors++;
-	errorAllmem();
-}
+	//if(start_error)                        // Корректируем ошибку при первом запуске
+	//{
+		errors++;
+		errorAllmem();
+	//}
 	if (errors > 20)
 	  {
 			//con.println("Number of transmission errors exceeded");
@@ -274,8 +282,8 @@ if(start_error)                        // Корректируем ошибку при первом запуске
 	errorAllmem();
 	if (errors > 20)
 	  {
-			//con.println("The number of server errors exceeded");
-			resetFunc();         // вызываем reset после 30 ошибок
+			con.println(F("The number of server errors exceeded 20"));
+			resetFunc();         // вызываем reset после 20 ошибок
 	  }
     delay(3000);
     return; 
@@ -284,23 +292,23 @@ if(start_error)                        // Корректируем ошибку при первом запуске
   // Теперь мы получили сообщение от сайта.
    con.print(F("[Payload] "));                              //con.print("[Payload] ");
    con.println(gprs.buffer);
-   String command = gprs.buffer;                       // Получить строку данных с сервера
-   String commEXE = command.substring(0, 2);           // Выделить строку с командой
-   int var = commEXE.toInt();                          // Получить номер команды. Преобразовать строку команды в число 
+   String command = gprs.buffer;                          // Получить строку данных с сервера
+   String commEXE = command.substring(0, 2);              // Выделить строку с командой
+   int var = commEXE.toInt();                             // Получить номер команды. Преобразовать строку команды в число 
 
-   if(var == 1)                                        // Выполнить команду 1
+   if(var == 1)                                           // Выполнить команду 1
 	{
-		String commData = command.substring(2, 10);    // Выделить строку с данными
-		unsigned long interval1 = commData.toInt();    // Преобразовать строку данных в число 
+		String commData = command.substring(2, 10);       // Выделить строку с данными
+		unsigned long interval1 = commData.toInt();       // Преобразовать строку данных в число 
 		con.println(interval1);
-		if(interval1 > 10 && interval1 < 86401)         // Ограничить интервалы от 10  секунд до 24 часов.
+		if(interval1 > 10 && interval1 < 86401)           // Ограничить интервалы от 10  секунд до 24 часов.
 		{
-		  if(interval1!=interval)                       // Если информиция не изменилась - не писать в EEPROM
+		  if(interval1!=interval)                         // Если информиция не изменилась - не писать в EEPROM
 		  {
-			 if(!time_set)                              // Если нет команды фиксации интервала от СМС 
+			 if(!time_set)                                // Если нет команды фиксации интервала от СМС 
 			 {
-			    interval = interval1;                    // Переключить интервал передачи на сервер
-			    EEPROM.put(Address_interval, interval);  // Записать интервал EEPROM , полученный от сервера
+			    interval = interval1;                     // Переключить интервал передачи на сервер
+			    EEPROM.put(Address_interval, interval);   // Записать интервал EEPROM , полученный от сервера
 			 }
 		  }
 		}
@@ -435,10 +443,140 @@ void setTime(String val, String f_phone)
   }
 }
 
+
+void blink()
+{
+	unsigned long current_M = millis();
+
+	metering_NETLIGHT = current_M - metering_temp;
+	metering_temp = current_M;
+	//Serial.println(metering_NETLIGHT);
+	if (metering_NETLIGHT > 3055 && metering_NETLIGHT < 3070)
+	{
+		state_device = 2;                 // 2 - Зарегистрировано в сети
+	}
+	else if (metering_NETLIGHT > 855 && metering_NETLIGHT < 870)
+	{
+		state_device = 1;                // 1 Не зарегистрирован в сети, поиск
+	}
+	else if (metering_NETLIGHT > 350 && metering_NETLIGHT < 370)
+	{
+		state_device = 3;                // 3 - GPRS связь установлена
+	}
+	if (state_device == 1)
+	{
+		state = !state;
+		if (!state)
+		{
+			setColor(COLOR_RED);
+		}
+		else
+		{
+			setColor(COLOR_GREEN);
+		}
+	}
+
+	if (state_device == 2)
+	{
+		state = !state;
+		if (!state)
+		{
+			setColor(COLOR_RED);
+		}
+		else
+		{
+			setColor(COLOR_BLUE);
+		}
+	}
+
+
+}
+
+void start_init()
+{
+	for (;;)
+	{
+		Serial.println(F("Initializing....(May take 5 seconds)"));
+
+		digitalWrite(SIM800_RESET_PIN,   LOW);               // Сигнал сброс в исходное состояние
+		digitalWrite(LED13,    LOW);
+		digitalWrite(PWR_On,   HIGH);                        // Кратковременно отключаем питание модуля GPRS
+		delay(2000);
+		digitalWrite(LED13,    HIGH);
+		digitalWrite(PWR_On,   LOW);
+		delay(1500);                           
+		digitalWrite(SIM800_RESET_PIN,   HIGH);              // Производим сброс модема после включения питания
+		delay(1000);
+		digitalWrite(SIM800_RESET_PIN,   LOW);               
+
+		while (digitalRead(STATUS) == LOW)
+		{
+			// Уточнить программу перезапуска  если модуль не включился
+		}
+		delay(2000);
+		Serial.println(F("Power SIM800 On"));
+
+			while (!gprs.begin(speed_Serial))
+			{
+				con.write('.');
+			}
+		con.println(F("OK"));                  // con.println("OK");
+
+
+		while (state_device != 2)  // Ожидание регистрации в сети
+		{
+			delay(1000);
+			// Уточнить программу перезапуска  если модуль не зарегистрировался
+		}
+
+
+		con.print(F("Setting up network..."));
+
+		if (gprs.getIMEI())                     // Получить IMEI
+		{
+			con.print(F("\nIMEI:"));
+			//imei = gprs.buffer;
+			gprs.cleanStr(imei);
+			con.println(imei);
+		}
+
+		byte ret = gprs.setup();
+		if (ret == 0)
+		{
+			while (state_device != 3)  // Ожидание регистрации в сети
+				{
+					delay(50);
+					// Уточнить программу перезапуска  если модуль не зарегистрировался
+				}
+
+			setColor(COLOR_GREEN);  // Включить светодиод
+			break;
+		}
+		con.print("Error code:");
+		con.println(ret);
+		con.println(gprs.buffer);
+		delay(2000);
+		if (ret == 4 || ret == 5)
+		{
+			setColor(COLOR_RED);
+			con.print(F("The network is not defined"));
+			delay(1000);
+			resetFunc();             //вызываем reset при отсутствии регистрации в сети
+		}
+
+
+	}
+}
+
 void setup()
 {
 	con.begin(speed_Serial);
-	con.println(F("\n SIM800 setup start"));           
+	con.println(F("\n SIM800 setup start"));     
+
+	pinMode(SIM800_RESET_PIN, OUTPUT);
+	pinMode(LED13, OUTPUT);
+	pinMode(PWR_On, OUTPUT);
+
 	pinMode(LED_RED,  OUTPUT);
 	pinMode(LED_BLUE, OUTPUT);
 	pinMode(LED_GREEN,OUTPUT);
@@ -464,50 +602,58 @@ void setup()
 	if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 	if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 
-	for (;;) 
-	{
-		con.print(F("\nResetting  "));          
-		while (!gprs.init(PWR_On, SIM800_RESET_PIN, LED13, speed_Serial))
-	    {
-		    con.write('.');
-	    }
-	    con.println(F("OK"));             // con.println("OK");
+	attachInterrupt(1, blink, RISING);            // Включить прерывания. Индикация состояния модема
 
-		for (int i = 0; i < 20; i++)           // Ожидаем подключения к станции
-		{
-			setColor(COLOR_GREEN);
-			delay(500);                        // Ожидаем подключения к станции
-			setColor(COLOR_RED);
-			delay(500);                        // Ожидаем подключения к станции
-		}
+	start_init();
 
-	    con.print(F("Setting up network..."));       
 
-	    if (gprs.getIMEI())                     // Получить IMEI
-	    {
-		con.print(F("\nIMEI:"));
-		imei = gprs.buffer;
-		gprs.cleanStr(imei);
-		con.println(imei);
-	    }
-		byte ret = gprs.setup();
-		if (ret == 0) 
-		{
-	    	setColor(COLOR_GREEN);  // Включить светодиод
-			break;
-		}
-	  	con.print("Error code:");
-		con.println(ret);
-		con.println(gprs.buffer);
-		delay(2000);
-		if (ret == 4 ||ret == 5) 
-		{
-            setColor(COLOR_RED);
-			con.print(F("The network is not defined"));
-			delay(1000);
-			resetFunc();             //вызываем reset при отсутствии регистрации в сети
-		}
-	}
+	//for (;;) 
+	//{
+	//	con.print(F("\nResetting  "));    
+
+
+
+	//	while (!gprs.init(PWR_On, SIM800_RESET_PIN, LED13, speed_Serial))
+	//    {
+	//	    con.write('.');
+	//    }
+	//    con.println(F("OK"));                  // con.println("OK");
+
+	//	for (int i = 0; i < 20; i++)           // Ожидаем подключения к станции
+	//	{
+	//		setColor(COLOR_GREEN);
+	//		delay(500);                        // Ожидаем подключения к станции
+	//		setColor(COLOR_RED);
+	//		delay(500);                        // Ожидаем подключения к станции
+	//	}
+
+	//    con.print(F("Setting up network..."));       
+
+	//    if (gprs.getIMEI())                     // Получить IMEI
+	//    {
+	//	con.print(F("\nIMEI:"));
+	//	//imei = gprs.buffer;
+	//	gprs.cleanStr(imei);
+	//	con.println(imei);
+	//    }
+	//	byte ret = gprs.setup();
+	//	if (ret == 0) 
+	//	{
+	//    	setColor(COLOR_GREEN);  // Включить светодиод
+	//		break;
+	//	}
+	//  	con.print("Error code:");
+	//	con.println(ret);
+	//	con.println(gprs.buffer);
+	//	delay(2000);
+	//	if (ret == 4 ||ret == 5) 
+	//	{
+ //           setColor(COLOR_RED);
+	//		con.print(F("The network is not defined"));
+	//		delay(1000);
+	//		resetFunc();             //вызываем reset при отсутствии регистрации в сети
+	//	}
+	//}
 
   con.println(F("OK"));           // con.println("OK");
  for (;;) 
@@ -543,7 +689,7 @@ void setup()
  }
 
 	SMS_center = "SMS.RU";                                   //  SMS_center = "SMS.RU";
-	// EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
+	//EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
 	EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
 	EEPROM.get(Address_interval, interval);                      //Получить из EEPROM интервал
 	EEPROM.get(Address_SMS_center, SMS_center);                  //Получить из EEPROM СМС центр
@@ -551,10 +697,7 @@ void setup()
 	con.print(F("Interval sec:"));
 	con.println(interval);
 	con.println(SMS_center);
-	 
-	setColor(COLOR_BLUE);
-	sendTemps();
-	setColor(COLOR_GREEN);
+//	setColor(COLOR_GREEN);
 	con.println(F("\nSIM800 setup end"));                        
 	time = millis();                                              // Старт отсчета суток
 }
