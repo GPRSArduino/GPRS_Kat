@@ -95,14 +95,7 @@ class SIM800C_FONA : public FONAStreamType {
   boolean setMicVolume(uint8_t a, uint8_t level);
   boolean playDTMF(char tone);
 
-  // FM radio functions.
-  boolean tuneFMradio(uint16_t station);
-  boolean FMradio(boolean onoff, uint8_t a = FONA_HEADSETAUDIO);
-  boolean setFMVolume(uint8_t i);
-  int8_t getFMVolume();
-  int8_t getFMSignalLevel(uint16_t station);
-
-  // SMS handling
+   // SMS handling
   boolean setSMSInterrupt(uint8_t i);
   uint8_t getSMSInterrupt(void);
   int8_t getNumSMS(void);

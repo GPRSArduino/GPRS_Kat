@@ -3,43 +3,43 @@
 
   These cellular modules use TTL Serial to communicate, 2 pins are
   required to interface
- 
+
   BSD license, all text above must be included in any redistribution
  ****************************************************/
 
-/*
-Open up the serial console on the Arduino at 115200 baud to interact with FONA
+ /*
+ Open up the serial console on the Arduino at 115200 baud to interact with FONA
 
-Note that if you need to set a GPRS APN, username, and password scroll down to
-the commented section below at the end of the setup() function.
-Обратите внимание, что если вам нужно установить GPRS APN, имя пользователя и пароль прокрутки вниз
-комментируемого раздел ниже в конце функции настройки ().
+ Note that if you need to set a GPRS APN, username, and password scroll down to
+ the commented section below at the end of the setup() function.
+ Обратите внимание, что если вам нужно установить GPRS APN, имя пользователя и пароль прокрутки вниз
+ комментируемого раздел ниже в конце функции настройки ().
 
 
- Optionally configure a GPRS APN, username, and password.
- You might need to do this to access your network's GPRS/data
- network.  Contact your provider for the exact APN, username,
- and password values.  Username and password are optional and
- can be removed, but APN is required.
-fona.setGPRSNetworkSettings(F("your APN"), F("your username"), F("your password"));
+  Optionally configure a GPRS APN, username, and password.
+  You might need to do this to access your network's GPRS/data
+  network.  Contact your provider for the exact APN, username,
+  and password values.  Username and password are optional and
+  can be removed, but APN is required.
+ fona.setGPRSNetworkSettings(F("your APN"), F("your username"), F("your password"));
 
- Optionally configure HTTP gets to follow redirects over SSL.
- Default is not to follow SSL redirects, however if you uncomment
- the following line then redirects over SSL will be followed.
-fona.setHTTPSRedirect(true);
-
- При необходимости настроить GPRS APN, имя пользователя и пароль.
- Возможно, придется сделать это, чтобы получить доступ к GPRS вашей сети / данные
- Сеть. Обратитесь к поставщику для точного APN, имя пользователя,
- И значения пароля. Имя пользователя и пароль не являются обязательными и
- Может быть удален, но имя точки доступа требуется.
-fona.setGPRSNetworkSettings(F("your APN "), F (" Ваше имя пользователя "), F (" Ваш пароль "));
-
- При необходимости настройки HTTP получает следовать переадресовывает над SSL.
- По умолчанию не следовать SSL переадресовывает, однако, если вы раскомментировать
- Следующая строка затем перенаправляет через SSL будет сопровождаться.
+  Optionally configure HTTP gets to follow redirects over SSL.
+  Default is not to follow SSL redirects, however if you uncomment
+  the following line then redirects over SSL will be followed.
  fona.setHTTPSRedirect(true);
-*/
+
+  При необходимости настроить GPRS APN, имя пользователя и пароль.
+  Возможно, придется сделать это, чтобы получить доступ к GPRS вашей сети / данные
+  Сеть. Обратитесь к поставщику для точного APN, имя пользователя,
+  И значения пароля. Имя пользователя и пароль не являются обязательными и
+  Может быть удален, но имя точки доступа требуется.
+ fona.setGPRSNetworkSettings(F("your APN "), F (" Ваше имя пользователя "), F (" Ваш пароль "));
+
+  При необходимости настройки HTTP получает следовать переадресовывает над SSL.
+  По умолчанию не следовать SSL переадресовывает, однако, если вы раскомментировать
+  Следующая строка затем перенаправляет через SSL будет сопровождаться.
+  fona.setHTTPSRedirect(true);
+ */
 #include "SIM800C_FONA.h"
 #include <SoftwareSerial.h>
 #include <OneWire.h> 
@@ -91,13 +91,13 @@ SIM800C_FONA fona = SIM800C_FONA(FONA_RST);
 uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
 uint8_t type;
 
-uint32_t count = 0;
-uint32_t errors = 0;
+uint32_t count     = 0;
+uint32_t errors    = 0;
 String string_imei = "";
-String CSQ = "";                                    // Уровень сигнала приема
-String SMS_center = "";
-String zero_tel = "";
-//String imei = "861445030362268";                  // Тест IMEI
+String CSQ         = "";                                    // Уровень сигнала приема
+String SMS_center  = "";
+String zero_tel    = "";
+//String imei      = "861445030362268";                  // Тест IMEI
 //#define DELIM "&"
 #define DELIM "@"
 //char mydata[] = "t1=861445030362268@04/01/02,15:22:52 00@24.50@25.60";
@@ -112,13 +112,13 @@ bool time_set = false;                              // Фиксировать и
 volatile int metering_NETLIGHT = 0;
 volatile unsigned long metering_temp = 0;
 
-int Address_tel1 = 100;                         // Адрес в EEPROM телефона 1
-int Address_tel2 = 120;                         // Адрес в EEPROM телефона 2
-int Address_tel3 = 140;                         // Адрес в EEPROM телефона 3
-int Address_errorAll = 160;                         // Адрес в EEPROM счетчика общих ошибок
-int Address_port1 = 180;                         // Адрес в EEPROM порт данных (незадействован)
-int Address_port2 = 190;                         // Адрес в EEPROM порт данных (незадействован)
-int Address_interval = 200;                         // Адрес в EEPROM величины интервала
+int Address_tel1       = 100;                         // Адрес в EEPROM телефона 1
+int Address_tel2       = 120;                         // Адрес в EEPROM телефона 2
+int Address_tel3       = 140;                         // Адрес в EEPROM телефона 3
+int Address_errorAll   = 160;                         // Адрес в EEPROM счетчика общих ошибок
+int Address_port1      = 180;                         // Адрес в EEPROM порт данных (незадействован)
+int Address_port2      = 190;                         // Адрес в EEPROM порт данных (незадействован)
+int Address_interval   = 200;                         // Адрес в EEPROM величины интервала
 int Address_SMS_center = 220;                         // Адрес в EEPROM SMS центра
 
 char data_tel[13];                                  // Буфер для номера телефоа
@@ -178,7 +178,7 @@ String formHeader()
 	String uptime = "17/01/01,10:10:10 00";
 	string_imei = String(imei);
 	char buffer[23];
-	
+
 	fona.getTime(buffer, 23);  // make sure replybuffer is at least 23 bytes!
 	Serial.print(F("Time = ")); Serial.println(buffer);
 
@@ -244,131 +244,131 @@ String formEnd()
 }
 
 
-void printMenu(void) 
+void printMenu(void)
 {
-  //Serial.println(F("-------------------------------------"));
-  //Serial.println(F("[?] Print this menu"));
-  //Serial.println(F("[a] read the ADC 2.8V max (FONA800 & 808)"));
-  //Serial.println(F("[b] read the Battery V and % charged"));
-  //Serial.println(F("[C] read the SIM CCID"));
-  //Serial.println(F("[U] Unlock SIM with PIN code"));
-  //Serial.println(F("[i] read RSSI"));
-  //Serial.println(F("[n] get Network status"));
-  //Serial.println(F("[v] set audio Volume"));
-  //Serial.println(F("[V] get Volume"));
-  //Serial.println(F("[H] set Headphone audio (FONA800 & 808)"));
-  //Serial.println(F("[e] set External audio (FONA800 & 808)"));
-  //Serial.println(F("[T] play audio Tone"));
-  //Serial.println(F("[P] PWM/Buzzer out (FONA800 & 808)"));
+	//Serial.println(F("-------------------------------------"));
+	//Serial.println(F("[?] Print this menu"));
+	//Serial.println(F("[a] read the ADC 2.8V max (FONA800 & 808)"));
+	//Serial.println(F("[b] read the Battery V and % charged"));
+	//Serial.println(F("[C] read the SIM CCID"));
+	//Serial.println(F("[U] Unlock SIM with PIN code"));
+	//Serial.println(F("[i] read RSSI"));
+	//Serial.println(F("[n] get Network status"));
+	//Serial.println(F("[v] set audio Volume"));
+	//Serial.println(F("[V] get Volume"));
+	//Serial.println(F("[H] set Headphone audio (FONA800 & 808)"));
+	//Serial.println(F("[e] set External audio (FONA800 & 808)"));
+	//Serial.println(F("[T] play audio Tone"));
+	//Serial.println(F("[P] PWM/Buzzer out (FONA800 & 808)"));
 
-  //// FM (SIM800 only!)
-  //Serial.println(F("[f] tune FM radio (FONA800)"));
-  //Serial.println(F("[F] turn off FM (FONA800)"));
-  //Serial.println(F("[m] set FM volume (FONA800)"));
-  //Serial.println(F("[M] get FM volume (FONA800)"));
-  //Serial.println(F("[q] get FM station signal level (FONA800)"));
+	//// FM (SIM800 only!)
+	//Serial.println(F("[f] tune FM radio (FONA800)"));
+	//Serial.println(F("[F] turn off FM (FONA800)"));
+	//Serial.println(F("[m] set FM volume (FONA800)"));
+	//Serial.println(F("[M] get FM volume (FONA800)"));
+	//Serial.println(F("[q] get FM station signal level (FONA800)"));
 
-  //// Phone
-  //Serial.println(F("[c] make phone Call"));
-  //Serial.println(F("[A] get call status"));
-  //Serial.println(F("[h] Hang up phone"));
-  //Serial.println(F("[p] Pick up phone"));
+	//// Phone
+	//Serial.println(F("[c] make phone Call"));
+	//Serial.println(F("[A] get call status"));
+	//Serial.println(F("[h] Hang up phone"));
+	//Serial.println(F("[p] Pick up phone"));
 
-  //// SMS
-  //Serial.println(F("[N] Number of SMSs"));
-  //Serial.println(F("[r] Read SMS #"));
-  //Serial.println(F("[R] Read All SMS"));
-  //Serial.println(F("[d] Delete SMS #"));
-  //Serial.println(F("[s] Send SMS"));
-  //Serial.println(F("[u] Send USSD"));
-  //
-  //// Time
-  //Serial.println(F("[y] Enable network time sync (FONA 800 & 808)"));
-  //Serial.println(F("[Y] Enable NTP time sync (GPRS FONA 800 & 808)"));
-  //Serial.println(F("[t] Get network time"));
+	//// SMS
+	//Serial.println(F("[N] Number of SMSs"));
+	//Serial.println(F("[r] Read SMS #"));
+	//Serial.println(F("[R] Read All SMS"));
+	//Serial.println(F("[d] Delete SMS #"));
+	//Serial.println(F("[s] Send SMS"));
+	//Serial.println(F("[u] Send USSD"));
+	//
+	//// Time
+	//Serial.println(F("[y] Enable network time sync (FONA 800 & 808)"));
+	//Serial.println(F("[Y] Enable NTP time sync (GPRS FONA 800 & 808)"));
+	//Serial.println(F("[t] Get network time"));
 
-  //// GPRS
-  //Serial.println(F("[G] Enable GPRS"));
-  //Serial.println(F("[g] Disable GPRS"));
-  //Serial.println(F("[l] Query GSMLOC (GPRS)"));
-  //Serial.println(F("[w] Read webpage (GPRS)"));
-  //Serial.println(F("[W] Post to website (GPRS)"));
-  // 
-  //Serial.println(F("[S] create Serial passthru tunnel"));
-  //Serial.println(F("-------------------------------------"));
-  //Serial.println(F(""));
+	//// GPRS
+	//Serial.println(F("[G] Enable GPRS"));
+	//Serial.println(F("[g] Disable GPRS"));
+	//Serial.println(F("[l] Query GSMLOC (GPRS)"));
+	//Serial.println(F("[w] Read webpage (GPRS)"));
+	//Serial.println(F("[W] Post to website (GPRS)"));
+	// 
+	//Serial.println(F("[S] create Serial passthru tunnel"));
+	//Serial.println(F("-------------------------------------"));
+	//Serial.println(F(""));
 
 }
 
-void flushSerial() 
+void flushSerial()
 {
-  while (Serial.available())
-    Serial.read();
+	while (Serial.available())
+		Serial.read();
 }
 
-char readBlocking() 
+char readBlocking()
 {
-  while (!Serial.available());
-  return Serial.read();
+	while (!Serial.available());
+	return Serial.read();
 }
-uint16_t readnumber() 
+uint16_t readnumber()
 {
-  uint16_t x = 0;
-  char c;
-  while (! isdigit(c = readBlocking())) 
-  {
-    //Serial.print(c);
-  }
-  Serial.print(c);
-  x = c - '0';
-  while (isdigit(c = readBlocking())) {
-    Serial.print(c);
-    x *= 10;
-    x += c - '0';
-  }
-  return x;
+	uint16_t x = 0;
+	char c;
+	while (!isdigit(c = readBlocking()))
+	{
+		//Serial.print(c);
+	}
+	Serial.print(c);
+	x = c - '0';
+	while (isdigit(c = readBlocking())) {
+		Serial.print(c);
+		x *= 10;
+		x += c - '0';
+	}
+	return x;
 }
-uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout) 
+uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout)
 {
-  uint16_t buffidx = 0;
-  boolean timeoutvalid = true;
-  if (timeout == 0) timeoutvalid = false;
+	uint16_t buffidx = 0;
+	boolean timeoutvalid = true;
+	if (timeout == 0) timeoutvalid = false;
 
-  while (true) 
-  {
-    if (buffidx > maxbuff) 
-    {
-      //Serial.println(F("SPACE"));
-      break;
-    }
+	while (true)
+	{
+		if (buffidx > maxbuff)
+		{
+			//Serial.println(F("SPACE"));
+			break;
+		}
 
-    while (Serial.available()) 
-    {
-      char c =  Serial.read();
+		while (Serial.available())
+		{
+			char c = Serial.read();
 
-      //Serial.print(c, HEX); Serial.print("#"); Serial.println(c);
+			//Serial.print(c, HEX); Serial.print("#"); Serial.println(c);
 
-      if (c == '\r') continue;
-      if (c == 0xA) {
-        if (buffidx == 0)   // the first 0x0A is ignored
-          continue;
+			if (c == '\r') continue;
+			if (c == 0xA) {
+				if (buffidx == 0)   // the first 0x0A is ignored
+					continue;
 
-        timeout = 0;         // the second 0x0A is the end of the line
-        timeoutvalid = true;
-        break;
-      }
-      buff[buffidx] = c;
-      buffidx++;
-    }
+				timeout = 0;         // the second 0x0A is the end of the line
+				timeoutvalid = true;
+				break;
+			}
+			buff[buffidx] = c;
+			buffidx++;
+		}
 
-    if (timeoutvalid && timeout == 0) {
-      //Serial.println(F("TIMEOUT"));
-      break;
-    }
-    delay(1);
-  }
-  buff[buffidx] = 0;  // null term
-  return buffidx;
+		if (timeoutvalid && timeout == 0) {
+			//Serial.println(F("TIMEOUT"));
+			break;
+		}
+		delay(1);
+	}
+	buff[buffidx] = 0;  // null term
+	return buffidx;
 }
 
 void init_SIM800C()
@@ -405,7 +405,7 @@ void init_SIM800C()
 	{
 		Serial.print(F("SIM CCID = ")); Serial.println(ccid);
 	}
-	//delay(20000);
+	//delay(15000);
 
 //	uint8_t operatorLen = fona.getOperator();
 	//if (fona.getOperator())
@@ -431,12 +431,12 @@ int get_rssi()
 	// read the RSSI
 	uint8_t n = fona.getRSSI();
 	int8_t r;
-	 
+
 	Serial.print(F("RSSI = ")); Serial.print(n); Serial.print(": ");
 	if (n == 0) r = -115;
 	if (n == 1) r = -111;
 	if (n == 31) r = -52;
-	if ((n >= 2) && (n <= 30)) 
+	if ((n >= 2) && (n <= 30))
 	{
 		r = map(n, 2, 30, -110, -54);
 	}
@@ -446,127 +446,131 @@ int get_rssi()
 
 void blink()
 {
-	/*unsigned long current_M = millis();
-	if ((unsigned long)(current_M - metering_temp) >= 3060)
+	unsigned long current_M = millis();
+
+	metering_NETLIGHT = current_M - metering_temp;
+	metering_temp = current_M;
+	Serial.println(metering_NETLIGHT);
+
+	if (metering_NETLIGHT > 3055 && metering_NETLIGHT < 3070)
 	{
-		Serial.println((current_M - metering_temp) );
-		setColor(COLOR_BLUE);
-		metering_temp = current_M;
+
 	}
-	else if ((unsigned long)(current_M - metering_temp) >= 860)
+	else if (metering_NETLIGHT > 855 && metering_NETLIGHT < 870)
 	{
-		Serial.println((current_M - metering_temp));
-		setColor(COLOR_BLUE);
-		metering_temp = current_M;
-	}*/
 
-	Serial.println("digitalPinToInterrupt");
+	}
+	else if (metering_NETLIGHT > 355 && metering_NETLIGHT < 370)
+	{
 
-	/*state = !state;
+	}
+
+	state = !state;
 	if(!state)
 	{
-		metering_NETLIGHT = 
-		metering_temp = millis();
-	}*/
-	//metering_temp = millis();
-	//digitalWrite(LED13, state);
+		setColor(COLOR_RED);
+	}
+	else
+	{
+		setColor(COLOR_GREEN);
+	}
 
 }
 
 
 
-  
+
 void setup() {
-  while (!Serial);
+	while (!Serial);
 
-  Serial.begin(115200);
-  Serial.println(F("SIM800C basic test"));
-  pinMode(FONA_RST, OUTPUT);
-  pinMode(LED13,    OUTPUT);
-  pinMode(PWR_On,   OUTPUT);
-  pinMode(LED_RED, OUTPUT);
-  pinMode(LED_BLUE, OUTPUT);
-  pinMode(LED_GREEN, OUTPUT);
- // pinMode(NETLIGHT, INPUT);                      // Индикация NETLIGHT
-  pinMode(STATUS, INPUT);                        // Индикация STATUS
+	Serial.begin(115200);
+	Serial.println(F("SIM800C basic test"));
+	pinMode(FONA_RST, OUTPUT);
+	pinMode(LED13, OUTPUT);
+	pinMode(PWR_On, OUTPUT);
+	pinMode(LED_RED, OUTPUT);
+	pinMode(LED_BLUE, OUTPUT);
+	pinMode(LED_GREEN, OUTPUT);
+	// pinMode(NETLIGHT, INPUT);                      // Индикация NETLIGHT
+	pinMode(STATUS, INPUT);                        // Индикация STATUS
 
-  setColor(COLOR_RED);
-  delay(300);
-  setColor(COLOR_GREEN);
-  delay(300);
-  setColor(COLOR_BLUE);
-  delay(300);
-  setColor(COLOR_RED);
+	setColor(COLOR_RED);
+	delay(300);
+	setColor(COLOR_GREEN);
+	delay(300);
+	setColor(COLOR_BLUE);
+	delay(300);
+	setColor(COLOR_RED);
 
-  DeviceAddress deviceAddress;
-  sensor1.setOneWire(&ds18x20_1);
-  sensor2.setOneWire(&ds18x20_2);
-  sensor3.setOneWire(&ds18x20_3);
-  sensor1.begin();
-  sensor2.begin();
-  sensor3.begin();
-  if (sensor1.getAddress(deviceAddress, 0)) sensor1.setResolution(deviceAddress, 12);
-  if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
-  if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
+	DeviceAddress deviceAddress;
+	sensor1.setOneWire(&ds18x20_1);
+	sensor2.setOneWire(&ds18x20_2);
+	sensor3.setOneWire(&ds18x20_3);
+	sensor1.begin();
+	sensor2.begin();
+	sensor3.begin();
+	if (sensor1.getAddress(deviceAddress, 0)) sensor1.setResolution(deviceAddress, 12);
+	if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
+	if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 
-  attachInterrupt(NETLIGHT, blink, CHANGE);
+	//attachInterrupt(NETLIGHT, blink, RISING);
 
-  init_SIM800C();
+	init_SIM800C();
 
- 
+	attachInterrupt(1, blink, RISING);
 
- // Serial.println(F("OK"));           // con.println("OK");
- // for (;;)
- // {  
-	//  if (fona.HTTP_init()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
-	//  Serial.print(">");
-	//  while (fona.available())
-	//  {
-	//	  Serial.write(fona.read());
-	//  }
-	////  Serial.println(gprs.buffer);                          // Не получилось, ("ERROR") 
-	//  //String stringError = fona.read();
-	//  //if (stringError.indexOf(F("ERROR")) > -1)
-	//  //{
-	//	 // Serial.print(F("\nNo internet connection"));
-	//	 // delay(1000);
-	//	 // resetFunc();                                //вызываем reset при отсутствии доступа к серверу
-	//  //}
-	//  fona.HTTP_init();                                  // Не получилось, попробовать снова 
-	//  delay(1000);
- // }
+	// Serial.println(F("OK"));           // con.println("OK");
+	// for (;;)
+	// {  
+	   //  if (fona.HTTP_init()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
+	   //  Serial.print(">");
+	   //  while (fona.available())
+	   //  {
+	   //	  Serial.write(fona.read());
+	   //  }
+	   ////  Serial.println(gprs.buffer);                          // Не получилось, ("ERROR") 
+	   //  //String stringError = fona.read();
+	   //  //if (stringError.indexOf(F("ERROR")) > -1)
+	   //  //{
+	   //	 // Serial.print(F("\nNo internet connection"));
+	   //	 // delay(1000);
+	   //	 // resetFunc();                                //вызываем reset при отсутствии доступа к серверу
+	   //  //}
+	   //  fona.HTTP_init();                                  // Не получилось, попробовать снова 
+	   //  delay(1000);
+	// }
 
-  if (EEPROM.read(0) != 31)
-  {
-	  Serial.println(F("Start clear EEPROM"));               //  
-	  for (int i = 0; i<1023; i++)
-	  {
-		  EEPROM.write(i, 0);
-	  }
-	  EEPROM.write(0, 31);
-	  EEPROM.put(Address_interval, interval);                     // строка начальной установки интервалов
-	  EEPROM.put(Address_tel1, "+79990000000");
-	  EEPROM.put(Address_tel2, "+79990000000");
-	  EEPROM.put(Address_tel3, "+79990000000");
-	  EEPROM.put(Address_SMS_center, "+79990000000");
-	  Serial.println(F("Clear EEPROM End"));
-  }
+	if (EEPROM.read(0) != 31)
+	{
+		Serial.println(F("Start clear EEPROM"));               //  
+		for (int i = 0; i < 1023; i++)
+		{
+			EEPROM.write(i, 0);
+		}
+		EEPROM.write(0, 31);
+		EEPROM.put(Address_interval, interval);                     // строка начальной установки интервалов
+		EEPROM.put(Address_tel1, "+79990000000");
+		EEPROM.put(Address_tel2, "+79990000000");
+		EEPROM.put(Address_tel3, "+79990000000");
+		EEPROM.put(Address_SMS_center, "+79990000000");
+		Serial.println(F("Clear EEPROM End"));
+	}
 
-  SMS_center = "SMS.RU";                                   //  SMS_center = "SMS.RU";
-														   // EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
-  EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
-  EEPROM.get(Address_interval, interval);                      //Получить из EEPROM интервал
-  EEPROM.get(Address_SMS_center, SMS_center);                  //Получить из EEPROM СМС центр
+	SMS_center = "SMS.RU";                                   //  SMS_center = "SMS.RU";
+															 // EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
+	EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
+	EEPROM.get(Address_interval, interval);                      //Получить из EEPROM интервал
+	EEPROM.get(Address_SMS_center, SMS_center);                  //Получить из EEPROM СМС центр
 
-  Serial.print(F("Interval sec:"));
-  Serial.println(interval);
-  Serial.println(SMS_center);
+	Serial.print(F("Interval sec:"));
+	Serial.println(interval);
+	Serial.println(SMS_center);
 
-  setColor(COLOR_BLUE);
- // sendTemps();
-  setColor(COLOR_GREEN);
-  Serial.println(F("\nSIM800 setup end"));
-  time = millis();                                              // Старт отсчета суток
+	setColor(COLOR_BLUE);
+	// sendTemps();
+	setColor(COLOR_GREEN);
+	Serial.println(F("\nSIM800 setup end"));
+	time = millis();                                              // Старт отсчета суток
 
 }
 void loop() {
@@ -609,8 +613,8 @@ void loop() {
 
 }
 
-  //char command = Serial.read();
-  //Serial.println(command);
+//char command = Serial.read();
+//Serial.println(command);
 
 //
 //  switch (command) 

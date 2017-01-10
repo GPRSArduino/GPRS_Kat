@@ -284,68 +284,6 @@ boolean SIM800C_FONA::setMicVolume(uint8_t a, uint8_t level) {
   return sendCheckReply(F("AT+CMIC="), a, level, ok_reply);
 }
 
-/********* FM RADIO *******************************************************/
-
-
-boolean SIM800C_FONA::FMradio(boolean onoff, uint8_t a) {
-  if (! onoff) {
-    return sendCheckReply(F("AT+FMCLOSE"), ok_reply);
-  }
-
-  // 0 is headset, 1 is external audio
-  if (a > 1) return false;
-
-  return sendCheckReply(F("AT+FMOPEN="), a, ok_reply);
-}
-
-boolean SIM800C_FONA::tuneFMradio(uint16_t station) {
-  // Fail if FM station is outside allowed range.
-  if ((station < 870) || (station > 1090))
-    return false;
-
-  return sendCheckReply(F("AT+FMFREQ="), station, ok_reply);
-}
-
-boolean SIM800C_FONA::setFMVolume(uint8_t i) {
-  // Fail if volume is outside allowed range (0-6).
-  if (i > 6) {
-    return false;
-  }
-  // Send FM volume command and verify response.
-  return sendCheckReply(F("AT+FMVOLUME="), i, ok_reply);
-}
-
-int8_t SIM800C_FONA::getFMVolume() {
-  uint16_t level;
-
-  if (! sendParseReply(F("AT+FMVOLUME?"), F("+FMVOLUME: "), &level) ) return 0;
-
-  return level;
-}
-
-int8_t SIM800C_FONA::getFMSignalLevel(uint16_t station) {
-  // Fail if FM station is outside allowed range.
-  if ((station < 875) || (station > 1080)) {
-    return -1;
-  }
-
-  // Send FM signal level query command.
-  // Note, need to explicitly send timeout so right overload is chosen.
-  getReply(F("AT+FMSIGNAL="), station, FONA_DEFAULT_TIMEOUT_MS);
-  // Check response starts with expected value.
-  char *p = prog_char_strstr(replybuffer, PSTR("+FMSIGNAL: "));
-  if (p == 0) return -1;
-  p+=11;
-  // Find second colon to get start of signal quality.
-  p = strchr(p, ':');
-  if (p == 0) return -1;
-  p+=1;
-  // Parse signal quality.
-  int8_t level = atoi(p);
-  readline();  // eat the "OK"
-  return level;
-}
-
 /********* PWM/BUZZER **************************************************/
 
 boolean SIM800C_FONA::setPWM(uint16_t period, uint8_t duty) {
@@ -738,7 +676,6 @@ boolean SIM800C_FONA::enableGPS(boolean onoff) {
   }
   return true;
 }
-
 
 
 boolean SIM800C_FONA_3G::enableGPS(boolean onoff) {
