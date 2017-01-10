@@ -408,22 +408,22 @@ void init_SIM800C()
 	//delay(20000);
 
 //	uint8_t operatorLen = fona.getOperator();
-	if (fona.getOperator())
-	{
-		//char get_operator[] = "";
-		//char *p = strstr(replybuffer, ",\"");
-		//if (p)
-		//{
-		//	p += 2;
-		//	char *s1 = strchr(p, '\"');
-		//	//if (s) *s = 0;
-		//	//strcpy(replybuffer, p);
-		//	//return sendCheckReply(get_operator, ok_reply);
-		//	//Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
-		//}
+	//if (fona.getOperator())
+	//{
+	//	//char get_operator[] = "";
+	//	//char *p = strstr(replybuffer, ",\"");
+	//	//if (p)
+	//	//{
+	//	//	p += 2;
+	//	//	char *s1 = strchr(p, '\"');
+	//	//	//if (s) *s = 0;
+	//	//	//strcpy(replybuffer, p);
+	//	//	//return sendCheckReply(get_operator, ok_reply);
+	//	//	//Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
+	//	//}
 
-		Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
-	}
+	//	Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
+	//}
 }
 
 int get_rssi()
