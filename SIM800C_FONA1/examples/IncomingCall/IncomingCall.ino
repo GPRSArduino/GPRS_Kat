@@ -1,7 +1,7 @@
 // FONA Incoming Call Number Example
 // Listens for a call and displays the phone number of the caller (if available).
 // Use this example to add phone call detection to your own FONA sketch.
-#include "SIM800C_FONA.h"
+#include "Adafruit_FONA.h"
 
 // Pins which are connected to the FONA.
 // Note that this is different from FONAtest!
@@ -27,14 +27,14 @@ SoftwareSerial *fonaSerial = &fonaSS;
 // Hardware serial is also possible!
 //  HardwareSerial *fonaSerial = &Serial1;
 
-SIM800C_FONA fona = SIM800C_FONA(FONA_RST);
+Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 
 void setup() {
   Serial.begin(115200);
   Serial.println(F("FONA incoming call example"));
   Serial.println(F("Initializing....(May take 3 seconds)"));
 
-  fonaSerial->begin(19200);
+  fonaSerial->begin(4800);
   if (! fona.begin(*fonaSerial)) {
     Serial.println(F("Couldn't find FONA"));
     while(1);

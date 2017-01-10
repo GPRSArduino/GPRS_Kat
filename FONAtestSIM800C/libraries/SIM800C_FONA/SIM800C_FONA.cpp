@@ -1,9 +1,8 @@
 /***************************************************
-  This is a library for our SIM800C FONA Cellular Module
-
+  This is a library for our SIM800C Module
   BSD license, all text above must be included in any redistribution
  ****************************************************/
-    // next line per http://postwarrior.com/arduino-ethershield-error-prog_char-does-not-name-a-type/
+ 
 
 #include "SIM800C_FONA.h"
 
@@ -27,7 +26,8 @@ uint8_t SIM800C_FONA::type(void) {
   return _type;
 }
 
-boolean SIM800C_FONA::begin(Stream &port) {
+boolean SIM800C_FONA::begin(Stream &port) 
+{
   mySerial = &port;
 
   pinMode(_rstpin, OUTPUT);
@@ -41,7 +41,8 @@ boolean SIM800C_FONA::begin(Stream &port) {
   // give 7 seconds to reboot
   int16_t timeout = 7000;
 
-  while (timeout > 0) {
+  while (timeout > 0) 
+  {
     while (mySerial->available()) mySerial->read();
     if (sendCheckReply(F("AT"), ok_reply))
       break;
@@ -52,7 +53,8 @@ boolean SIM800C_FONA::begin(Stream &port) {
     timeout-=500;
   }
 
-  if (timeout <= 0) {
+  if (timeout <= 0) 
+  {
 #ifdef SIM800C_FONA_DEBUG
     DEBUG_PRINTLN(F("Timeout: No response to AT... last ditch attempt."));
 #endif
@@ -68,12 +70,30 @@ boolean SIM800C_FONA::begin(Stream &port) {
   sendCheckReply(F("ATE0"), ok_reply);
   delay(100);
 
-  if (! sendCheckReply(F("ATE0"), ok_reply)) {
+  if (! sendCheckReply(F("ATE0"), ok_reply))
+  {
     return false;
   }
 
   // turn on hangupitude
   sendCheckReply(F("AT+CVHU=0"), ok_reply);
+
+  // turn off Echo!
+  sendCheckReply(F("AT+CFUN=1"), ok_reply);           // 1 Ц нормальный режим(по умолчанию).¬торой параметр 1 Ц перезагрузить(доступно только в нормальном режиме, т.е.параметры = 1, 1)
+  delay(100);
+
+  //if (!sendCheckReply(F("AT+CFUN=1"), ok_reply))
+  //{
+	 // //return false;
+  //}
+
+  sendCheckReply(F("AT+CMGF=1"), ok_reply);          // режим кодировки —ћ— - текстовый
+  delay(100);
+  sendCheckReply(F("AT+CLIP=1"), ok_reply);          // включаем јќЌ
+  delay(100);
+  sendCheckReply(F("AT+CSCS=\"GSM\""), ok_reply);    // режим кодировки текста
+  delay(100);
+  sendCheckReply(F("AT+CNMI=2,2"), ok_reply);        // отображение смс в терминале сразу после приема (без этого сообщени€ молча падают в пам€ть)tln("AT+CSCS=\"GSM\""); 
 
   delay(100);
   flushInput();
@@ -86,34 +106,21 @@ boolean SIM800C_FONA::begin(Stream &port) {
 
   DEBUG_PRINT (F("\t<--- ")); DEBUG_PRINTLN(replybuffer);
 
-
-
-  if (prog_char_strstr(replybuffer, (prog_char *)F("SIM808 R14")) != 0) {
-    _type = FONA808_V2;
-  } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIM808 R13")) != 0) {
-    _type = FONA808_V1;
-  } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800 R13")) != 0) {
-    _type = FONA800L;
-  } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIMCOM_SIM5320A")) != 0) {
-    _type = FONA3G_A;
-  } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIMCOM_SIM5320E")) != 0) {
-    _type = FONA3G_E;
+  if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800 R14.18")) != 0)
+  {
+	  _type = FONA800C;
   }
 
-  if (_type == FONA800L) {
-    // determine if L or H
-
+  if (_type == FONA800C)
+  {
+ 
   DEBUG_PRINT(F("\t---> ")); DEBUG_PRINTLN("AT+GMM");
 
     mySerial->println("AT+GMM");
     readline(500, true);
 
   DEBUG_PRINT (F("\t<--- ")); DEBUG_PRINTLN(replybuffer);
-
-
-    if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800H")) != 0) {
-      _type = FONA800H;
-    }
+  
   }
 
 #if defined(FONA_PREF_SMS_STORAGE)
@@ -145,20 +152,51 @@ boolean SIM800C_FONA::enableRTC(uint8_t i) {
   return sendCheckReply(F("AT&W"), ok_reply);
 }
 
+/*********** OPERATOR ***********************************************/
+boolean SIM800C_FONA::getOperator()
+{
+
+	//while (!sendCheckReply(F("AT+COPS?"), ok_reply))
+	//{
+	//	return sendCheckReply(replybuffer, ok_reply);
+	//}
+
+
+
+
+	//getReply(F("AT+COPS?"));
+	//sendCheckReply(F("AT+COPS?"), ok_reply)
+	//if (sendCheckReply(F("AT+COPS?"), ok_reply)
+	/*while (prog_char_strcmp(replybuffer, (prog_char*)F("MTS")) == 0) {*/
+		//flushInput();
+		//readline();
+
+	//if(sendCheckReply(F("AT+COPS?"), ok_reply)
+	//{
+	//	return sendCheckReply(replybuffer, ok_reply);
+	//}
+
+	//if (sendCheckReply(F("AT+COPS?"), ok_reply))
+	//{
+	///*	char *p = strstr(replybuffer, ",\"");
+	//	if (p)
+	//	{
+	//		p += 2;
+	//		char *s = strchr(p, '\"');
+	//		if (s) *s = 0;
+	//		strcpy(get_operator, p);*/
+	//		return sendCheckReply(replybuffer, ok_reply);
+	//		//return get_operator;
+	//	//}
+	//}
+	return false;
+}
 
 /********* BATTERY & ADC ********************************************/
 
 /* returns value in mV (uint16_t) */
 boolean SIM800C_FONA::getBattVoltage(uint16_t *v) {
   return sendParseReply(F("AT+CBC"), F("+CBC: "), v, ',', 2);
-}
-
-/* returns value in mV (uint16_t) */
-boolean SIM800C_FONA_3G::getBattVoltage(uint16_t *v) {
-  float f;
-  boolean b = sendParseReply(F("AT+CBC"), F("+CBC: "), &f, ',', 2);
-  *v = f*1000;
-  return b;
 }
 
 
@@ -270,19 +308,13 @@ boolean SIM800C_FONA::playToolkitTone(uint8_t t, uint16_t len) {
   return sendCheckReply(F("AT+STTONE=1,"), t, len, ok_reply);
 }
 
-boolean SIM800C_FONA_3G::playToolkitTone(uint8_t t, uint16_t len) {
-  if (! sendCheckReply(F("AT+CPTONE="), t, ok_reply))
-    return false;
-  delay(len);
-  return sendCheckReply(F("AT+CPTONE=0"), ok_reply);
-}
-
 boolean SIM800C_FONA::setMicVolume(uint8_t a, uint8_t level) {
   // 0 is headset, 1 is external audio
   if (a > 1) return false;
 
   return sendCheckReply(F("AT+CMIC="), a, level, ok_reply);
 }
+
 
 /********* PWM/BUZZER **************************************************/
 
@@ -319,18 +351,8 @@ boolean SIM800C_FONA::hangUp(void) {
   return sendCheckReply(F("ATH0"), ok_reply);
 }
 
-boolean SIM800C_FONA_3G::hangUp(void) {
-  getReply(F("ATH"));
-
-  return (prog_char_strstr(replybuffer, (prog_char *)F("VOICE CALL: END")) != 0);
-}
-
 boolean SIM800C_FONA::pickUp(void) {
   return sendCheckReply(F("ATA"), ok_reply);
-}
-
-boolean SIM800C_FONA_3G::pickUp(void) {
-  return sendCheckReply(F("ATA"), F("VOICE CALL: BEGIN"));
 }
 
 
@@ -503,13 +525,6 @@ boolean SIM800C_FONA::sendSMS(char *smsaddr, char *smsmsg) {
 
   DEBUG_PRINTLN("^Z");
 
-  if ( (_type == FONA3G_A) || (_type == FONA3G_E) ) {
-    // Eat two sets of CRLF
-    readline(200);
-    //DEBUG_PRINT("Line 1: "); DEBUG_PRINTLN(strlen(replybuffer));
-    readline(200);
-    //DEBUG_PRINT("Line 2: "); DEBUG_PRINTLN(strlen(replybuffer));
-  }
   readline(10000); // read the +CMGS reply, wait up to 10 seconds!!!
   //DEBUG_PRINT("Line 3: "); DEBUG_PRINTLN(strlen(replybuffer));
   if (strstr(replybuffer, "+CMGS") == 0) {
@@ -641,415 +656,6 @@ boolean SIM800C_FONA::getTime(char *buff, uint16_t maxlen) {
   return true;
 }
 
-/********* GPS **********************************************************/
-
-
-boolean SIM800C_FONA::enableGPS(boolean onoff) {
-  uint16_t state;
-
-  // first check if its already on or off
-
-  if (_type == FONA808_V2) {
-    if (! sendParseReply(F("AT+CGNSPWR?"), F("+CGNSPWR: "), &state) )
-      return false;
-  } else {
-    if (! sendParseReply(F("AT+CGPSPWR?"), F("+CGPSPWR: "), &state))
-      return false;
-  }
-
-  if (onoff && !state) {
-    if (_type == FONA808_V2) {
-      if (! sendCheckReply(F("AT+CGNSPWR=1"), ok_reply))  // try GNS command
-	return false;
-    } else {
-      if (! sendCheckReply(F("AT+CGPSPWR=1"), ok_reply))
-	return false;
-    }
-  } else if (!onoff && state) {
-    if (_type == FONA808_V2) {
-      if (! sendCheckReply(F("AT+CGNSPWR=0"), ok_reply)) // try GNS command
-	return false;
-    } else {
-      if (! sendCheckReply(F("AT+CGPSPWR=0"), ok_reply))
-	return false;
-    }
-  }
-  return true;
-}
-
-
-boolean SIM800C_FONA_3G::enableGPS(boolean onoff) {
-  uint16_t state;
-
-  // first check if its already on or off
-  if (! SIM800C_FONA::sendParseReply(F("AT+CGPS?"), F("+CGPS: "), &state) )
-    return false;
-
-  if (onoff && !state) {
-    if (! sendCheckReply(F("AT+CGPS=1"), ok_reply))
-      return false;
-  } else if (!onoff && state) {
-    if (! sendCheckReply(F("AT+CGPS=0"), ok_reply))
-      return false;
-    // this takes a little time
-    readline(2000); // eat '+CGPS: 0'
-  }
-  return true;
-}
-
-int8_t SIM800C_FONA::GPSstatus(void) {
-  if (_type == FONA808_V2) {
-    // 808 V2 uses GNS commands and doesn't have an explicit 2D/3D fix status.
-    // Instead just look for a fix and if found assume it's a 3D fix.
-    getReply(F("AT+CGNSINF"));
-    char *p = prog_char_strstr(replybuffer, (prog_char*)F("+CGNSINF: "));
-    if (p == 0) return -1;
-    p+=10;
-    readline(); // eat 'OK'
-    if (p[0] == '0') return 0; // GPS is not even on!
-
-    p+=2; // Skip to second value, fix status.
-    //DEBUG_PRINTLN(p);
-    // Assume if the fix status is '1' then we have a 3D fix, otherwise no fix.
-    if (p[0] == '1') return 3;
-    else return 1;
-  }
-  if (_type == FONA3G_A || _type == FONA3G_E) {
-    // FONA 3G doesn't have an explicit 2D/3D fix status.
-    // Instead just look for a fix and if found assume it's a 3D fix.
-    getReply(F("AT+CGPSINFO"));
-    char *p = prog_char_strstr(replybuffer, (prog_char*)F("+CGPSINFO:"));
-    if (p == 0) return -1;
-    if (p[10] != ',') return 3; // if you get anything, its 3D fix
-    return 0;
-  }
-  else {
-    // 808 V1 looks for specific 2D or 3D fix state.
-    getReply(F("AT+CGPSSTATUS?"));
-    char *p = prog_char_strstr(replybuffer, (prog_char*)F("SSTATUS: Location "));
-    if (p == 0) return -1;
-    p+=18;
-    readline(); // eat 'OK'
-    //DEBUG_PRINTLN(p);
-    if (p[0] == 'U') return 0;
-    if (p[0] == 'N') return 1;
-    if (p[0] == '2') return 2;
-    if (p[0] == '3') return 3;
-  }
-  // else
-  return 0;
-}
-
-uint8_t SIM800C_FONA::getGPS(uint8_t arg, char *buffer, uint8_t maxbuff) {
-  int32_t x = arg;
-
-  if ( (_type == FONA3G_A) || (_type == FONA3G_E) ) {
-    getReply(F("AT+CGPSINFO"));
-  } else if (_type == FONA808_V1) {
-    getReply(F("AT+CGPSINF="), x);
-  } else {
-    getReply(F("AT+CGNSINF"));
-  }
-
-  char *p = prog_char_strstr(replybuffer, (prog_char*)F("SINF"));
-  if (p == 0) {
-    buffer[0] = 0;
-    return 0;
-  }
-
-  p+=6;
-
-  uint8_t len = max(maxbuff-1, strlen(p));
-  strncpy(buffer, p, len);
-  buffer[len] = 0;
-
-  readline(); // eat 'OK'
-  return len;
-}
-
-boolean SIM800C_FONA::getGPS(float *lat, float *lon, float *speed_kph, float *heading, float *altitude) {
-
-  char gpsbuffer[120];
-
-  // we need at least a 2D fix
-  if (GPSstatus() < 2)
-    return false;
-
-  // grab the mode 2^5 gps csv from the sim808
-  uint8_t res_len = getGPS(32, gpsbuffer, 120);
-
-  // make sure we have a response
-  if (res_len == 0)
-    return false;
-
-  if (_type == FONA3G_A || _type == FONA3G_E) {
-    // Parse 3G respose
-    // +CGPSINFO:4043.000000,N,07400.000000,W,151015,203802.1,-12.0,0.0,0
-    // skip beginning
-    char *tok;
-
-   // grab the latitude
-    char *latp = strtok(gpsbuffer, ",");
-    if (! latp) return false;
-
-    // grab latitude direction
-    char *latdir = strtok(NULL, ",");
-    if (! latdir) return false;
-
-    // grab longitude
-    char *longp = strtok(NULL, ",");
-    if (! longp) return false;
-
-    // grab longitude direction
-    char *longdir = strtok(NULL, ",");
-    if (! longdir) return false;
-
-    // skip date & time
-    tok = strtok(NULL, ",");
-    tok = strtok(NULL, ",");
-
-   // only grab altitude if needed
-    if (altitude != NULL) {
-      // grab altitude
-      char *altp = strtok(NULL, ",");
-      if (! altp) return false;
-      *altitude = atof(altp);
-    }
-
-    // only grab speed if needed
-    if (speed_kph != NULL) {
-      // grab the speed in km/h
-      char *speedp = strtok(NULL, ",");
-      if (! speedp) return false;
-
-      *speed_kph = atof(speedp);
-    }
-
-    // only grab heading if needed
-    if (heading != NULL) {
-
-      // grab the speed in knots
-      char *coursep = strtok(NULL, ",");
-      if (! coursep) return false;
-
-      *heading = atof(coursep);
-    }
-
-    double latitude = atof(latp);
-    double longitude = atof(longp);
-
-    // convert latitude from minutes to decimal
-    float degrees = floor(latitude / 100);
-    double minutes = latitude - (100 * degrees);
-    minutes /= 60;
-    degrees += minutes;
-
-    // turn direction into + or -
-    if (latdir[0] == 'S') degrees *= -1;
-
-    *lat = degrees;
-
-    // convert longitude from minutes to decimal
-    degrees = floor(longitude / 100);
-    minutes = longitude - (100 * degrees);
-    minutes /= 60;
-    degrees += minutes;
-
-    // turn direction into + or -
-    if (longdir[0] == 'W') degrees *= -1;
-
-    *lon = degrees;
-
-  } else if (_type == FONA808_V2) {
-    // Parse 808 V2 response.  See table 2-3 from here for format:
-    // http://www.adafruit.com/datasheets/SIM800%20Series_GNSS_Application%20Note%20V1.00.pdf
-
-    // skip GPS run status
-    char *tok = strtok(gpsbuffer, ",");
-    if (! tok) return false;
-
-    // skip fix status
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // skip date
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // grab the latitude
-    char *latp = strtok(NULL, ",");
-    if (! latp) return false;
-
-    // grab longitude
-    char *longp = strtok(NULL, ",");
-    if (! longp) return false;
-
-    *lat = atof(latp);
-    *lon = atof(longp);
-
-    // only grab altitude if needed
-    if (altitude != NULL) {
-      // grab altitude
-      char *altp = strtok(NULL, ",");
-      if (! altp) return false;
-
-      *altitude = atof(altp);
-    }
-
-    // only grab speed if needed
-    if (speed_kph != NULL) {
-      // grab the speed in km/h
-      char *speedp = strtok(NULL, ",");
-      if (! speedp) return false;
-
-      *speed_kph = atof(speedp);
-    }
-
-    // only grab heading if needed
-    if (heading != NULL) {
-
-      // grab the speed in knots
-      char *coursep = strtok(NULL, ",");
-      if (! coursep) return false;
-
-      *heading = atof(coursep);
-    }
-  }
-  else {
-    // Parse 808 V1 response.
-
-    // skip mode
-    char *tok = strtok(gpsbuffer, ",");
-    if (! tok) return false;
-
-    // skip date
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // skip fix
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // grab the latitude
-    char *latp = strtok(NULL, ",");
-    if (! latp) return false;
-
-    // grab latitude direction
-    char *latdir = strtok(NULL, ",");
-    if (! latdir) return false;
-
-    // grab longitude
-    char *longp = strtok(NULL, ",");
-    if (! longp) return false;
-
-    // grab longitude direction
-    char *longdir = strtok(NULL, ",");
-    if (! longdir) return false;
-
-    double latitude = atof(latp);
-    double longitude = atof(longp);
-
-    // convert latitude from minutes to decimal
-    float degrees = floor(latitude / 100);
-    double minutes = latitude - (100 * degrees);
-    minutes /= 60;
-    degrees += minutes;
-
-    // turn direction into + or -
-    if (latdir[0] == 'S') degrees *= -1;
-
-    *lat = degrees;
-
-    // convert longitude from minutes to decimal
-    degrees = floor(longitude / 100);
-    minutes = longitude - (100 * degrees);
-    minutes /= 60;
-    degrees += minutes;
-
-    // turn direction into + or -
-    if (longdir[0] == 'W') degrees *= -1;
-
-    *lon = degrees;
-
-    // only grab speed if needed
-    if (speed_kph != NULL) {
-
-      // grab the speed in knots
-      char *speedp = strtok(NULL, ",");
-      if (! speedp) return false;
-
-      // convert to kph
-      *speed_kph = atof(speedp) * 1.852;
-
-    }
-
-    // only grab heading if needed
-    if (heading != NULL) {
-
-      // grab the speed in knots
-      char *coursep = strtok(NULL, ",");
-      if (! coursep) return false;
-
-      *heading = atof(coursep);
-
-    }
-
-    // no need to continue
-    if (altitude == NULL)
-      return true;
-
-    // we need at least a 3D fix for altitude
-    if (GPSstatus() < 3)
-      return false;
-
-    // grab the mode 0 gps csv from the sim808
-    res_len = getGPS(0, gpsbuffer, 120);
-
-    // make sure we have a response
-    if (res_len == 0)
-      return false;
-
-    // skip mode
-    tok = strtok(gpsbuffer, ",");
-    if (! tok) return false;
-
-    // skip lat
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // skip long
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // grab altitude
-    char *altp = strtok(NULL, ",");
-    if (! altp) return false;
-
-    *altitude = atof(altp);
-  }
-
-  return true;
-
-}
-
-boolean SIM800C_FONA::enableGPSNMEA(uint8_t i) {
-
-  char sendbuff[15] = "AT+CGPSOUT=000";
-  sendbuff[11] = (i / 100) + '0';
-  i %= 100;
-  sendbuff[12] = (i / 10) + '0';
-  i %= 10;
-  sendbuff[13] = i + '0';
-
-  if (_type == FONA808_V2) {
-    if (i)
-      return sendCheckReply(F("AT+CGNSTST=1"), ok_reply);
-    else
-      return sendCheckReply(F("AT+CGNSTST=0"), ok_reply);
-  } else {
-    return sendCheckReply(sendbuff, ok_reply, 2000);
-  }
-}
 
 
 /********* GPRS **********************************************************/
@@ -1139,66 +745,6 @@ boolean SIM800C_FONA::enableGPRS(boolean onoff) {
       return false;
 
   }
-  return true;
-}
-
-boolean SIM800C_FONA_3G::enableGPRS(boolean onoff) {
-
-  if (onoff) {
-    // disconnect all sockets
-    //sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 5000);
-
-    if (! sendCheckReply(F("AT+CGATT=1"), ok_reply, 10000))
-      return false;
-
-
-    // set bearer profile access point name
-    if (apn) {
-      // Send command AT+CGSOCKCONT=1,"IP","<apn value>" where <apn value> is the configured APN name.
-      if (! sendCheckReplyQuoted(F("AT+CGSOCKCONT=1,\"IP\","), apn, ok_reply, 10000))
-        return false;
-
-      // set username/password
-      if (apnusername) {
-	char authstring[100] = "AT+CGAUTH=1,1,\"";
-	char *strp = authstring + strlen(authstring);
-	prog_char_strcpy(strp, (prog_char *)apnusername);
-	strp+=prog_char_strlen((prog_char *)apnusername);
-	strp[0] = '\"';
-	strp++;
-	strp[0] = 0;
-
-	if (apnpassword) {
-	  strp[0] = ','; strp++;
-	  strp[0] = '\"'; strp++;
-	  prog_char_strcpy(strp, (prog_char *)apnpassword);
-	  strp+=prog_char_strlen((prog_char *)apnpassword);
-	  strp[0] = '\"';
-	  strp++;
-	  strp[0] = 0;
-	}
-
-	if (! sendCheckReply(authstring, ok_reply, 10000))
-	  return false;
-      }
-    }
-
-    // connect in transparent
-    if (! sendCheckReply(F("AT+CIPMODE=1"), ok_reply, 10000))
-      return false;
-    // open network (?)
-    if (! sendCheckReply(F("AT+NETOPEN=,,1"), F("Network opened"), 10000))
-      return false;
-
-    readline(); // eat 'OK'
-  } else {
-    // close GPRS context
-    if (! sendCheckReply(F("AT+NETCLOSE"), F("Network closed"), 10000))
-      return false;
-
-    readline(); // eat 'OK'
-  }
-
   return true;
 }
 
@@ -1388,8 +934,7 @@ boolean SIM800C_FONA::HTTP_term() {
   return sendCheckReply(F("AT+HTTPTERM"), ok_reply);
 }
 
-void SIM800C_FONA::HTTP_para_start(FONAFlashStringPtr parameter,
-                                    boolean quoted) {
+void SIM800C_FONA::HTTP_para_start(FONAFlashStringPtr parameter, boolean quoted) {
   flushInput();
 
 
@@ -1416,22 +961,19 @@ boolean SIM800C_FONA::HTTP_para_end(boolean quoted) {
   return expectReply(ok_reply);
 }
 
-boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter,
-                                 const char *value) {
+boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter, const char *value) {
   HTTP_para_start(parameter, true);
   mySerial->print(value);
   return HTTP_para_end(true);
 }
 
-boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter,
-                                 FONAFlashStringPtr value) {
+boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter, FONAFlashStringPtr value) {
   HTTP_para_start(parameter, true);
   mySerial->print(value);
   return HTTP_para_end(true);
 }
 
-boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter,
-                                 int32_t value) {
+boolean SIM800C_FONA::HTTP_para(FONAFlashStringPtr parameter, int32_t value) {
   HTTP_para_start(parameter, false);
   mySerial->print(value);
   return HTTP_para_end(false);
@@ -1456,8 +998,7 @@ boolean SIM800C_FONA::HTTP_data(uint32_t size, uint32_t maxTime) {
   return expectReply(F("DOWNLOAD"));
 }
 
-boolean SIM800C_FONA::HTTP_action(uint8_t method, uint16_t *status,
-                                   uint16_t *datalen, int32_t timeout) {
+boolean SIM800C_FONA::HTTP_action(uint8_t method, uint16_t *status, uint16_t *datalen, int32_t timeout) {
   // Send request.
   if (! sendCheckReply(F("AT+HTTPACTION="), method, ok_reply))
     return false;
@@ -1486,8 +1027,8 @@ boolean SIM800C_FONA::HTTP_ssl(boolean onoff) {
 
 /********* HTTP HIGH LEVEL FUNCTIONS ***************************/
 
-boolean SIM800C_FONA::HTTP_GET_start(char *url,
-              uint16_t *status, uint16_t *datalen){
+boolean SIM800C_FONA::HTTP_GET_start(char *url,uint16_t *status, uint16_t *datalen)
+{
   if (! HTTP_setup(url))
     return false;
 
@@ -1505,54 +1046,19 @@ boolean SIM800C_FONA::HTTP_GET_start(char *url,
   return true;
 }
 
-/*
-boolean SIM800C_FONA_3G::HTTP_GET_start(char *ipaddr, char *path, uint16_t port
-				      uint16_t *status, uint16_t *datalen){
-  char send[100] = "AT+CHTTPACT=\"";
-  char *sendp = send + strlen(send);
-  memset(sendp, 0, 100 - strlen(send));
-
-  strcpy(sendp, ipaddr);
-  sendp+=strlen(ipaddr);
-  sendp[0] = '\"';
-  sendp++;
-  sendp[0] = ',';
-  itoa(sendp, port);
-  getReply(send, 500);
-
-  return;
-
-  if (! HTTP_setup(url))
-
-    return false;
-
-  // HTTP GET
-  if (! HTTP_action(FONA_HTTP_GET, status, datalen))
-    return false;
-
-  DEBUG_PRINT("Status: "); DEBUG_PRINTLN(*status);
-  DEBUG_PRINT("Len: "); DEBUG_PRINTLN(*datalen);
-
-  // HTTP response data
-  if (! HTTP_readall(datalen))
-    return false;
-
-  return true;
-}
-*/
 
 void SIM800C_FONA::HTTP_GET_end(void) {
   HTTP_term();
 }
 
-boolean SIM800C_FONA::HTTP_POST_start(char *url,
-              FONAFlashStringPtr contenttype,
-              const uint8_t *postdata, uint16_t postdatalen,
-              uint16_t *status, uint16_t *datalen){
+boolean SIM800C_FONA::HTTP_POST_start(char *url, FONAFlashStringPtr contenttype,
+              const uint8_t *postdata, uint16_t postdatalen, uint16_t *status, uint16_t *datalen)
+{
   if (! HTTP_setup(url))
     return false;
 
-  if (! HTTP_para(F("CONTENT"), contenttype)) {
+  if (! HTTP_para(F("CONTENT"), contenttype)) 
+  {
     return false;
   }
 
@@ -1960,8 +1466,7 @@ boolean SIM800C_FONA::parseReplyQuoted(FONAFlashStringPtr toreply,
   return true;
 }
 
-boolean SIM800C_FONA::sendParseReply(FONAFlashStringPtr tosend,
-				      FONAFlashStringPtr toreply,
+boolean SIM800C_FONA::sendParseReply(FONAFlashStringPtr tosend, FONAFlashStringPtr toreply,
 				      uint16_t *v, char divider, uint8_t index) {
   getReply(tosend);
 
@@ -1973,36 +1478,4 @@ boolean SIM800C_FONA::sendParseReply(FONAFlashStringPtr tosend,
 }
 
 
-// needed for CBC and others
 
-boolean SIM800C_FONA_3G::sendParseReply(FONAFlashStringPtr tosend,
-				      FONAFlashStringPtr toreply,
-				      float *f, char divider, uint8_t index) {
-  getReply(tosend);
-
-  if (! parseReply(toreply, f, divider, index)) return false;
-
-  readline(); // eat 'OK'
-
-  return true;
-}
-
-
-boolean SIM800C_FONA_3G::parseReply(FONAFlashStringPtr toreply,
-          float *f, char divider, uint8_t index) {
-  char *p = prog_char_strstr(replybuffer, (prog_char*)toreply);  // get the pointer to the voltage
-  if (p == 0) return false;
-  p+=prog_char_strlen((prog_char*)toreply);
-  //DEBUG_PRINTLN(p);
-  for (uint8_t i=0; i<index;i++) {
-    // increment dividers
-    p = strchr(p, divider);
-    if (!p) return false;
-    p++;
-    //DEBUG_PRINTLN(p);
-
-  }
-  *f = atof(p);
-
-  return true;
-}

@@ -1,6 +1,19 @@
 /***************************************************
-  This is an example for our SIM800C Module
+  This is an example for our Adafruit FONA Cellular Module
 
+  Designed specifically to work with the Adafruit FONA
+  ----> http://www.adafruit.com/products/1946
+  ----> http://www.adafruit.com/products/1963
+  ----> http://www.adafruit.com/products/2468
+  ----> http://www.adafruit.com/products/2542
+
+  These cellular modules use TTL Serial to communicate, 2 pins are
+  required to interface
+  Adafruit invests time and resources providing this open source code,
+  please support Adafruit and open-source hardware by purchasing
+  products from Adafruit!
+
+  Written by Limor Fried/Ladyada for Adafruit Industries.
   BSD license, all text above must be included in any redistribution
  ****************************************************/
 
@@ -15,7 +28,7 @@ This code will receive an SMS, identify the sender's phone number, and automatic
 For use with FONA 800 & 808, not 3G
 */
 
-#include "SIM800C_FONA.h"
+#include "Adafruit_FONA.h"
 
 #define FONA_RX 2
 #define FONA_TX 3
@@ -34,7 +47,7 @@ SoftwareSerial *fonaSerial = &fonaSS;
 // Hardware serial is also possible!
 //  HardwareSerial *fonaSerial = &Serial1;
 
-SIM800C_FONA fona = SIM800C_FONA(FONA_RST);
+Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
 
 uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
 
@@ -46,7 +59,7 @@ void setup() {
   Serial.println(F("Initializing....(May take 3 seconds)"));
 
   // make it slow so its easy to read!
-  fonaSerial->begin(19200);
+  fonaSerial->begin(4800);
   if (! fona.begin(*fonaSerial)) {
     Serial.println(F("Couldn't find FONA"));
     while(1);
