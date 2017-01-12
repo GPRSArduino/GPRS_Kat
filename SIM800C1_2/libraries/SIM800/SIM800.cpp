@@ -73,56 +73,7 @@ bool CGPRS_SIM800::begin(long speed_serial)
 
 }
 
-//bool CGPRS_SIM800::init(int PWR_On,int SIM800_RESET_PIN,int LED13, long speed_serial)
-//{
-//	_PWR_On           = PWR_On;                           // Включение питания модуля SIM800
-//    _SIM800_RESET_PIN = SIM800_RESET_PIN;                 // Сброс модуля SIM800
-//    _LED13            = LED13;                            // Индикация светодиодом
-//
-// 	SIM_SERIAL.begin(speed_serial);
-//	//pinMode(_SIM800_RESET_PIN, OUTPUT);
-//	//pinMode(_LED13,    OUTPUT);
-//	//pinMode(_PWR_On,   OUTPUT);
-//	//digitalWrite(_SIM800_RESET_PIN,   LOW);               // Сигнал сброс в исходное состояние
-//	//digitalWrite(_LED13,    LOW);
-//	//digitalWrite(_PWR_On,   HIGH);                        // Кратковременно отключаем питание модуля GPRS
-//	//delay(2000);
-//	//digitalWrite(_LED13,    HIGH);
-//	//digitalWrite(_PWR_On,   LOW);
-//	//delay(1500);                           
-//	//digitalWrite(_SIM800_RESET_PIN,   HIGH);              // Производим сброс модема после включения питания
-//	//delay(1200);
-//	//digitalWrite(_SIM800_RESET_PIN,   LOW);               
-// //   delay(3000);
-//
-//    if (sendCommand("AT"))
-//	{
-//		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[1])));
-// 		sendCommand(bufcom);         	                                //	sendCommand("AT+IPR=19200");   // Установить скорость обмена
-//		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[0])));
-//        //sendCommand("ATE0");                                          // Отключить эхо 
-//        sendCommand(bufcom);   
-//		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[2])));
-//		sendCommand(bufcom);                                            // 1 – нормальный режим (по умолчанию). Второй параметр 1
-//		//sendCommand("AT+CFUN=1");                                     // 1 – нормальный режим (по умолчанию). Второй параметр 1 – перезагрузить (доступно только в нормальном режиме, т.е. параметры = 1,1)
-//  	    strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[3])));
-//		sendCommand(bufcom);                                            // режим кодировки СМС - обычный (для англ.)
-//		//sendCommand("AT+CMGF=1");                                     // режим кодировки СМС - обычный (для англ.)
-//		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[4])));
-//		sendCommand(bufcom);                                            // включаем АОН
-//		//sendCommand("AT+CLIP=1");                                     // включаем АОН
-//		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[5])));
-//		sendCommand(bufcom);                                            // режим кодировки текста
-//		//sendCommand("AT+CSCS=\"GSM\"");                               // режим кодировки текста
-//		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[6])));
-//		sendCommand(bufcom);                                            // отображение смс в терминале сразу после приема (без этого 
-//		//sendCommand("AT+CNMI=2,2");                                   // отображение смс в терминале сразу после приема (без этого сообщения молча падают в память)tln("AT+CSCS=\"GSM\""); 
-//		sendCommand("AT+CMGDA=\"DEL ALL\"");                            // AT+CMGDA=«DEL ALL» команда удалит все сообщения
-//		
-//		return true;
-//    }
-//    return false;
-//}
+
 byte CGPRS_SIM800::setup()
 {
   bool success = false;
@@ -334,6 +285,31 @@ bool CGPRS_SIM800::getOperatorName()
   }
   return false;
 }
+
+bool CGPRS_SIM800::ping(const char* url)
+{
+	sendCommand("AT+CGATT?", 1000);
+	delay(1000);
+	sendCommand("AT+CSTT=\"internet\"", 1000);
+	delay(1000);
+	sendCommand("AT+CIICR", 1000);
+	delay(1000);
+	sendCommand("AT+CIFSR", 3000);
+	delay(1000);
+
+	if (sendCommand(url, "+CIPPING", "ERROR",2000) == 1)
+	{
+		return true;
+	}
+	return false;
+	//sendCommand(url, 3000);
+
+	//SIM_SERIAL.print("AT+CIPPING=\"");
+	//SIM_SERIAL.print(url);
+	//SIM_SERIAL.println('\"');
+}
+
+
 bool CGPRS_SIM800::checkSMS()
 {
  if (sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1) 

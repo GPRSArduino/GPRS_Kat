@@ -150,6 +150,7 @@ public:
     // get network operator name
     bool getOperatorName();
 	bool getIMEI();
+	bool ping(const char* url);
     // check for incoming SMS
     bool checkSMS();
 	bool checkSMSU();

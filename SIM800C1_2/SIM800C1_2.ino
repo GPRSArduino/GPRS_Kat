@@ -49,6 +49,7 @@
 #define con Serial
 #define speed_Serial 19200
 static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
+static const char* url2 = "AT+CIPPING=\"www.yandex.ru\"";
 
 
 #define PWR_On           5                          // Включение питания модуля SIM800
@@ -163,6 +164,18 @@ void sendTemps()
 
 	con.println(F("String length: "));
 	Serial.println(toSend.length());
+	//if (gprs.ping(url2))
+	//{
+	//	Serial.println("ping Ok");
+	//}
+	//else
+	//{
+	//	Serial.println("ping No");
+	//}
+
+
+	//gprs.ping("AT+CIPPING=\"www.yandex.ru\"");
+	delay(3000);
 	gprs_send(toSend);
 }
 
@@ -392,12 +405,14 @@ void gprs_send(String data)
   // Показать статистику
   con.print(F("Total:"));                  //con.print("Total:");
   con.print(count);
-  if (errors) 
+  if (errors)                               // Если есть ошибки - сообщить
   {
     con.print(F(" Errors:")); //con.print(" Errors:");
     con.print(errors);
   }
   con.println();
+
+ // gprs.ping("AT+CIPPING=\"www.yandex.ru\"");
 }
 
 void errorAllmem()
@@ -700,6 +715,9 @@ void setup()
 //	setColor(COLOR_GREEN);
 	con.println(F("\nSIM800 setup end"));                        
 	time = millis();                                              // Старт отсчета суток
+
+//	gprs.sendCommand("AT+CIPPING=\"www.yandex.ru\"", 1000);
+	delay(3000);
 }
 
 void loop()
@@ -757,6 +775,7 @@ void loop()
 		con.println((currentMillis-previousMillis)/1000);
 		setColor(COLOR_BLUE);
 		previousMillis = currentMillis;
+		//gprs.sendCommand("AT+CIPPING=\"www.yandex.ru\"", 1000);
 		sendTemps();
 		setColor(COLOR_GREEN);
 		con.print(F("\nfree memory: "));                                 
