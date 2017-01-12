@@ -1,4 +1,4 @@
-/***************************************************
+ï»¿/***************************************************
   This is a library for our SIM800C Module
   BSD license, all text above must be included in any redistribution
  ****************************************************/
@@ -13,11 +13,9 @@ SIM800C_FONA::SIM800C_FONA(int8_t rst)
 {
   _rstpin = rst;
 
-  apn = F("MTS");
-  apnusername = F("mts");
-  apnpassword = F("mts");
- /* apnusername = 0;
-  apnpassword = 0;*/
+  apn = F("FONAnet");
+  apnusername = 0;
+  apnpassword = 0;
   mySerial = 0;
   httpsredirect = false;
   useragent = F("FONA");
@@ -32,12 +30,12 @@ boolean SIM800C_FONA::begin(Stream &port)
 {
   mySerial = &port;
 
- /* pinMode(_rstpin, OUTPUT);
+  pinMode(_rstpin, OUTPUT);
   digitalWrite(_rstpin, HIGH);
   delay(10);
   digitalWrite(_rstpin, LOW);
   delay(100);
-  digitalWrite(_rstpin, HIGH);*/
+  digitalWrite(_rstpin, HIGH);
 
   DEBUG_PRINTLN(F("Attempting to open comm with ATs"));
   // give 7 seconds to reboot
@@ -81,7 +79,7 @@ boolean SIM800C_FONA::begin(Stream &port)
   sendCheckReply(F("AT+CVHU=0"), ok_reply);
 
   // turn off Echo!
-  sendCheckReply(F("AT+CFUN=1"), ok_reply);           // 1 – íîðìàëüíûé ðåæèì(ïî óìîë÷àíèþ).Âòîðîé ïàðàìåòð 1 – ïåðåçàãðóçèòü(äîñòóïíî òîëüêî â íîðìàëüíîì ðåæèìå, ò.å.ïàðàìåòðû = 1, 1)
+  sendCheckReply(F("AT+CFUN=1"), ok_reply);           // 1 Ð¦ Ð½Ð¾Ñ€Ð¼Ð°Ð»ÑŒÐ½Ñ‹Ð¹ Ñ€ÐµÐ¶Ð¸Ð¼(Ð¿Ð¾ ÑƒÐ¼Ð¾Ð»Ñ‡Ð°Ð½Ð¸ÑŽ).Â¬Ñ‚Ð¾Ñ€Ð¾Ð¹ Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€ 1 Ð¦ Ð¿ÐµÑ€ÐµÐ·Ð°Ð³Ñ€ÑƒÐ·Ð¸Ñ‚ÑŒ(Ð´Ð¾ÑÑ‚ÑƒÐ¿Ð½Ð¾ Ñ‚Ð¾Ð»ÑŒÐºÐ¾ Ð² Ð½Ð¾Ñ€Ð¼Ð°Ð»ÑŒÐ½Ð¾Ð¼ Ñ€ÐµÐ¶Ð¸Ð¼Ðµ, Ñ‚.Ðµ.Ð¿Ð°Ñ€Ð°Ð¼ÐµÑ‚Ñ€Ñ‹ = 1, 1)
   delay(100);
 
   //if (!sendCheckReply(F("AT+CFUN=1"), ok_reply))
@@ -89,13 +87,13 @@ boolean SIM800C_FONA::begin(Stream &port)
 	 // //return false;
   //}
 
-  sendCheckReply(F("AT+CMGF=1"), ok_reply);          // ðåæèì êîäèðîâêè ÑÌÑ - òåêñòîâûé
+  sendCheckReply(F("AT+CMGF=1"), ok_reply);          // Ñ€ÐµÐ¶Ð¸Ð¼ ÐºÐ¾Ð´Ð¸Ñ€Ð¾Ð²ÐºÐ¸ â€”Ñ›â€” - Ñ‚ÐµÐºÑÑ‚Ð¾Ð²Ñ‹Ð¹
   delay(100);
-  sendCheckReply(F("AT+CLIP=1"), ok_reply);          // âêëþ÷àåì ÀÎÍ
+  sendCheckReply(F("AT+CLIP=1"), ok_reply);          // Ð²ÐºÐ»ÑŽÑ‡Ð°ÐµÐ¼ Ñ˜ÑœÐŒ
   delay(100);
-  sendCheckReply(F("AT+CSCS=\"GSM\""), ok_reply);    // ðåæèì êîäèðîâêè òåêñòà
+  sendCheckReply(F("AT+CSCS=\"GSM\""), ok_reply);    // Ñ€ÐµÐ¶Ð¸Ð¼ ÐºÐ¾Ð´Ð¸Ñ€Ð¾Ð²ÐºÐ¸ Ñ‚ÐµÐºÑÑ‚Ð°
   delay(100);
-  sendCheckReply(F("AT+CNMI=2,2"), ok_reply);        // îòîáðàæåíèå ñìñ â òåðìèíàëå ñðàçó ïîñëå ïðèåìà (áåç ýòîãî ñîîáùåíèÿ ìîë÷à ïàäàþò â ïàìÿòü)tln("AT+CSCS=\"GSM\""); 
+  sendCheckReply(F("AT+CNMI=2,2"), ok_reply);        // Ð¾Ñ‚Ð¾Ð±Ñ€Ð°Ð¶ÐµÐ½Ð¸Ðµ ÑÐ¼Ñ Ð² Ñ‚ÐµÑ€Ð¼Ð¸Ð½Ð°Ð»Ðµ ÑÑ€Ð°Ð·Ñƒ Ð¿Ð¾ÑÐ»Ðµ Ð¿Ñ€Ð¸ÐµÐ¼Ð° (Ð±ÐµÐ· ÑÑ‚Ð¾Ð³Ð¾ ÑÐ¾Ð¾Ð±Ñ‰ÐµÐ½Ð¸Â¤ Ð¼Ð¾Ð»Ñ‡Ð° Ð¿Ð°Ð´Ð°ÑŽÑ‚ Ð² Ð¿Ð°Ð¼Â¤Ñ‚ÑŒ)tln("AT+CSCS=\"GSM\""); 
 
   delay(100);
   flushInput();
@@ -173,10 +171,10 @@ boolean SIM800C_FONA::getOperator()
 		//flushInput();
 		//readline();
 
-	if(sendCheckReply(F("AT+COPS?"), ok_reply))
-	{
-		return sendCheckReply(replybuffer, ok_reply);
-	}
+	//if(sendCheckReply(F("AT+COPS?"), ok_reply)
+	//{
+	//	return sendCheckReply(replybuffer, ok_reply);
+	//}
 
 	//if (sendCheckReply(F("AT+COPS?"), ok_reply))
 	//{
@@ -759,17 +757,11 @@ uint8_t SIM800C_FONA::GPRSstate(void) {
   return state;
 }
 
-//void SIM800C_FONA::setGPRSNetworkSettings(FONAFlashStringPtr apn,
-//              FONAFlashStringPtr username, FONAFlashStringPtr password) {
-//  this->apn = apn;
-//  this->apnusername = username;
-//  this->apnpassword = password;
-//}
-
-void SIM800C_FONA::setGPRSNetworkSettings(char* apn,	char* username, char* password) {
-	this->apn = apn;
-	this->apnusername = username;
-	this->apnpassword = password;
+void SIM800C_FONA::setGPRSNetworkSettings(FONAFlashStringPtr apn,
+              FONAFlashStringPtr username, FONAFlashStringPtr password) {
+  this->apn = apn;
+  this->apnusername = username;
+  this->apnpassword = password;
 }
 
 boolean SIM800C_FONA::getGSMLoc(uint16_t *errorcode, char *buff, uint16_t maxlen) {
