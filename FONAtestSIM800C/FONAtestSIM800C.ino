@@ -53,14 +53,14 @@ static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
 
 #define FONA_RX 7
 #define FONA_TX 8
-#define FONA_RST 6
+#define SIM800_RESET_PIN 6
 #define PWR_On           5                          // Включение питания модуля SIM800
 #define LED13           13                          // Индикация светодиодом
 
 #define NETLIGHT         3                          // Индикация NETLIGHT подключение к оператору 
-                                                    // 64ms On/ 800ms Off   Not registered the network.        Не зарегистрирован в сети
-                                                    // 64ms On/ 3000ms Off  Registered to the network.         Зарегистрировано в сети
-                                                    // 64ms On/ 300ms Off   GPRS communication is established. GPRS связь установлена
+													// 64ms On/ 800ms Off   Not registered the network.        Не зарегистрирован в сети
+													// 64ms On/ 3000ms Off  Registered to the network.         Зарегистрировано в сети
+													// 64ms On/ 300ms Off   GPRS communication is established. GPRS связь установлена
 
 #define STATUS           9                          // Индикация STATUS
 
@@ -80,9 +80,9 @@ static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
 #define COLOR_BLUE LOW, LOW, HIGH
 volatile int state = LOW;
 volatile int state_device = 0;                     // Состояние модуля при запуске 
-                                                   // 1 - Не зарегистрирован в сети, поиск
-                                                   // 2 - Зарегистрировано в сети
-                                                   // 3 - GPRS связь установлена
+												   // 1 - Не зарегистрирован в сети, поиск
+												   // 2 - Зарегистрировано в сети
+												   // 3 - GPRS связь установлена
 volatile int metering_NETLIGHT = 0;
 volatile unsigned long metering_temp = 0;
 
@@ -91,7 +91,7 @@ char imei[15] = { 0 }; // MUST use a 15 character buffer for IMEI!
 char ccid[20] = { 0 }; // MUST use a 20 character buffer for CCID!
 SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX);
 SoftwareSerial *fonaSerial = &fonaSS;
-SIM800C_FONA fona = SIM800C_FONA(FONA_RST);
+SIM800C_FONA fona = SIM800C_FONA(SIM800_RESET_PIN);
 
 uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
 uint8_t type;
@@ -248,62 +248,6 @@ String formEnd()
 }
 
 
-void printMenu(void)
-{
-	//Serial.println(F("-------------------------------------"));
-	//Serial.println(F("[?] Print this menu"));
-	//Serial.println(F("[a] read the ADC 2.8V max (FONA800 & 808)"));
-	//Serial.println(F("[b] read the Battery V and % charged"));
-	//Serial.println(F("[C] read the SIM CCID"));
-	//Serial.println(F("[U] Unlock SIM with PIN code"));
-	//Serial.println(F("[i] read RSSI"));
-	//Serial.println(F("[n] get Network status"));
-	//Serial.println(F("[v] set audio Volume"));
-	//Serial.println(F("[V] get Volume"));
-	//Serial.println(F("[H] set Headphone audio (FONA800 & 808)"));
-	//Serial.println(F("[e] set External audio (FONA800 & 808)"));
-	//Serial.println(F("[T] play audio Tone"));
-	//Serial.println(F("[P] PWM/Buzzer out (FONA800 & 808)"));
-
-	//// FM (SIM800 only!)
-	//Serial.println(F("[f] tune FM radio (FONA800)"));
-	//Serial.println(F("[F] turn off FM (FONA800)"));
-	//Serial.println(F("[m] set FM volume (FONA800)"));
-	//Serial.println(F("[M] get FM volume (FONA800)"));
-	//Serial.println(F("[q] get FM station signal level (FONA800)"));
-
-	//// Phone
-	//Serial.println(F("[c] make phone Call"));
-	//Serial.println(F("[A] get call status"));
-	//Serial.println(F("[h] Hang up phone"));
-	//Serial.println(F("[p] Pick up phone"));
-
-	//// SMS
-	//Serial.println(F("[N] Number of SMSs"));
-	//Serial.println(F("[r] Read SMS #"));
-	//Serial.println(F("[R] Read All SMS"));
-	//Serial.println(F("[d] Delete SMS #"));
-	//Serial.println(F("[s] Send SMS"));
-	//Serial.println(F("[u] Send USSD"));
-	//
-	//// Time
-	//Serial.println(F("[y] Enable network time sync (FONA 800 & 808)"));
-	//Serial.println(F("[Y] Enable NTP time sync (GPRS FONA 800 & 808)"));
-	//Serial.println(F("[t] Get network time"));
-
-	//// GPRS
-	//Serial.println(F("[G] Enable GPRS"));
-	//Serial.println(F("[g] Disable GPRS"));
-	//Serial.println(F("[l] Query GSMLOC (GPRS)"));
-	//Serial.println(F("[w] Read webpage (GPRS)"));
-	//Serial.println(F("[W] Post to website (GPRS)"));
-	// 
-	//Serial.println(F("[S] create Serial passthru tunnel"));
-	//Serial.println(F("-------------------------------------"));
-	//Serial.println(F(""));
-
-}
-
 void flushSerial()
 {
 	while (Serial.available())
@@ -377,110 +321,143 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout)
 
 void init_SIM800C()
 {
-	Serial.println(F("Initializing....(May take 5 seconds)"));
-//	digitalWrite(FONA_RST, LOW);               // Сигнал сброс в исходное состояние
-	digitalWrite(LED13, LOW);
-	digitalWrite(PWR_On, HIGH);                // Кратковременно отключаем питание модуля GPRS
-	delay(2000);
-	digitalWrite(LED13, HIGH);
-	digitalWrite(PWR_On, LOW);
-	delay(1500);
 
-	digitalWrite(FONA_RST, HIGH);
-	delay(10);
-	digitalWrite(FONA_RST, LOW);
-	delay(100);
-	digitalWrite(FONA_RST, HIGH);
-
-	while (digitalRead(STATUS) == LOW) 
-	{
-	  // Уточнить программу перезапуска  если модуль не включился
-	}
-	delay(2000);
-	Serial.println(F("Power SIM800 On"));
-	fonaSerial->begin(19200);
-
-	if (!fona.begin(*fonaSerial))
-	{
-		Serial.println(F("Couldn't find SIM80C"));
-		while (1);
-	}
-	Serial.println(F("SIM800C is OK"));
-
-	uint8_t imeiLen = fona.getIMEI(imei);
-	if (imeiLen > 0)
-	{
-		Serial.print("Module IMEI: "); Serial.println(imei); // Print module IMEI number.
-	}
-	uint8_t ccidLen = fona.getSIMCCID(ccid);                 // read the CCID make sure replybuffer is at least 21 bytes!
-	if (ccidLen > 0)
-	{
-		Serial.print(F("SIM CCID = ")); Serial.println(ccid);
-	}
-
-
-	while (state_device != 2)  // Ожидание регистрации в сети
-	{
-		delay(1000);
-		// Уточнить программу перезапуска  если модуль не зарегистрировался
-	}
-
-	delay(1500);
-	Serial.print(F("Registered to the network ... "));
-
-//	uint8_t operatorLen = fona.getOperator();
-	//if (fona.getOperator())
+	//for (;;)
 	//{
-	//	//char get_operator[] = "";
-	//	//char *p = strstr(replybuffer, ",\"");
-	//	//if (p)
-	//	//{
-	//	//	//p += 2;
-	//	//	//char *s = strchr(p, '\"');
-	//	//	//if (s) *s = 0;
-	//	//	//strcpy(get_operator, p);
-	//	//	//return sendCheckReply(get_operator, ok_reply);
-	//	//	//Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
-	//	//}
+		Serial.println(F("Initializing....(May take 5 seconds)"));
 
-	//	//Serial.print(F("Operator: ")); Serial.println(get_operator); // 
+		digitalWrite(SIM800_RESET_PIN, LOW);               // Сигнал сброс в исходное состояние
+		digitalWrite(LED13, LOW);
+		digitalWrite(PWR_On, HIGH);                        // Кратковременно отключаем питание модуля GPRS
+		delay(2000);
+		digitalWrite(LED13, HIGH);
+		digitalWrite(PWR_On, LOW);
+		delay(1500);
+		digitalWrite(SIM800_RESET_PIN, HIGH);              // Производим сброс модема после включения питания
+		delay(1000);
+		digitalWrite(SIM800_RESET_PIN, LOW);
+
+		while (digitalRead(STATUS) == LOW)
+		{
+			// Уточнить программу перезапуска  если модуль не включился
+		}
+		delay(2000);
+		Serial.println(F("Power SIM800 On"));
+
+		fonaSerial->begin(19200);
+		
+		if (!fona.begin(*fonaSerial))
+		{
+			Serial.println(F("Couldn't find SIM80C"));
+			while (1);
+		}
+		Serial.println(F("SIM800C is OK"));
+		
+		uint8_t imeiLen = fona.getIMEI(imei);
+		if (imeiLen > 0)
+		{
+			Serial.print("Module IMEI: "); Serial.println(imei); // Print module IMEI number.
+		}
+		uint8_t ccidLen = fona.getSIMCCID(ccid);                 // read the CCID make sure replybuffer is at least 21 bytes!
+		if (ccidLen > 0)
+		{
+			Serial.print(F("SIM CCID = ")); Serial.println(ccid);
+		}
+		
+
+		while (state_device != 2)  // Ожидание регистрации в сети
+		{
+			delay(1000);
+			// Уточнить программу перезапуска  если модуль не зарегистрировался
+		}
+
+	
+		Serial.print(F("Setting up network..."));
+		//fona.setGPRSNetworkSettings(F("MTS"), F("mts"), F("mts"));
+
+
+		// turn GPRS off
+		//        if (!fona.enableGPRS(false))
+		//          Serial.println(F("Failed to turn off"));
+
+
+		delay(15000);
+
+		byte ret = fona.enableGPRS(true);
+
+
+		//if (!fona.enableGPRS(true))
+		//Serial.println(F("Failed to turn on"));
+
+
+	//	byte ret = gprs.setup();
+		//if (ret == 0)
+		//{
+		//	while (state_device != 3)  // Ожидание регистрации в сети
+		//	{
+		//		delay(50);
+		//		// Уточнить программу перезапуска  если модуль не зарегистрировался
+		//	}
+
+		//	setColor(COLOR_GREEN);  // Включить светодиод
+		//	break;
+		//}
+
+
+
+
+
+
+
 	//}
 
-	char apn[] = "MTS";
-	char user[] = "mts";
-	char pass[] = "mts";
 
-	fona.setGPRSNetworkSettings(apn, user, pass);
-//	fona.setGPRSNetworkSettings(F("your APN"), F("your username"), F("your password"));
-
-	delay(1500);
-	if (!fona.enableGPRS(true))
-		Serial.println(F("Failed to turn on"));
-
-
-
-
-
+//
+////	uint8_t operatorLen = fona.getOperator();
+//	//if (fona.getOperator())
+//	//{
+//	//	//char get_operator[] = "";
+//	//	//char *p = strstr(replybuffer, ",\"");
+//	//	//if (p)
+//	//	//{
+//	//	//	//p += 2;
+//	//	//	//char *s = strchr(p, '\"');
+//	//	//	//if (s) *s = 0;
+//	//	//	//strcpy(get_operator, p);
+//	//	//	//return sendCheckReply(get_operator, ok_reply);
+//	//	//	//Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
+//	//	//}
+//
+//	//	//Serial.print(F("Operator: ")); Serial.println(get_operator); // 
+//	//}
+//
+////	fona.setGPRSNetworkSettings(F("your APN"), F("your username"), F("your password"));
+//
+//	delay(1500);
+//	if (!fona.enableGPRS(true))
+//		Serial.println(F("Failed to turn on"));
+//
+//
 
 }
 
-//int get_rssi()
-//{
-//	// read the RSSI
-//	uint8_t n = fona.getRSSI();
-//	int8_t r;
-//
-//	Serial.print(F("RSSI = ")); Serial.print(n); Serial.print(": ");
-//	if (n == 0) r = -115;
-//	if (n == 1) r = -111;
-//	if (n == 31) r = -52;
-//	if ((n >= 2) && (n <= 30))
-//	{
-//		r = map(n, 2, 30, -110, -54);
-//	}
-//	Serial.print(r); Serial.println(F(" dBm"));
-//	return n;
-//}
+int get_rssi()
+{
+	// read the RSSI
+	uint8_t n = fona.getRSSI();
+	int8_t r;
+
+	Serial.print(F("RSSI = ")); Serial.print(n); Serial.print(": ");
+	if (n == 0) r = -115;
+	if (n == 1) r = -111;
+	if (n == 31) r = -52;
+	if ((n >= 2) && (n <= 30))
+	{
+		r = map(n, 2, 30, -110, -54);
+	}
+	Serial.print(r); Serial.println(F(" dBm"));
+	return n;
+}
 
 void blink()
 {
@@ -532,19 +509,18 @@ void blink()
 
 
 
-
-void setup() {
-	while (!Serial);
-
+void setup() 
+{
 	Serial.begin(115200);
-	Serial.println(F("SIM800C basic test"));
-	pinMode(FONA_RST, OUTPUT);
+	Serial.println(F("\n SIM800 setup start"));
+	pinMode(SIM800_RESET_PIN, OUTPUT);
 	pinMode(LED13, OUTPUT);
 	pinMode(PWR_On, OUTPUT);
+	
 	pinMode(LED_RED, OUTPUT);
 	pinMode(LED_BLUE, OUTPUT);
 	pinMode(LED_GREEN, OUTPUT);
-	// pinMode(NETLIGHT, INPUT);                      // Индикация NETLIGHT
+	pinMode(NETLIGHT, INPUT);                      // Индикация NETLIGHT
 	pinMode(STATUS, INPUT);                        // Индикация STATUS
 
 	setColor(COLOR_RED);
@@ -665,6 +641,76 @@ void loop() {
 	 //delay(1000);
 
 }
+
+
+
+//void printMenu(void)
+//{
+	//Serial.println(F("-------------------------------------"));
+	//Serial.println(F("[?] Print this menu"));
+	//Serial.println(F("[a] read the ADC 2.8V max (FONA800 & 808)"));
+	//Serial.println(F("[b] read the Battery V and % charged"));
+	//Serial.println(F("[C] read the SIM CCID"));
+	//Serial.println(F("[U] Unlock SIM with PIN code"));
+	//Serial.println(F("[i] read RSSI"));
+	//Serial.println(F("[n] get Network status"));
+	//Serial.println(F("[v] set audio Volume"));
+	//Serial.println(F("[V] get Volume"));
+	//Serial.println(F("[H] set Headphone audio (FONA800 & 808)"));
+	//Serial.println(F("[e] set External audio (FONA800 & 808)"));
+	//Serial.println(F("[T] play audio Tone"));
+	//Serial.println(F("[P] PWM/Buzzer out (FONA800 & 808)"));
+
+	//// FM (SIM800 only!)
+	//Serial.println(F("[f] tune FM radio (FONA800)"));
+	//Serial.println(F("[F] turn off FM (FONA800)"));
+	//Serial.println(F("[m] set FM volume (FONA800)"));
+	//Serial.println(F("[M] get FM volume (FONA800)"));
+	//Serial.println(F("[q] get FM station signal level (FONA800)"));
+
+	//// Phone
+	//Serial.println(F("[c] make phone Call"));
+	//Serial.println(F("[A] get call status"));
+	//Serial.println(F("[h] Hang up phone"));
+	//Serial.println(F("[p] Pick up phone"));
+
+	//// SMS
+	//Serial.println(F("[N] Number of SMSs"));
+	//Serial.println(F("[r] Read SMS #"));
+	//Serial.println(F("[R] Read All SMS"));
+	//Serial.println(F("[d] Delete SMS #"));
+	//Serial.println(F("[s] Send SMS"));
+	//Serial.println(F("[u] Send USSD"));
+	//
+	//// Time
+	//Serial.println(F("[y] Enable network time sync (FONA 800 & 808)"));
+	//Serial.println(F("[Y] Enable NTP time sync (GPRS FONA 800 & 808)"));
+	//Serial.println(F("[t] Get network time"));
+
+	//// GPRS
+	//Serial.println(F("[G] Enable GPRS"));
+	//Serial.println(F("[g] Disable GPRS"));
+	//Serial.println(F("[l] Query GSMLOC (GPRS)"));
+	//Serial.println(F("[w] Read webpage (GPRS)"));
+	//Serial.println(F("[W] Post to website (GPRS)"));
+	// 
+	//Serial.println(F("[S] create Serial passthru tunnel"));
+	//Serial.println(F("-------------------------------------"));
+	//Serial.println(F(""));
+
+//}
+
+
+
+
+
+
+
+
+
+
+
+
 
 //char command = Serial.read();
 //Serial.println(command);
@@ -1173,3 +1219,21 @@ void loop() {
   // flush input
 
 
+
+  //	uint8_t operatorLen = fona.getOperator();
+  //if (fona.getOperator())
+  //{
+  //	//char get_operator[] = "";
+  //	//char *p = strstr(replybuffer, ",\"");
+  //	//if (p)
+  //	//{
+  //	//	//p += 2;
+  //	//	//char *s = strchr(p, '\"');
+  //	//	//if (s) *s = 0;
+  //	//	//strcpy(get_operator, p);
+  //	//	//return sendCheckReply(get_operator, ok_reply);
+  //	//	//Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
+  //	//}
+
+  //	//Serial.print(F("Operator: ")); Serial.println(get_operator); // 
+  //}

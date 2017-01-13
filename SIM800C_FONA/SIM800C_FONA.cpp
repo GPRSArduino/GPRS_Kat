@@ -1,4 +1,4 @@
-/***************************************************
+п»ї/***************************************************
   This is a library for our SIM800C Module
   BSD license, all text above must be included in any redistribution
  ****************************************************/
@@ -79,7 +79,7 @@ boolean SIM800C_FONA::begin(Stream &port)
   sendCheckReply(F("AT+CVHU=0"), ok_reply);
 
   // turn off Echo!
-  sendCheckReply(F("AT+CFUN=1"), ok_reply);           // 1 – нормальный режим(по умолчанию).Второй параметр 1 – перезагрузить(доступно только в нормальном режиме, т.е.параметры = 1, 1)
+  sendCheckReply(F("AT+CFUN=1"), ok_reply);           // 1 Р¦ РЅРѕСЂРјР°Р»СЊРЅС‹Р№ СЂРµР¶РёРј(РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ).В¬С‚РѕСЂРѕР№ РїР°СЂР°РјРµС‚СЂ 1 Р¦ РїРµСЂРµР·Р°РіСЂСѓР·РёС‚СЊ(РґРѕСЃС‚СѓРїРЅРѕ С‚РѕР»СЊРєРѕ РІ РЅРѕСЂРјР°Р»СЊРЅРѕРј СЂРµР¶РёРјРµ, С‚.Рµ.РїР°СЂР°РјРµС‚СЂС‹ = 1, 1)
   delay(100);
 
   //if (!sendCheckReply(F("AT+CFUN=1"), ok_reply))
@@ -87,13 +87,13 @@ boolean SIM800C_FONA::begin(Stream &port)
 	 // //return false;
   //}
 
-  sendCheckReply(F("AT+CMGF=1"), ok_reply);          // режим кодировки СМС - текстовый
+  sendCheckReply(F("AT+CMGF=1"), ok_reply);          // СЂРµР¶РёРј РєРѕРґРёСЂРѕРІРєРё вЂ”С›вЂ” - С‚РµРєСЃС‚РѕРІС‹Р№
   delay(100);
-  sendCheckReply(F("AT+CLIP=1"), ok_reply);          // включаем АОН
+  sendCheckReply(F("AT+CLIP=1"), ok_reply);          // РІРєР»СЋС‡Р°РµРј ССњРЊ
   delay(100);
-  sendCheckReply(F("AT+CSCS=\"GSM\""), ok_reply);    // режим кодировки текста
+  sendCheckReply(F("AT+CSCS=\"GSM\""), ok_reply);    // СЂРµР¶РёРј РєРѕРґРёСЂРѕРІРєРё С‚РµРєСЃС‚Р°
   delay(100);
-  sendCheckReply(F("AT+CNMI=2,2"), ok_reply);        // отображение смс в терминале сразу после приема (без этого сообщения молча падают в память)tln("AT+CSCS=\"GSM\""); 
+  sendCheckReply(F("AT+CNMI=2,2"), ok_reply);        // РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ СЃРјСЃ РІ С‚РµСЂРјРёРЅР°Р»Рµ СЃСЂР°Р·Сѓ РїРѕСЃР»Рµ РїСЂРёРµРјР° (Р±РµР· СЌС‚РѕРіРѕ СЃРѕРѕР±С‰РµРЅРёВ¤ РјРѕР»С‡Р° РїР°РґР°СЋС‚ РІ РїР°РјВ¤С‚СЊ)tln("AT+CSCS=\"GSM\""); 
 
   delay(100);
   flushInput();

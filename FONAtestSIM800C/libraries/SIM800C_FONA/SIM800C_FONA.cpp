@@ -13,12 +13,12 @@ SIM800C_FONA::SIM800C_FONA(int8_t rst)
 {
   _rstpin = rst;
 
-  apn = F("FONAnet");
-  apnusername = 0;
-  apnpassword = 0;
+  apn = F("MTS");
+  apnusername = F("mts");
+  apnpassword = F("mts");
   mySerial = 0;
   httpsredirect = false;
-  useragent = F("FONA");
+  useragent = F("mts");
   ok_reply = F("OK");
 }
 
@@ -30,12 +30,6 @@ boolean SIM800C_FONA::begin(Stream &port)
 {
   mySerial = &port;
 
-  pinMode(_rstpin, OUTPUT);
-  digitalWrite(_rstpin, HIGH);
-  delay(10);
-  digitalWrite(_rstpin, LOW);
-  delay(100);
-  digitalWrite(_rstpin, HIGH);
 
   DEBUG_PRINTLN(F("Attempting to open comm with ATs"));
   // give 7 seconds to reboot
@@ -661,9 +655,18 @@ boolean SIM800C_FONA::getTime(char *buff, uint16_t maxlen) {
 /********* GPRS **********************************************************/
 
 
-boolean SIM800C_FONA::enableGPRS(boolean onoff) {
+boolean SIM800C_FONA::enableGPRS(boolean onoff) 
+{
+	apn = F("MTS");
+	apnusername = F("mts");
+	apnpassword = F("mts");
+	mySerial = 0;
+	httpsredirect = false;
+	useragent = F("mts");
+	ok_reply = F("OK");
 
-  if (onoff) {
+  if (onoff) 
+  {
     // disconnect all sockets
     sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 20000);
 
@@ -676,7 +679,8 @@ boolean SIM800C_FONA::enableGPRS(boolean onoff) {
       return false;
 
     // set bearer profile access point name
-    if (apn) {
+    if (apn)
+	{
       // Send command AT+SAPBR=3,1,"APN","<apn value>" where <apn value> is the configured APN value.
       if (! sendCheckReplyQuoted(F("AT+SAPBR=3,1,\"APN\","), apn, ok_reply, 10000))
         return false;

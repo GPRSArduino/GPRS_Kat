@@ -288,25 +288,26 @@ bool CGPRS_SIM800::getOperatorName()
 
 bool CGPRS_SIM800::ping(const char* url)
 {
-	sendCommand("AT+CGATT?", 1000);
+	sendCommand("AT+CGATT?", 1000);                 // Проверить подключение к сервису GPRS
 	delay(1000);
-	sendCommand("AT+CSTT=\"internet\"", 1000);
+	sendCommand("AT+CSTT=\"internet\"", 1000);      // Настроить точку доступа ????
 	delay(1000);
-	sendCommand("AT+CIICR", 1000);
+	sendCommand("AT+CIICR", 1000);                  // Установить GPRS-соединение   ????   
 	delay(1000);
-	sendCommand("AT+CIFSR", 3000);
+	sendCommand("AT+CIFSR", 1000);                  // Получить локальный IP-адрес
 	delay(1000);
 
-	if (sendCommand(url, "+CIPPING", "ERROR",2000) == 1)
-	{
-		return true;
-	}
-	return false;
+	//if (sendCommand(url, "+CIPPING", "ERROR",3000) == 1)
+	//{
+	//	return true;
+	//}
+	//return false;
 	//sendCommand(url, 3000);
 
-	//SIM_SERIAL.print("AT+CIPPING=\"");
-	//SIM_SERIAL.print(url);
-	//SIM_SERIAL.println('\"');
+	SIM_SERIAL.print("AT+CIPPING=\"");
+	SIM_SERIAL.print(url);
+	SIM_SERIAL.println('\"');
+
 }
 
 
