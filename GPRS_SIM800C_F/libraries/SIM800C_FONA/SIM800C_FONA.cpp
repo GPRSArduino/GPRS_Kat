@@ -14,14 +14,39 @@ SIM800C_FONA::SIM800C_FONA(int8_t rst)
 {
   _rstpin = rst;
 
-  apn = F("FONAnet");
-  apnusername = 0;
-  apnpassword = 0;
+  apn = F("MTS");
+  apnusername = F("mts");
+  apnpassword = F("mts");
   mySerial = 0;
   httpsredirect = false;
   useragent = F("FONA");
   ok_reply = F("OK");
 }
+
+
+void SIM800C_FONA::put_operator(int8_t home_operator)
+{
+
+	switch (home_operator) 
+	{
+	case 1:
+		apn = F("MTS");
+		apnusername = F("mts");
+		apnpassword = F("mts");
+		break;
+	case 2:
+		//выполняется когда  var равно 2
+		break;
+	default:
+		// выполняется, если не выбрана ни одна альтернатива
+		// default необязателен
+		break;
+	}
+	DEBUG_PRINT(F("\nOperator .. "));
+	DEBUG_PRINTLN(apn);
+
+}
+
 
 uint8_t SIM800C_FONA::type(void) {
   return _type;

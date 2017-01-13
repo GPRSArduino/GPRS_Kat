@@ -11,12 +11,61 @@ Open up the serial console on the Arduino at 115200 baud to interact with FONA
 
 Note that if you need to set a GPRS APN, username, and password scroll down to
 the commented section below at the end of the setup() function.
+
+
+
+Проверить отключение
+
+FONA>
++SAPBR 1: DEACT
+
+NORMAL POWER DOWN
+
+
 */
 #include "SIM800C_FONA.h"
+#include <SoftwareSerial.h>
+#include <OneWire.h> 
+#include <DallasTemperature.h>
+#include <avr/pgmspace.h>
+#include <EEPROM.h>
 
-#define FONA_RX 2
-#define FONA_TX 3
-#define FONA_RST 4
+#define FONA_RX 8                                   // Подключить  к выводу 8 Atmega328P сигнал TX модуля GPRS. 
+#define FONA_TX 7                                   // Подключить  к выводу 7 Atmega328P сигнал RX модуля GPRS.
+
+#define PWR_On           5                          // Включение питания модуля SIM800
+#define FONA_RST 6                                  // Сброс модуля SIM800
+#define LED13           13                          // Индикация светодиодом
+#define NETLIGHT         3                          // Индикация NETLIGHT
+#define STATUS           9                          // Индикация STATUS
+
+#define port1           11                          // Порт управления внешними устройствами (незадействован)
+#define port2           12                          // Порт управления внешними устройствами (незадействован)
+
+//#define COMMON_ANODE
+#define LED_RED      10                             // Индикация светодиодом RED
+#define LED_BLUE     15                             // Индикация светодиодом BLUE
+#define LED_GREEN    14                             // Индикация светодиодом GREEN
+
+#define COLOR_NONE LOW, LOW, LOW
+#define COLOR_RED HIGH, LOW, LOW
+#define COLOR_GREEN LOW, HIGH, LOW
+#define COLOR_BLUE LOW, LOW, HIGH
+
+volatile int state = LOW;
+volatile int state_device = 0;                     // Состояние модуля при запуске 
+												   // 1 - Не зарегистрирован в сети, поиск
+												   // 2 - Зарегистрировано в сети
+												   // 3 - GPRS связь установлена
+volatile int metering_NETLIGHT = 0;
+volatile unsigned long metering_temp = 0;
+
+
+
+
+
+
+
 
 // this is a large buffer for replies
 char replybuffer[255];
@@ -40,14 +89,264 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
 
 uint8_t type;
 
-void setup() {
+
+
+uint8_t oneWirePins[] = { 16, 17, 4 };                     //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
+														   // Сейчас первым идет внутренний датчик.
+uint8_t oneWirePinsCount = sizeof(oneWirePins) / sizeof(int);
+
+OneWire ds18x20_1(oneWirePins[0]);
+OneWire ds18x20_2(oneWirePins[1]);
+OneWire ds18x20_3(oneWirePins[2]);
+DallasTemperature sensor1(&ds18x20_1);
+DallasTemperature sensor2(&ds18x20_2);
+DallasTemperature sensor3(&ds18x20_3);
+
+
+
+void(*resetFunc) (void) = 0;                         // объявляем функцию reset
+
+void setColor(bool red, bool green, bool blue)       // Включение цвета свечения трехцветного светодиода.
+{
+#ifdef COMMON_ANODE
+	red = !red;
+	green = !green;
+	blue = !blue;
+#endif
+	digitalWrite(LED_RED, red);
+	digitalWrite(LED_GREEN, green);
+	digitalWrite(LED_BLUE, blue);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+void blink()
+{
+	unsigned long current_M = millis();
+
+	metering_NETLIGHT = current_M - metering_temp;
+	metering_temp = current_M;
+	//Serial.println(metering_NETLIGHT);
+	if (metering_NETLIGHT > 3055 && metering_NETLIGHT < 3070)
+	{
+		state_device = 2;                 // 2 - Зарегистрировано в сети
+	}
+	else if (metering_NETLIGHT > 855 && metering_NETLIGHT < 870)
+	{
+		state_device = 1;                // 1 Не зарегистрирован в сети, поиск
+	}
+	else if (metering_NETLIGHT > 350 && metering_NETLIGHT < 370)
+	{
+		state_device = 3;                // 3 - GPRS связь установлена
+	}
+	if (state_device == 1)
+	{
+		state = !state;
+		if (!state)
+		{
+			setColor(COLOR_RED);
+		}
+		else
+		{
+			setColor(COLOR_GREEN);
+		}
+	}
+
+	if (state_device == 2)
+	{
+		state = !state;
+		if (!state)
+		{
+			setColor(COLOR_RED);
+		}
+		else
+		{
+			setColor(COLOR_BLUE);
+		}
+	}
+
+
+}
+
+
+void init_SIM800C()
+{
+
+	//for (;;)
+	//{
+	Serial.println(F("Initializing....(May take 5 seconds)"));
+
+	digitalWrite(FONA_RST, LOW);               // Сигнал сброс в исходное состояние
+	digitalWrite(LED13, LOW);
+	digitalWrite(PWR_On, HIGH);                        // Кратковременно отключаем питание модуля GPRS
+	delay(2000);
+	digitalWrite(LED13, HIGH);
+	digitalWrite(PWR_On, LOW);
+	delay(1500);
+	digitalWrite(FONA_RST, HIGH);              // Производим сброс модема после включения питания
+	delay(1000);
+	digitalWrite(FONA_RST, LOW);
+
+	while (digitalRead(STATUS) == LOW)
+	{
+		// Уточнить программу перезапуска  если модуль не включился
+	}
+	delay(2000);
+	Serial.println(F("Power SIM800 On"));
+
+	fonaSerial->begin(19200);
+
+	if (!fona.begin(*fonaSerial))
+	{
+		Serial.println(F("Couldn't find SIM80C"));
+		while (1);
+	}
+	Serial.println(F("SIM800C is OK"));
+
+	uint8_t imeiLen = fona.getIMEI(imei);
+	if (imeiLen > 0)
+	{
+		Serial.print("Module IMEI: "); Serial.println(imei); // Print module IMEI number.
+	}
+	uint8_t ccidLen = fona.getSIMCCID(ccid);                 // read the CCID make sure replybuffer is at least 21 bytes!
+	if (ccidLen > 0)
+	{
+		Serial.print(F("SIM CCID = ")); Serial.println(ccid);
+	}
+
+
+	while (state_device != 2)  // Ожидание регистрации в сети
+	{
+		delay(1000);
+		// Уточнить программу перезапуска  если модуль не зарегистрировался
+	}
+
+
+	Serial.print(F("Setting up network..."));
+	//fona.setGPRSNetworkSettings(F("MTS"), F("mts"), F("mts"));
+
+
+	// turn GPRS off
+	//        if (!fona.enableGPRS(false))
+	//          Serial.println(F("Failed to turn off"));
+
+
+	delay(15000);
+
+	//byte ret = fona.enableGPRS(true);
+
+
+	//if (!fona.enableGPRS(true))
+	//Serial.println(F("Failed to turn on"));
+
+
+	//	byte ret = gprs.setup();
+	//if (ret == 0)
+	//{
+	//	while (state_device != 3)  // Ожидание регистрации в сети
+	//	{
+	//		delay(50);
+	//		// Уточнить программу перезапуска  если модуль не зарегистрировался
+	//	}
+
+	//	setColor(COLOR_GREEN);  // Включить светодиод
+	//	break;
+	//}
+
+
+
+
+
+
+
+	//}
+
+
+	//
+	////	uint8_t operatorLen = fona.getOperator();
+	//	//if (fona.getOperator())
+	//	//{
+	//	//	//char get_operator[] = "";
+	//	//	//char *p = strstr(replybuffer, ",\"");
+	//	//	//if (p)
+	//	//	//{
+	//	//	//	//p += 2;
+	//	//	//	//char *s = strchr(p, '\"');
+	//	//	//	//if (s) *s = 0;
+	//	//	//	//strcpy(get_operator, p);
+	//	//	//	//return sendCheckReply(get_operator, ok_reply);
+	//	//	//	//Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
+	//	//	//}
+	//
+	//	//	//Serial.print(F("Operator: ")); Serial.println(get_operator); // 
+	//	//}
+	//
+	////	fona.setGPRSNetworkSettings(F("your APN"), F("your username"), F("your password"));
+	//
+	//	delay(1500);
+	//	if (!fona.enableGPRS(true))
+	//		Serial.println(F("Failed to turn on"));
+	//
+	//
+
+}
+
+
+
+
+
+
+
+
+
+
+void setup() 
+{
 	while (!Serial);
 
 	Serial.begin(115200);
 	Serial.println(F("FONA basic test"));
 	Serial.println(F("Initializing....(May take 3 seconds)"));
 
-	fonaSerial->begin(4800);
+
+	pinMode(FONA_RST, OUTPUT);
+	pinMode(LED13, OUTPUT);
+	pinMode(PWR_On, OUTPUT);
+
+	pinMode(LED_RED, OUTPUT);
+	pinMode(LED_BLUE, OUTPUT);
+	pinMode(LED_GREEN, OUTPUT);
+	pinMode(NETLIGHT, INPUT);                      // Индикация NETLIGHT
+	pinMode(STATUS, INPUT);                        // Индикация STATUS
+
+	setColor(COLOR_RED);
+	delay(300);
+	setColor(COLOR_GREEN);
+	delay(300);
+	setColor(COLOR_BLUE);
+	delay(300);
+	setColor(COLOR_RED);
+
+	
+	fonaSerial->begin(19200);
 	if (!fona.begin(*fonaSerial)) {
 		Serial.println(F("Couldn't find FONA"));
 		while (1);
@@ -85,11 +384,28 @@ void setup() {
 	// and password values.  Username and password are optional and
 	// can be removed, but APN is required.
 	//fona.setGPRSNetworkSettings(F("your APN"), F("your username"), F("your password"));
-
+	//fona.setGPRSNetworkSettings(F("MTS"), F("mts"), F("mts"));
 	// Optionally configure HTTP gets to follow redirects over SSL.
 	// Default is not to follow SSL redirects, however if you uncomment
 	// the following line then redirects over SSL will be followed.
 	//fona.setHTTPSRedirect(true);
+
+
+	fona.put_operator(1);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	printMenu();
 }
@@ -735,7 +1051,7 @@ void loop() {
 
 		flushSerial();
 		Serial.println(F("NOTE: in beta! Use small webpages to read!"));
-		Serial.println(F("URL to read (e.g. www.SIM800C.com/testwifi/index.html):"));
+		Serial.println(F("URL to read (e.g. www.adafruit.com/testwifi/index.html):"));
 		Serial.print(F("http://")); readline(url, 79);
 		Serial.println(url);
 

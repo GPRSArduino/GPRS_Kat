@@ -55,7 +55,8 @@
 
 class SIM800C_FONA : public FONAStreamType {
  public:
-  SIM800C_FONA(int8_t r);
+  SIM800C_FONA(int8_t rst);
+  void put_operator(int8_t home_operator);
   boolean begin(FONAStreamType &port);
   uint8_t type();
 
