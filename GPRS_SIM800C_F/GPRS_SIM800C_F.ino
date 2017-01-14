@@ -60,8 +60,8 @@ volatile int state_device = 0;                     // Состояние модуля при запус
 volatile int metering_NETLIGHT = 0;
 volatile unsigned long metering_temp = 0;
 
-
-
+char imei[16] = { 0 }; // MUST use a 16 character buffer for IMEI!
+char ccid[21] = { 0 }; // MUST use a 21 character buffer for ccid!
 
 
 
@@ -89,7 +89,36 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
 
 uint8_t type;
 
+uint32_t count = 0;
+uint32_t errors = 0;
+String string_imei = "";
+String CSQ = "";                                    // Уровень сигнала приема
+String SMS_center = "";
+String zero_tel = "";
+//String imei      = "861445030362268";                  // Тест IMEI
+//#define DELIM "&"
+#define DELIM "@"
+//char mydata[] = "t1=861445030362268@04/01/02,15:22:52 00@24.50@25.60";
+// тел Мегафон +79258110171
 
+
+unsigned long time;                                 // Переменная для суточного сброса
+unsigned long time_day = 86400;                     // Переменная секунд в сутках
+unsigned long previousMillis = 0;
+unsigned long interval = 10;                        // Интервал передачи данных 10 секунд
+													//unsigned long interval = 300;                     // Интервал передачи данных 5 минут
+bool time_set = false;                              // Фиксировать интервал заданный СМС
+
+int Address_tel1 = 100;                         // Адрес в EEPROM телефона 1
+int Address_tel2 = 120;                         // Адрес в EEPROM телефона 2
+int Address_tel3 = 140;                         // Адрес в EEPROM телефона 3
+int Address_errorAll = 160;                         // Адрес в EEPROM счетчика общих ошибок
+int Address_port1 = 180;                         // Адрес в EEPROM порт данных (незадействован)
+int Address_port2 = 190;                         // Адрес в EEPROM порт данных (незадействован)
+int Address_interval = 200;                         // Адрес в EEPROM величины интервала
+int Address_SMS_center = 220;                         // Адрес в EEPROM SMS центра
+
+char data_tel[13];                                  // Буфер для номера телефоа
 
 uint8_t oneWirePins[] = { 16, 17, 4 };                     //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
 														   // Сейчас первым идет внутренний датчик.
@@ -117,12 +146,6 @@ void setColor(bool red, bool green, bool blue)       // Включение цвета свечения
 	digitalWrite(LED_GREEN, green);
 	digitalWrite(LED_BLUE, blue);
 }
-
-
-
-
-
-
 
 
 
@@ -186,136 +209,146 @@ void blink()
 
 }
 
-
 void init_SIM800C()
 {
-
-	//for (;;)
-	//{
-	Serial.println(F("Initializing....(May take 5 seconds)"));
-
-	digitalWrite(FONA_RST, LOW);               // Сигнал сброс в исходное состояние
-	digitalWrite(LED13, LOW);
-	digitalWrite(PWR_On, HIGH);                        // Кратковременно отключаем питание модуля GPRS
-	delay(2000);
-	digitalWrite(LED13, HIGH);
-	digitalWrite(PWR_On, LOW);
-	delay(1500);
-	digitalWrite(FONA_RST, HIGH);              // Производим сброс модема после включения питания
-	delay(1000);
-	digitalWrite(FONA_RST, LOW);
-
-	while (digitalRead(STATUS) == LOW)
+	bool setup_ok = false;
+	do
 	{
-		// Уточнить программу перезапуска  если модуль не включился
-	}
-	delay(2000);
-	Serial.println(F("Power SIM800 On"));
+		Serial.println(F("Initializing....(May take 5 seconds)"));
 
-	fonaSerial->begin(19200);
-
-	if (!fona.begin(*fonaSerial))
-	{
-		Serial.println(F("Couldn't find SIM80C"));
-		while (1);
-	}
-	Serial.println(F("SIM800C is OK"));
-
-	uint8_t imeiLen = fona.getIMEI(imei);
-	if (imeiLen > 0)
-	{
-		Serial.print("Module IMEI: "); Serial.println(imei); // Print module IMEI number.
-	}
-	uint8_t ccidLen = fona.getSIMCCID(ccid);                 // read the CCID make sure replybuffer is at least 21 bytes!
-	if (ccidLen > 0)
-	{
-		Serial.print(F("SIM CCID = ")); Serial.println(ccid);
-	}
-
-
-	while (state_device != 2)  // Ожидание регистрации в сети
-	{
+		digitalWrite(FONA_RST, LOW);               // Сигнал сброс в исходное состояние
+		digitalWrite(LED13, LOW);
+		digitalWrite(PWR_On, HIGH);                // Кратковременно отключаем питание модуля GPRS
+		delay(2000);
+		digitalWrite(LED13, HIGH);
+		digitalWrite(PWR_On, LOW);
+		delay(1500);
+		digitalWrite(FONA_RST, HIGH);              // Производим сброс модема после включения питания
 		delay(1000);
-		// Уточнить программу перезапуска  если модуль не зарегистрировался
-	}
+		digitalWrite(FONA_RST, LOW);
+
+		while (digitalRead(STATUS) == LOW)
+		{
+			// Уточнить программу перезапуска  если модуль не включился
+		}
+		delay(2000);
+		Serial.println(F("Power SIM800 On"));
 
 
-	Serial.print(F("Setting up network..."));
-	//fona.setGPRSNetworkSettings(F("MTS"), F("mts"), F("mts"));
+		fonaSerial->begin(19200);
+		if (!fona.begin(*fonaSerial)) {
+			Serial.println(F("Couldn't find module GPRS"));
+			while (1);
+		}
+		type = fona.type();
+		Serial.println(F("GPRS is OK"));
+		Serial.print(F("Found "));
+		switch (type) 
+		{
+		case FONA800L:
+			Serial.println(F("SIM800L")); break;
+		case FONA800H:
+			Serial.println(F("SIM800H")); break;
+		case FONA808_V1:
+			Serial.println(F("SIM808 (v1)")); break;
+		case FONA808_V2:
+			Serial.println(F("SIM808 (v2)")); break;
+		case FONA3G_A:
+			Serial.println(F("FONA 3G (American)")); break;
+		case FONA3G_E:
+			Serial.println(F("FONA 3G (European)")); break;
+		case FONA800C:
+			Serial.println(F("SIM800C")); break;
+		default:
+			Serial.println(F("???")); break;
+		}
+
+		uint8_t ccidLen = fona.getSIMCCID(ccid);                 // read the CCID make sure replybuffer is at least 21 bytes!
+		if (ccidLen > 0)
+		{
+			Serial.print(F("SIM CCID = ")); Serial.println(ccid);
+		}
+
+		uint8_t imeiLen = fona.getIMEI(imei);
+		if (imeiLen > 0)
+		{
+			Serial.print("Module IMEI: "); Serial.println(imei); // Print module IMEI number.
+		}
+
+		while (state_device != 2)  // Ожидание регистрации в сети
+		{
+			delay(1000);
+			// Уточнить программу перезапуска  если модуль не зарегистрировался
+		}
+
+		Serial.print(F("Setting up network..."));
 
 
-	// turn GPRS off
-	//        if (!fona.enableGPRS(false))
-	//          Serial.println(F("Failed to turn off"));
 
+		put_operatorName();       // Определить и передать параметры оператора
 
-	delay(15000);
+		delay(2000);
+		if (!fona.enableGPRS(true))
+		{
+			//fona.enableGPRS(false);
+			Serial.println(F("Failed to turn on"));
+		}
+		else
+		{
+			while (state_device != 3)  // Ожидание регистрации в сети
+			{
+				delay(50);
+			}
 
-	//byte ret = fona.enableGPRS(true);
-
-
-	//if (!fona.enableGPRS(true))
-	//Serial.println(F("Failed to turn on"));
-
-
-	//	byte ret = gprs.setup();
-	//if (ret == 0)
-	//{
-	//	while (state_device != 3)  // Ожидание регистрации в сети
-	//	{
-	//		delay(50);
-	//		// Уточнить программу перезапуска  если модуль не зарегистрировался
-	//	}
-
-	//	setColor(COLOR_GREEN);  // Включить светодиод
-	//	break;
-	//}
-
-
-
-
-
-
-
-	//}
-
-
-	//
-	////	uint8_t operatorLen = fona.getOperator();
-	//	//if (fona.getOperator())
-	//	//{
-	//	//	//char get_operator[] = "";
-	//	//	//char *p = strstr(replybuffer, ",\"");
-	//	//	//if (p)
-	//	//	//{
-	//	//	//	//p += 2;
-	//	//	//	//char *s = strchr(p, '\"');
-	//	//	//	//if (s) *s = 0;
-	//	//	//	//strcpy(get_operator, p);
-	//	//	//	//return sendCheckReply(get_operator, ok_reply);
-	//	//	//	//Serial.print(F("Operator: ")); Serial.println(replybuffer); // 
-	//	//	//}
-	//
-	//	//	//Serial.print(F("Operator: ")); Serial.println(get_operator); // 
-	//	//}
-	//
-	////	fona.setGPRSNetworkSettings(F("your APN"), F("your username"), F("your password"));
-	//
-	//	delay(1500);
-	//	if (!fona.enableGPRS(true))
-	//		Serial.println(F("Failed to turn on"));
-	//
-	//
-
+			setColor(COLOR_GREEN);  // Включить светодиод
+			setup_ok = true;
+		}
+		delay(15000);
+	}while (!setup_ok);
 }
 
 
+void put_operatorName()
+{
+	int n_operator = 0;
+	// Здесь определить оператора
+	if (fona.getOperatorName(replybuffer))
+	{
+		//Serial.print(F("Operator +++"));
+		Serial.println(replybuffer);
+
+		String OperatorName = replybuffer;
+		cleanStr(OperatorName);
 
 
+		if (OperatorName.indexOf("MTS") > -1)
+		{
+			n_operator = 1;
+		}
+		else if (OperatorName.indexOf("Beeline") > -1)
+		{
+			n_operator = 2;                         
+		}
+		else if (OperatorName.indexOf("MegaFon") > -1)
+		{
+			n_operator = 3;
+		}
+		else if (OperatorName.indexOf("TELE2") > -1)
+		{
+			n_operator = 4;
+		}
+	}
+	fona.put_operator(n_operator);        // Передать параметры оператора
+}
 
-
-
-
+void cleanStr(String & str)
+{
+	str.replace("OK", "");
+	str.replace("\"", "");
+	str.replace("\n", "");
+	str.replace("\r", "");
+	str.trim();
+}
 
 
 void setup() 
@@ -323,9 +356,6 @@ void setup()
 	while (!Serial);
 
 	Serial.begin(115200);
-	Serial.println(F("FONA basic test"));
-	Serial.println(F("Initializing....(May take 3 seconds)"));
-
 
 	pinMode(FONA_RST, OUTPUT);
 	pinMode(LED13, OUTPUT);
@@ -345,38 +375,24 @@ void setup()
 	delay(300);
 	setColor(COLOR_RED);
 
-	
-	fonaSerial->begin(19200);
-	if (!fona.begin(*fonaSerial)) {
-		Serial.println(F("Couldn't find FONA"));
-		while (1);
-	}
-	type = fona.type();
-	Serial.println(F("FONA is OK"));
-	Serial.print(F("Found "));
-	switch (type) {
-	case FONA800L:
-		Serial.println(F("FONA 800L")); break;
-	case FONA800H:
-		Serial.println(F("FONA 800H")); break;
-	case FONA808_V1:
-		Serial.println(F("FONA 808 (v1)")); break;
-	case FONA808_V2:
-		Serial.println(F("FONA 808 (v2)")); break;
-	case FONA3G_A:
-		Serial.println(F("FONA 3G (American)")); break;
-	case FONA3G_E:
-		Serial.println(F("FONA 3G (European)")); break;
-	default:
-		Serial.println(F("???")); break;
-	}
+	DeviceAddress deviceAddress;
+	sensor1.setOneWire(&ds18x20_1);
+	sensor2.setOneWire(&ds18x20_2);
+	sensor3.setOneWire(&ds18x20_3);
+	sensor1.begin();
+	sensor2.begin();
+	sensor3.begin();
+	if (sensor1.getAddress(deviceAddress, 0)) sensor1.setResolution(deviceAddress, 12);
+	if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
+	if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 
-	// Print module IMEI number.
-	char imei[15] = { 0 }; // MUST use a 16 character buffer for IMEI!
-	uint8_t imeiLen = fona.getIMEI(imei);
-	if (imeiLen > 0) {
-		Serial.print("Module IMEI: "); Serial.println(imei);
-	}
+	attachInterrupt(1, blink, RISING);            // Включить прерывания. Индикация состояния модема
+
+
+	init_SIM800C();
+
+	delay(1000);
+
 
 	// Optionally configure a GPRS APN, username, and password.
 	// You might need to do this to access your network's GPRS/data
@@ -391,7 +407,40 @@ void setup()
 	//fona.setHTTPSRedirect(true);
 
 
-	fona.put_operator(1);
+
+
+
+	if (EEPROM.read(0) != 32)
+	{
+		Serial.println(F("Start clear EEPROM"));               //  
+		for (int i = 0; i < 1023; i++)
+		{
+			EEPROM.write(i, 0);
+		}
+		EEPROM.write(0, 32);
+		EEPROM.put(Address_interval, interval);                     // строка начальной установки интервалов
+		EEPROM.put(Address_tel1, "+79858258846");
+		EEPROM.put(Address_tel2, "+79990000000");
+		EEPROM.put(Address_tel3, "+79990000000");
+		EEPROM.put(Address_SMS_center, "+79990000000");
+		Serial.println(F("Clear EEPROM End"));
+	}
+
+	SMS_center = "SMS.RU";                                   //  SMS_center = "SMS.RU";
+															 // EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
+	EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
+	EEPROM.get(Address_interval, interval);                      //Получить из EEPROM интервал
+	EEPROM.get(Address_SMS_center, SMS_center);                  //Получить из EEPROM СМС центр
+
+	Serial.print(F("Interval sec:"));
+	Serial.println(interval);
+	Serial.println(SMS_center);
+
+	Serial.println(F("\nSIM800 setup end"));
+	Serial.println(state_device);
+	time = millis();                                              // Старт отсчета суток
+	delay(1000);
+	setColor(COLOR_GREEN);
 
 
 
@@ -402,14 +451,9 @@ void setup()
 
 
 
-
-
-
-
-
-	printMenu();
+	//printMenu();
 }
-
+/*
 void printMenu(void) {
 	Serial.println(F("-------------------------------------"));
 	Serial.println(F("[?] Print this menu"));
@@ -475,6 +519,9 @@ void printMenu(void) {
 	Serial.println(F(""));
 
 }
+
+*/
+
 void loop() {
 	Serial.print(F("FONA> "));
 	while (!Serial.available()) {
@@ -489,7 +536,7 @@ void loop() {
 
 	switch (command) {
 	case '?': {
-		printMenu();
+		//printMenu();
 		break;
 	}
 
@@ -1138,7 +1185,7 @@ void loop() {
 
 	default: {
 		Serial.println(F("Unknown command"));
-		printMenu();
+		//printMenu();
 		break;
 	}
 	}
@@ -1149,6 +1196,7 @@ void loop() {
 	}
 
 }
+
 
 void flushSerial() {
 	while (Serial.available())

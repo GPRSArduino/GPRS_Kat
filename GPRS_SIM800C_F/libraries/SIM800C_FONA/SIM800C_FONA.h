@@ -14,6 +14,7 @@
 
 #define FONA800L 1
 #define FONA800H 6
+#define FONA800C 7
 
 #define FONA808_V1 2
 #define FONA808_V2 3
@@ -57,6 +58,8 @@ class SIM800C_FONA : public FONAStreamType {
  public:
   SIM800C_FONA(int8_t rst);
   void put_operator(int8_t home_operator);
+  bool getOperatorName(char *OperatorName);
+
   boolean begin(FONAStreamType &port);
   uint8_t type();
 

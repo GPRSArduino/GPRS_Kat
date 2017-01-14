@@ -19,8 +19,28 @@ SIM800C_FONA::SIM800C_FONA(int8_t rst)
   apnpassword = F("mts");
   mySerial = 0;
   httpsredirect = false;
-  useragent = F("FONA");
+  useragent = F("mts");
   ok_reply = F("OK");
+}
+
+
+bool SIM800C_FONA::getOperatorName(char *OperatorName)
+{
+	sendCheckReply(F("AT+COPS?"), ok_reply);
+	if (prog_char_strstr(replybuffer, (prog_char *)F("+COPS:")) != 0)
+	{
+		char *p = strstr(replybuffer, ",\"");
+		if (p)
+		{
+			p += 2;
+			char *s = strchr(p, '\"');
+			if (s) *s = 0;
+			strcpy(replybuffer, p);
+			strcpy(OperatorName, replybuffer);
+		    return strlen(OperatorName);
+		}
+	}
+	return false;
 }
 
 
@@ -33,13 +53,28 @@ void SIM800C_FONA::put_operator(int8_t home_operator)
 		apn = F("MTS");
 		apnusername = F("mts");
 		apnpassword = F("mts");
+		useragent = F("mts");
 		break;
 	case 2:
-		//выполн€етс€ когда  var равно 2
+		apn = F("internet.beeline.ru");
+		apnusername = F("beeline");
+		apnpassword = F("beeline");
 		break;
+	case 3:
+		apn = F("internet");
+		apnusername = F("");
+		apnpassword = F("");
+		break;
+	case 4:
+		apn = F("internet.TELE2.ru");
+		apnusername = F("");
+		apnpassword = F("");
+		break;
+
 	default:
-		// выполн€етс€, если не выбрана ни одна альтернатива
-		// default необ€зателен
+		apn = F("MTS");
+		apnusername = F("mts");
+		apnpassword = F("mts");
 		break;
 	}
 	DEBUG_PRINT(F("\nOperator .. "));
@@ -54,13 +89,6 @@ uint8_t SIM800C_FONA::type(void) {
 
 boolean SIM800C_FONA::begin(Stream &port) {
   mySerial = &port;
-
-  pinMode(_rstpin, OUTPUT);
-  digitalWrite(_rstpin, HIGH);
-  delay(10);
-  digitalWrite(_rstpin, LOW);
-  delay(100);
-  digitalWrite(_rstpin, HIGH);
 
   DEBUG_PRINTLN(F("Attempting to open comm with ATs"));
   // give 7 seconds to reboot
@@ -100,9 +128,17 @@ boolean SIM800C_FONA::begin(Stream &port) {
   // turn on hangupitude
   sendCheckReply(F("AT+CVHU=0"), ok_reply);
 
+  sendCheckReply(F("AT+CFUN=1"), ok_reply);       // 1 Ц нормальный режим (по умолчанию). ¬торой параметр 1 Ц перезагрузить (доступно только в нормальном режиме, т.е. параметры = 1,1)
+  
+  sendCheckReply(F("AT+CMGF=1"), ok_reply);       // режим кодировки —ћ— - обычный (дл€ англ.)
+  sendCheckReply(F("AT+CLIP=1"), ok_reply);       // включаем јќЌ
+  sendCheckReply(F("AT+CSCS=\"GSM\""), ok_reply); // режим кодировки текста 
+  sendCheckReply(F("AT+CNMI=2,2"), ok_reply);     // отображение смс в терминале сразу после приема (без этого сообщени€ молча падают в пам€ть)tln("AT+CSCS=\"GSM\""); 
+
+
   delay(100);
   flushInput();
-
+ // FONAConfig.h -- compile - time configuration
 
   DEBUG_PRINT(F("\t---> ")); DEBUG_PRINTLN("ATI");
 
@@ -113,19 +149,24 @@ boolean SIM800C_FONA::begin(Stream &port) {
 
 
 
-  if (prog_char_strstr(replybuffer, (prog_char *)F("SIM808 R14")) != 0) {
-    _type = FONA808_V2;
-  } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIM808 R13")) != 0) {
-    _type = FONA808_V1;
-  } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800 R13")) != 0) {
-    _type = FONA800L;
-  } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIMCOM_SIM5320A")) != 0) {
-    _type = FONA3G_A;
-  } else if (prog_char_strstr(replybuffer, (prog_char *)F("SIMCOM_SIM5320E")) != 0) {
-    _type = FONA3G_E;
-  }
+	if (prog_char_strstr(replybuffer, (prog_char *)F("SIM808 R14")) != 0) {
+		_type = FONA808_V2;
+	} else if (prog_char_strstr(replybuffer, (prog_char *)F("SIM808 R13")) != 0) {
+		_type = FONA808_V1;
+	} else if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800 R13")) != 0) {
+		_type = FONA800L;
+	} else if (prog_char_strstr(replybuffer, (prog_char *)F("SIMCOM_SIM5320A")) != 0) {
+		_type = FONA3G_A;
+	} else if (prog_char_strstr(replybuffer, (prog_char *)F("SIMCOM_SIM5320E")) != 0) {
+		_type = FONA3G_E;
+	}
+	else if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800 R14.18")) != 0) {
+		_type = FONA800C;
+	}
 
-  if (_type == FONA800L) {
+
+  if (_type == FONA800L) 
+  {
     // determine if L or H
 
   DEBUG_PRINT(F("\t---> ")); DEBUG_PRINTLN("AT+GMM");
@@ -136,7 +177,8 @@ boolean SIM800C_FONA::begin(Stream &port) {
   DEBUG_PRINT (F("\t<--- ")); DEBUG_PRINTLN(replybuffer);
 
 
-    if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800H")) != 0) {
+    if (prog_char_strstr(replybuffer, (prog_char *)F("SIM800H")) != 0) 
+	{
       _type = FONA800H;
     }
   }
@@ -465,6 +507,7 @@ boolean SIM800C_FONA::incomingCallNumber(char* phonenum) {
 }
 
 /********* SMS **********************************************************/
+
 
 uint8_t SIM800C_FONA::getSMSInterrupt(void) {
   uint16_t reply;
