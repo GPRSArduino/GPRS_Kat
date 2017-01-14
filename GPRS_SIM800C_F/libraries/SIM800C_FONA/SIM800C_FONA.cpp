@@ -19,7 +19,7 @@ SIM800C_FONA::SIM800C_FONA(int8_t rst)
   apnpassword = F("mts");
   mySerial = 0;
   httpsredirect = false;
-  useragent = F("mts");
+  useragent = F("FONA");
   ok_reply = F("OK");
 }
 
@@ -53,7 +53,7 @@ void SIM800C_FONA::put_operator(int8_t home_operator)
 		apn = F("MTS");
 		apnusername = F("mts");
 		apnpassword = F("mts");
-		useragent = F("mts");
+		//useragent = F("mts");
 		break;
 	case 2:
 		apn = F("internet.beeline.ru");
@@ -77,8 +77,8 @@ void SIM800C_FONA::put_operator(int8_t home_operator)
 		apnpassword = F("mts");
 		break;
 	}
-	DEBUG_PRINT(F("\nOperator .. "));
-	DEBUG_PRINTLN(apn);
+	/*DEBUG_PRINT(F("\nOperator .. "));
+	DEBUG_PRINTLN(apn);*/
 
 }
 
@@ -1188,9 +1188,12 @@ boolean SIM800C_FONA::enableGPRS(boolean onoff) {
 
   if (onoff) {
     // disconnect all sockets
-    sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 20000);
+    sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 20000);              // сброс всех tcp/ip соединений SHUT OK Ч все соединени€ разорваны
+	sendCheckReply(F("AT+CIPSTATUS"), F("OK"), 10000);                 // 
 
-    if (! sendCheckReply(F("AT+CGATT=1"), ok_reply, 10000))
+	if (!sendCheckReply(F("AT+CGATT?"), ok_reply, 10000))              // ѕеределать - если не ноль пропустить "AT+CGATT=1"
+	
+    if (! sendCheckReply(F("AT+CGATT=1"), ok_reply, 20000))
       return false;
 
     // set bearer profile! connection type GPRS
@@ -1248,7 +1251,7 @@ boolean SIM800C_FONA::enableGPRS(boolean onoff) {
     }
 
     // open GPRS context
-    if (! sendCheckReply(F("AT+SAPBR=1,1"), ok_reply, 30000))
+    if (! sendCheckReply(F("AT+SAPBR=1,1"), ok_reply, 20000))
       return false;
 
     // bring up wireless connection
