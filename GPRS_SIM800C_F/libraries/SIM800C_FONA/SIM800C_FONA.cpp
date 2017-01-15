@@ -133,7 +133,7 @@ boolean SIM800C_FONA::begin(Stream &port) {
   sendCheckReply(F("AT+CMGF=1"), ok_reply);       // режим кодировки СМС - обычный (для англ.)
   sendCheckReply(F("AT+CLIP=1"), ok_reply);       // включаем АОН
   sendCheckReply(F("AT+CSCS=\"GSM\""), ok_reply); // режим кодировки текста 
-  sendCheckReply(F("AT+CNMI=2,2"), ok_reply);     // отображение смс в терминале сразу после приема (без этого сообщения молча падают в память)tln("AT+CSCS=\"GSM\""); 
+  //sendCheckReply(F("AT+CNMI=2,2"), ok_reply);     // отображение смс в терминале сразу после приема (без этого сообщения молча падают в память)tln("AT+CSCS=\"GSM\""); 
 
 
   delay(100);
@@ -301,6 +301,50 @@ uint8_t SIM800C_FONA::getRSSI(void) {
 
   return reply;
 }
+
+
+boolean SIM800C_FONA::ping(FONAFlashStringPtr pingserver)
+{
+	if (!sendCheckReply(F("AT+CGATT=1"), ok_reply, 10000))
+	return false;
+
+	if (!sendCheckReply(F("AT+CSTT=\"internet\""), ok_reply))
+	//	return false;
+
+	if (!sendCheckReply(F("AT+CIICR"), ok_reply))
+	//	return false;
+
+	if (!sendCheckReply(F("AT+CIFSR"), ok_reply))
+	//	return false;
+
+		
+	mySerial->print(F("AT+CIPPING=\""));
+	if (pingserver != 0)
+	{
+		mySerial->print(pingserver);
+	}
+	else
+	{
+		mySerial->print(F("www.yandex.ru"));
+	}
+	mySerial->println(F("\""));
+
+	readline(10000);
+
+	if (prog_char_strstr(replybuffer, (prog_char *)F("+CIPPING:")) != 0)
+	{
+		DEBUG_PRINT(F("PING:"));
+		DEBUG_PRINTLN(replybuffer);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+	sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 20000);              // сброс всех tcp/ip соединений SHUT OK — все соединения разорваны
+}
+
+
 
 /********* AUDIO *******************************************************/
 
@@ -590,6 +634,11 @@ boolean SIM800C_FONA::readSMS(uint8_t i, char *smsbuff,
 // and a null terminator will be added if less than senderlen charactesr are
 // copied to the result.  Returns true if a result was successfully retrieved,
 // otherwise false.
+
+
+
+
+
 boolean SIM800C_FONA::getSMSSender(uint8_t i, char *sender, int senderlen) {
   // Ensure text mode and all text mode parameters are sent.
   if (! sendCheckReply(F("AT+CMGF=1"), ok_reply)) return false;

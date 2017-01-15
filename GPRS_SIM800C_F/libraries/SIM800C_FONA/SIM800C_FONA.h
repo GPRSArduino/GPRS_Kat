@@ -62,7 +62,7 @@ class SIM800C_FONA : public FONAStreamType {
 
   boolean begin(FONAStreamType &port);
   uint8_t type();
-
+  boolean ping(FONAFlashStringPtr tspserver);
   // Stream
   int available(void);
   size_t write(uint8_t x);

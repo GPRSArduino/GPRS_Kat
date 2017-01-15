@@ -63,9 +63,7 @@ volatile unsigned long metering_temp = 0;
 char imei[16] = { 0 }; // MUST use a 16 character buffer for IMEI!
 char ccid[21] = { 0 }; // MUST use a 21 character buffer for ccid!
 
-
-
-
+char buffer1[23] = {0};
 
 // this is a large buffer for replies
 char replybuffer[255];
@@ -77,13 +75,8 @@ char replybuffer[255];
 SoftwareSerial fonaSS = SoftwareSerial(FONA_RX, FONA_TX);
 SoftwareSerial *fonaSerial = &fonaSS;
 
-// Hardware serial is also possible!
-//  HardwareSerial *fonaSerial = &Serial1;
-
 // Use this for FONA 800 and 808s
 SIM800C_FONA fona = SIM800C_FONA(FONA_RST);
-// Use this one for FONA 3G
-//SIM800C_FONA_3G fona = SIM800C_FONA_3G(FONA_RST);
 
 uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
 
@@ -105,7 +98,7 @@ String zero_tel = "";
 unsigned long time;                                 // Переменная для суточного сброса
 unsigned long time_day = 86400;                     // Переменная секунд в сутках
 unsigned long previousMillis = 0;
-unsigned long interval = 10;                        // Интервал передачи данных 10 секунд
+unsigned long interval = 30;                        // Интервал передачи данных 30 секунд
 													//unsigned long interval = 300;                     // Интервал передачи данных 5 минут
 bool time_set = false;                              // Фиксировать интервал заданный СМС
 
@@ -197,6 +190,114 @@ void blink()
 
 }
 
+void sendTemps()
+{
+	Serial.println(F("\nTemp"));
+	sensor1.requestTemperatures();
+	sensor2.requestTemperatures();
+	sensor3.requestTemperatures();
+	float t1 = sensor1.getTempCByIndex(0);
+	float t2 = sensor2.getTempCByIndex(0);
+	float t3 = sensor3.getTempCByIndex(0);
+	float tsumma = t1 + t2 + t3 + 88.88;
+	int signal = get_rssi();
+	int error_All = 0;
+	EEPROM.get(Address_errorAll, error_All);
+	//String toSend = formHeader()+DELIM+"temp1="+String(t1)+DELIM+"temp2="+String(t2)+DELIM+"tempint="+String(t3)+ DELIM+"slevel="+String(signal)+DELIM+"ecs="+String(errors)+DELIM+"ec="+String(error_All)+formEnd();
+	String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
+
+	Serial.println(F("String length: "));
+	Serial.println(toSend.length());
+	Serial.println(toSend);
+	/*if (gprs.ping(url2))
+	{
+	Serial.println("ping Ok");
+	}
+	else
+	{
+	Serial.println("ping No");
+	}
+	*/
+
+	//gprs.ping("AT+CIPPING=\"www.yandex.ru\"");
+	//gprs.ping("www.yandex.ru");
+	//delay(2000);
+	//gprs_send(toSend);
+}
+
+
+
+String formHeader()
+{
+	//String uptime = "17/01/01,10:10:10 00";
+
+	fona.getTime(buffer1, 23);  // make sure replybuffer is at least 23 bytes!
+	return "t1=" + String(imei) + DELIM + String(buffer1);
+}
+String formEnd()
+{
+	char buf[13];
+
+	EEPROM.get(Address_tel1, buf);
+	String master_tel1(buf);
+	Serial.println(master_tel1);
+
+	EEPROM.get(Address_tel2, buf);
+	String master_tel2(buf);
+	Serial.println(master_tel2);
+
+	EEPROM.get(Address_tel3, buf);
+	String master_tel3(buf);
+	Serial.println(master_tel3);
+
+	//EEPROM.get(Address_tel1, master_tel1); 
+	//EEPROM.get(Address_tel2, master_tel3); 
+	//EEPROM.get(Address_tel2, master_tel3); 
+
+
+	EEPROM.get(Address_SMS_center, SMS_center);   //Получить из EEPROM СМС центр
+
+
+	if (EEPROM.read(Address_port1))
+	{
+
+	}
+	else
+	{
+		//dataport1 = digitalRead(port1);
+		//Serial.println(dataport1);
+	}
+
+	if (EEPROM.read(Address_port2))
+	{
+
+	}
+	else
+	{
+		/*dataport2 = digitalRead(port2);
+		Serial.println(dataport2);*/
+	}
+	String mytel = "mytel=" + master_tel1;
+	String tel1 = "tel1=" + master_tel2;
+	String tel2 = "tel2=" + master_tel3;
+
+	//return DELIM + mytel + DELIM +tel1 + DELIM + tel2;
+	return DELIM + master_tel1 + DELIM + master_tel2 + DELIM + master_tel3 + DELIM + SMS_center;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 void init_SIM800C()
 {
 	bool setup_ok = false;
@@ -273,15 +374,15 @@ void init_SIM800C()
 
 		Serial.print(F("Setting up network..."));
 		uint8_t n = fona.getNetworkStatus();
-		Serial.print(F("Network status "));
+		Serial.print(F("\nNetwork status "));
 		Serial.print(n);
 		Serial.print(F(": "));
-		if (n == 0) Serial.println(F("Not registered"));
-		if (n == 1) Serial.println(F("Registered (home)"));
-		if (n == 2) Serial.println(F("Not registered (searching)"));
-		if (n == 3) Serial.println(F("Denied"));
-		if (n == 4) Serial.println(F("Unknown"));
-		if (n == 5) Serial.println(F("Registered roaming"));
+		if (n == 0) Serial.println(F("\nNot registered"));
+		if (n == 1) Serial.println(F("\nRegistered (home)"));
+		if (n == 2) Serial.println(F("\nNot registered (searching)"));
+		if (n == 3) Serial.println(F("\nDenied"));
+		if (n == 4) Serial.println(F("\nUnknown"));
+		if (n == 5) Serial.println(F("\nRegistered roaming"));
 	
 			// Первый параметр:
 			// 0 – нет кода регистрации сети
@@ -300,31 +401,34 @@ void init_SIM800C()
 		{
 
 			put_operatorName();       // Определить и передать параметры оператора
-
+			count_init = 0;
 
 
 			delay(2000);
 			do
 			{
-				if (!fona.enableGPRS(true))
+				get_rssi();
+				
+				if(!fona.enableGPRS(true))
 				{
 					count_init++;
-					Serial.println(F("Failed to turn on"));
+					Serial.println(F("Failed init GPRS"));
+					delay(5000);
 				}
 				else
 				{
-					while (state_device != 3)  // Ожидание регистрации в сети
-					{
-						delay(50);
-					}
+					//while (state_device != 3)  // Ожидание регистрации в сети
+					//{
+					//	delay(50);
+					//}
 
 					setColor(COLOR_GREEN);  // Включить светодиод
 					setup_ok = true;
 				}
 		    } while (!setup_ok);
-
+			setup_ok = false;
 		}
-	}while (count_init>10);    // Десять попыток зарегистрироваться в сети
+	}while (count_init >20);    // 20 попыток зарегистрироваться в сети
 }
 
 
@@ -334,8 +438,8 @@ void put_operatorName()
 	// Здесь определить оператора
 	if (fona.getOperatorName(replybuffer))
 	{
-		//Serial.print(F("Operator +++"));
-	//	Serial.println(replybuffer);
+		Serial.print(F("Operator: "));
+		Serial.println(replybuffer);
 
 		String OperatorName = replybuffer;
 		cleanStr(OperatorName);
@@ -369,6 +473,71 @@ void cleanStr(String & str)
 	str.replace("\r", "");
 	str.trim();
 }
+
+void errorAllmem()
+{
+	int error_All;
+	EEPROM.get(Address_errorAll, error_All);
+	error_All++;
+	EEPROM.put(Address_errorAll, error_All);
+}
+
+int freeRam()
+{
+	extern int __heap_start, *__brkval;
+	int v;
+	return (int)&v - (__brkval == 0 ? (int)&__heap_start : (int)__brkval);
+}
+
+void setTime(String val, String f_phone)
+{
+	if (val.indexOf(F("Timeset")) > -1)         // (val.indexOf("Timeset") > -1) 
+	{
+		interval = 20;                                     // Установить интервал 20 секунд
+		time_set = true;                                   // Установить фиксацию интервала заданного СМС
+		Serial.println(interval);
+	}
+	else if (val.indexOf(F("Restart")) > -1)
+	{
+		Serial.print(f_phone);
+		Serial.print("..");
+		Serial.println(F("Restart"));
+		delay(1000);
+		resetFunc();                                        //вызываем reset
+	}
+	else if (val.indexOf(F("Timeoff")) > -1)
+	{
+		time_set = false;                              // Снять фиксацию интервала заданного СМС
+	}
+	else
+	{
+		Serial.println(F("Unknown command"));         // Serial.println("Unknown command");
+	}
+}
+
+
+
+int get_rssi()
+{
+	// read the RSSI
+	uint8_t n = fona.getRSSI();
+	int8_t r;
+
+	Serial.print(F("RSSI = ")); Serial.print(n); Serial.print(": ");
+	if (n == 0) r = -115;
+	if (n == 1) r = -111;
+	if (n == 31) r = -52;
+	if ((n >= 2) && (n <= 30))
+	{
+		r = map(n, 2, 30, -110, -54);
+	}
+	Serial.print(r); Serial.println(F(" dBm"));
+	return n;
+}
+
+
+
+
 
 
 void setup() 
@@ -414,16 +583,13 @@ void setup()
 	delay(1000);
 
 
-	// Optionally configure a GPRS APN, username, and password.
-	// You might need to do this to access your network's GPRS/data
-	// network.  Contact your provider for the exact APN, username,
-	// and password values.  Username and password are optional and
-	// can be removed, but APN is required.
-	//fona.setGPRSNetworkSettings(F("your APN"), F("your username"), F("your password"));
-	//fona.setGPRSNetworkSettings(F("MTS"), F("mts"), F("mts"));
 	// Optionally configure HTTP gets to follow redirects over SSL.
 	// Default is not to follow SSL redirects, however if you uncomment
 	// the following line then redirects over SSL will be followed.
+	// При необходимости настройки HTTP получает следовать переадресовывает над SSL.
+	// По умолчанию не следовать SSL переадресовывает, однако, если вы раскомментировать
+	// Следующая строка затем перенаправляет через SSL будет сопровождаться.
+
 	//fona.setHTTPSRedirect(true);
 
 
@@ -440,14 +606,14 @@ void setup()
 		EEPROM.write(0, 32);
 		EEPROM.put(Address_interval, interval);                     // строка начальной установки интервалов
 		EEPROM.put(Address_tel1, "+79858258846");
-		EEPROM.put(Address_tel2, "+79990000000");
+		EEPROM.put(Address_tel2, "+79162632701");
 		EEPROM.put(Address_tel3, "+79990000000");
 		EEPROM.put(Address_SMS_center, "+79990000000");
 		Serial.println(F("Clear EEPROM End"));
 	}
 
-	SMS_center = "SMS.RU";                                   //  SMS_center = "SMS.RU";
-															 // EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
+	SMS_center = "SMS.RU";                                       //  SMS_center = "SMS.RU";
+															     // EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
 	EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
 	EEPROM.get(Address_interval, interval);                      //Получить из EEPROM интервал
 	EEPROM.get(Address_SMS_center, SMS_center);                  //Получить из EEPROM СМС центр
@@ -456,18 +622,220 @@ void setup()
 	Serial.println(interval);
 	Serial.println(SMS_center);
 
-	Serial.println(F("\nSIM800 setup end"));
-	Serial.println(state_device);
-	time = millis();                                              // Старт отсчета суток
-	delay(1000);
-	setColor(COLOR_GREEN);
+	if(state_device==3)	Serial.println(F("\nGPRS connect"));
 
+	// enable NTP time sync
+	/*		if (!fona.enableNTPTimeSync(true, F("pool.ntp.org")))
+				Serial.println(F("Failed to enable"));*/
+
+	if (!fona.ping(F("www.yandex.ru")))
+	{
+		Serial.println(F("Failed to ping"));
+	}
+	else
+	{
+		Serial.println(F("Ping Ok!"));
+	}
+	
+
+	delay(2000);
+	if (!fona.enableNetworkTimeSync(true))
+	{
+		Serial.println(F("Failed to Sync Time"));
+	}
+	else
+	{
+		Serial.println(F("Sync Time Ok!"));
+	}
+	delay(4000);
+	fona.getTime(buffer1, 23);  // make sure replybuffer is at least 23 bytes!
+	Serial.print(F("Time = ")); Serial.println(buffer1);
+	time = millis();                                              // Старт отсчета суток
+	setColor(COLOR_GREEN);
+	Serial.println(F("\nSIM800 setup end"));
 
 
 	//printMenu();
 }
-/*
-void printMenu(void) {
+
+void loop()
+{
+
+	/*while (!Serial.available())
+	{
+		if (fona.available())
+		{
+			Serial.write(fona.read());
+		}
+	}*/
+
+
+	
+	// read all SMS
+	int8_t smsnum = fona.getNumSMS();
+	//Serial.println(smsnum);
+	uint16_t smslen;
+	int8_t smsn = 1; // 1 indexed
+	if (smsnum > 0)
+	{
+		for (; smsn <= smsnum; smsn++)
+		{
+			Serial.print(F("\n\rReading SMS #")); Serial.println(smsn);
+			if (!fona.readSMS(smsn, replybuffer, 250, &smslen)) {  // pass in buffer and max len!
+				Serial.println(F("Failed!"));
+				break;
+			}
+			// if the length is zero, its a special case where the index number is higher
+			// so increase the max we'll look at!
+			if (smslen == 0)
+			{
+				Serial.println(F("[empty slot]")); 
+				smsnum++;
+				continue;
+			}
+
+			Serial.print(F("***** SMS #")); Serial.print(smsn);
+			Serial.print(" ("); Serial.print(smslen); Serial.println(F(") bytes *****"));
+			Serial.println(replybuffer);
+			Serial.println(F("*****"));
+			// Обработать SMS
+
+			String gprs_val = replybuffer;               // Записать текст СМС
+			
+			if (fona.getSMSSender(smsn, replybuffer, 13))
+			{
+				Serial.println(replybuffer);
+				String gprs_tel = replybuffer;            // Записать номер телефона отправителя
+
+				// Удалить текущую СМС
+				Serial.print(F("\n\rDeleting SMS #")); Serial.println(smsn);
+				if (fona.deleteSMS(smsn))
+				{
+					Serial.println(F("OK!"));
+				}
+				else
+				{
+					Serial.println(F("Couldn't delete"));
+				}
+	
+				//---поиск номера телефона отправителя кодового слова в СМС 
+				char buf[13];
+
+				EEPROM.get(Address_tel2, buf);                                         // Восстановить телефон хозяина 1
+				String master_tel2(buf);
+				EEPROM.get(Address_tel3, buf);                                         // Восстановить телефон хозяина 2
+				String master_tel3(buf);
+				EEPROM.get(Address_SMS_center, buf);                                   // Восстановить телефон СМС центра
+				String master_SMS_center(buf);
+
+				if (gprs_tel.indexOf(master_tel2) > -1)                              //если СМС от хозяина 1
+				{
+					Serial.println(F("Commanda tel1"));
+					setTime(gprs_val, master_tel2);
+				}
+				else if (gprs_tel.indexOf(master_tel3) > -1)                          //если СМС от хозяина 2
+				{
+					Serial.println(F("Commanda tel2"));
+					setTime(gprs_val, master_tel3);
+				}
+				else if (gprs_tel.indexOf(master_SMS_center) > -1)                    //если СМС от хозяина 2
+				{
+					Serial.println(F("SMS centr"));
+					setTime(gprs_val, master_SMS_center);
+				}
+				else
+				{
+					Serial.println(F("phone ignored"));
+				}
+			}
+		}
+	}
+
+
+	unsigned long currentMillis = millis();
+	if (!time_set)                                                               // 
+	{
+		EEPROM.get(Address_interval, interval);                               // Получить интервал из EEPROM Address_interval
+	}
+	if ((unsigned long)(currentMillis - previousMillis) >= interval * 1000)
+	{
+		Serial.print(F("Interval sec:"));
+		Serial.println((currentMillis - previousMillis) / 1000);
+		setColor(COLOR_BLUE);
+		previousMillis = currentMillis;
+		//gprs.sendCommand("AT+CIPPING=\"www.yandex.ru\"", 1000);
+		sendTemps();
+		setColor(COLOR_GREEN);
+		Serial.print(F("\nfree memory: "));
+		Serial.println(freeRam());
+	}
+
+	if (millis() - time > time_day * 1000) resetFunc();                       //вызываем reset интервалом в сутки
+	delay(500);
+
+
+
+
+	//while (!Serial.available())
+	//{
+	//	if (fona.available())
+	//	{
+	//		Serial.write(fona.read());
+	//	}
+	//}
+	delay(1000);
+
+	
+}
+	
+
+	//flushSerial();
+	/*
+	if (gprs.checkSMSU())
+	{
+		Serial.print(F("SMS:"));                    //  Serial.print("SMS:");
+		Serial.println(gprs.val);
+		if (gprs.val.indexOf(F("+CMT")) > -1)  //если обнаружен СМС (для определения звонка вместо "+CMT" вписать "RING", трубку он не берет, но реагировать на факт звонка можно)
+		{
+			//------------- поиск кодового слова в СМС 
+			char buf[13];
+
+			EEPROM.get(Address_tel2, buf);                                         // Восстановить телефон хозяина 1
+			String master_tel2(buf);
+			EEPROM.get(Address_tel3, buf);                                         // Восстановить телефон хозяина 2
+			String master_tel3(buf);
+			EEPROM.get(Address_SMS_center, buf);                                   // Восстановить телефон СМС центра
+			String master_SMS_center(buf);
+
+			if (gprs.val.indexOf(master_tel2) > -1)                              //если СМС от хозяина 1
+			{
+				Serial.println(F("Commanda tel1"));
+				setTime(gprs.val, master_tel2);
+			}
+			else if (gprs.val.indexOf(master_tel3) > -1)                          //если СМС от хозяина 2
+			{
+				Serial.println(F("Commanda tel2"));
+				setTime(gprs.val, master_tel3);
+			}
+			else if (gprs.val.indexOf(master_SMS_center) > -1)                    //если СМС от хозяина 2
+			{
+				Serial.println(F("SMS centr"));
+				setTime(gprs.val, master_SMS_center);
+			}
+			else
+			{
+				Serial.println(F("phone ignored"));
+			}
+		}
+
+		gprs.val = "";
+	}
+
+	*/
+
+
+	/*
+	void printMenu(void) {
 	Serial.println(F("-------------------------------------"));
 	Serial.println(F("[?] Print this menu"));
 	Serial.println(F("[a] read the ADC 2.8V max (FONA800 & 808)"));
@@ -518,26 +886,34 @@ void printMenu(void) {
 
 	// GPS
 	if ((type == FONA3G_A) || (type == FONA3G_E) || (type == FONA808_V1) || (type == FONA808_V2)) {
-		Serial.println(F("[O] Turn GPS on (FONA 808 & 3G)"));
-		Serial.println(F("[o] Turn GPS off (FONA 808 & 3G)"));
-		Serial.println(F("[L] Query GPS location (FONA 808 & 3G)"));
-		if (type == FONA808_V1) {
-			Serial.println(F("[x] GPS fix status (FONA808 v1 only)"));
-		}
-		Serial.println(F("[E] Raw NMEA out (FONA808)"));
+	Serial.println(F("[O] Turn GPS on (FONA 808 & 3G)"));
+	Serial.println(F("[o] Turn GPS off (FONA 808 & 3G)"));
+	Serial.println(F("[L] Query GPS location (FONA 808 & 3G)"));
+	if (type == FONA808_V1) {
+	Serial.println(F("[x] GPS fix status (FONA808 v1 only)"));
+	}
+	Serial.println(F("[E] Raw NMEA out (FONA808)"));
 	}
 
 	Serial.println(F("[S] create Serial passthru tunnel"));
 	Serial.println(F("-------------------------------------"));
 	Serial.println(F(""));
 
-}
+	}
 
-*/
+	*/
 
-void loop() 
-{
-	Serial.print(F("FONA> "));
+
+
+
+
+
+
+
+
+
+
+	/*Serial.print(F("FONA> "));
 	while (!Serial.available()) 
 	{
 		if (fona.available()) 
@@ -547,7 +923,7 @@ void loop()
 	}
 
 	char command = Serial.read();
-	Serial.println(command);
+	Serial.println(command);*/
 //
 //
 //	switch (command) {
@@ -1212,7 +1588,7 @@ void loop()
 	//	Serial.write(fona.read());
 	//}
 
-}
+//}
 
 
 void flushSerial()
