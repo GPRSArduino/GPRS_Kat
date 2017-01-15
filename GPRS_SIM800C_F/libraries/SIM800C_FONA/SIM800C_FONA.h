@@ -54,6 +54,17 @@
 #define FONA_CALL_RINGING 3
 #define FONA_CALL_INPROGRESS 4
 
+
+typedef enum {
+	HTTP_DISABLED = 0,
+	HTTP_READY,
+	HTTP_CONNECTING,
+	HTTP_READING,
+	HTTP_ERROR,
+} HTTP_STATES;
+
+
+
 class SIM800C_FONA : public FONAStreamType {
  public:
   SIM800C_FONA(int8_t rst);
@@ -69,6 +80,15 @@ class SIM800C_FONA : public FONAStreamType {
   int read(void);
   int peek(void);
   void flush();
+  // Добавил код
+  char buffer[128];
+  byte httpState;
+  String val = "";
+  // send AT command and check for expected response
+  byte sendCommand(const char* cmd, unsigned int timeout = 2000, const char* expected = 0);
+  // send AT command and check for two possible responses
+  byte sendCommand(const char* cmd, const char* expected1, const char* expected2, unsigned int timeout = 2000);
+
 
   // FONA 3G requirements
   boolean setBaudrate(uint16_t baud);
@@ -138,10 +158,17 @@ class SIM800C_FONA : public FONAStreamType {
   uint16_t TCPread(uint8_t *buff, uint8_t len);
 
   // HTTP low level interface (maps directly to SIM800 commands).
-
-  boolean httpConnectStr(const char* url, const char* args);
+  bool httpConnectStr(const char* url, String args);
+  byte httpIsConnected();
+  // read data from HTTP connection
+  void httpRead();
+  // return 0 for in progress, -1 for error, bytes of http payload on success
+  int httpIsRead();
   boolean HTTP_init();
   boolean HTTP_term();
+  bool httpInit1();
+  // terminate HTTP connection
+  void httpUninit1();
   void HTTP_para_start(FONAFlashStringPtr parameter, boolean quoted = true);
   boolean HTTP_para_end(boolean quoted = true);
   boolean HTTP_para(FONAFlashStringPtr parameter, const char *value);
@@ -184,7 +211,7 @@ class SIM800C_FONA : public FONAStreamType {
   int8_t _rstpin;
   uint8_t _type;
 
-  char replybuffer[255];
+  char replybuffer[140];
   FONAFlashStringPtr apn;
   FONAFlashStringPtr apnusername;
   FONAFlashStringPtr apnpassword;
@@ -226,27 +253,14 @@ class SIM800C_FONA : public FONAStreamType {
   static void onIncomingCall();
 
   FONAStreamType *mySerial;
-};
 
-class SIM800C_FONA_3G : public SIM800C_FONA {
+  private:
+  byte checkbuffer(const char* expected1, const char* expected2 = 0, unsigned int timeout = 2000);
+  void purgeSerial();
+  byte m_bytesRecv;
+  uint32_t m_checkTimer;
 
- public:
-  SIM800C_FONA_3G (int8_t r) : SIM800C_FONA(r) { _type = FONA3G_A; }
 
-    boolean getBattVoltage(uint16_t *v);
-    boolean playToolkitTone(uint8_t t, uint16_t len);
-    boolean hangUp(void);
-    boolean pickUp(void);
-    boolean enableGPRS(boolean onoff);
-    boolean enableGPS(boolean onoff);
-
- protected:
-    boolean parseReply(FONAFlashStringPtr toreply,
-		       float *f, char divider, uint8_t index);
-
-    boolean sendParseReply(FONAFlashStringPtr tosend,
-			   FONAFlashStringPtr toreply,
-			   float *f, char divider = ',', uint8_t index=0);
 };
 
 #endif

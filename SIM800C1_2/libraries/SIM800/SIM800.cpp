@@ -238,6 +238,120 @@ void CGPRS_SIM800::cleanStr(String & str)
   str.trim();
 }
 
+uint8_t CGPRS_SIM800::getNetworkStatus()
+{
+
+	for (byte n = 0; n < 30; n++)
+	{
+		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[7])));
+		if (sendCommand(bufcom, 2000))
+		{
+			// if (sendCommand("AT+CREG?", 2000))  // “ип регистрации сети
+			// ѕервый параметр:
+			// 0 Ц нет кода регистрации сети
+			// 1 Ц есть код регистрации сети
+			// 2 Ц есть код регистрации сети + доп параметры
+			// ¬торой параметр:
+			// 0 Ц не зарегистрирован, поиска сети нет
+			// 1 Ц зарегистрирован, домашн€€ сеть
+			// 2 Ц не зарегистрирован, идЄт поиск новой сети
+			// 3 Ц регистраци€ отклонена
+			// 4 Ц неизвестно
+			// 5 Ц роуминг
+		
+			char *p = strstr(buffer, "0,");
+			if (p)
+			{
+				char mode = *(p + 2);
+#if DEBUG
+				DEBUG.print("Mode:");
+				DEBUG.println(mode);
+#endif
+								
+				if (mode == '1' || mode == '5')
+				{
+					strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[8])));
+					sendCommand(bufcom, 1000); 	//sendCommand("AT+CSQ",1000); 
+					char *p = strstr(buffer, "CSQ: ");
+					/*		Serial.println();
+					Serial.println(p);   */
+					//success = true;
+					//break;
+
+					uint8_t status = atoi(mode);
+					return  status;
+
+				}
+			}
+		}
+		delay(1000);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[7])));
+	if (sendCommand(bufcom, 2000))
+	{	// if (sendCommand("AT+CREG?", 2000))  // “ип регистрации сети
+		// ѕервый параметр:
+		// 0 Ц нет кода регистрации сети
+		// 1 Ц есть код регистрации сети
+		// 2 Ц есть код регистрации сети + доп параметры
+		// ¬торой параметр:
+		// 0 Ц не зарегистрирован, поиска сети нет
+		// 1 Ц зарегистрирован, домашн€€ сеть
+		// 2 Ц не зарегистрирован, идЄт поиск новой сети
+		// 3 Ц регистраци€ отклонена
+		// 4 Ц неизвестно
+		// 5 Ц роуминг
+		uint8_t status;
+		char *p = strstr(buffer, "0,");
+	
+		if (p)
+		{
+			char mode = *(p + 2);
+#if DEBUG
+			DEBUG.print("Mode:");
+			DEBUG.println(mode);
+#endif
+			status =  atoi(mode);
+			return  status;
+			
+			
+			//	return  mode;
+			if (mode == '1' || mode == '5')
+			{
+				//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[8])));
+				//sendCommand(bufcom, 1000); 	//sendCommand("AT+CSQ",1000); 
+				//char *p = strstr(buffer, "CSQ: ");
+				//		Serial.println();
+				//Serial.println(p);   
+				//success = true;
+				//break;
+				status = atoi(mode);
+				return  status;
+
+			}
+		}
+	}
+	*/
+}
+
+
 bool CGPRS_SIM800::getIMEI()
 {
 

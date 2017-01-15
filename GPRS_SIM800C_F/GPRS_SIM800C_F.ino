@@ -52,6 +52,8 @@ NORMAL POWER DOWN
 #define COLOR_GREEN LOW, HIGH, LOW
 #define COLOR_BLUE LOW, LOW, HIGH
 
+bool start_error = false;                         // флаг компенсации первой ошибки при старте.
+
 volatile int state = LOW;
 volatile int state_device = 0;                     // Состояние модуля при запуске 
 												   // 1 - Не зарегистрирован в сети, поиск
@@ -64,6 +66,35 @@ char imei[16] = { 0 }; // MUST use a 16 character buffer for IMEI!
 char ccid[21] = { 0 }; // MUST use a 21 character buffer for ccid!
 
 char buffer1[23] = {0};
+
+
+//+++++++++++++++++ Пример Fona +++++++++++++++++++++++
+uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
+
+
+int Interval = 10000;             // Time between measurements in seconds
+int KeyTime = 2000;               // Time needed to turn on the Fona
+unsigned long Reporting = 30000;  // Time between uploads to Ubidots
+unsigned long TimeOut = 30000;    // How long we will give an AT command to comeplete
+unsigned long LastReading = 0;    // When did we last read the sensors - they are slow so will read between sends
+unsigned long LastReporting = 0;  // When did we last send data to Ubidots
+uint8_t n = 0;
+int f = 0;
+int PersonCount = 0;
+
+//-----------------------------------------------------------------
+
+char buffer[128];
+byte httpState;
+String val = "";
+
+
+
+
+
+
+
+
 
 // this is a large buffer for replies
 char replybuffer[255];
@@ -84,16 +115,17 @@ uint8_t type;
 
 uint32_t count = 0;
 uint32_t errors = 0;
-String string_imei = "";
+//String string_imei = "";
 String CSQ = "";                                    // Уровень сигнала приема
 String SMS_center = "";
 String zero_tel = "";
-//String imei      = "861445030362268";                  // Тест IMEI
+String imeiF      = "861445030362268";                  // Тест IMEI
 //#define DELIM "&"
 #define DELIM "@"
 //char mydata[] = "t1=861445030362268@04/01/02,15:22:52 00@24.50@25.60";
 // тел Мегафон +79258110171
 static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
+char url[80] = "http://vps3908.vps.host.ru/recieveReadings.php?";
 
 unsigned long time;                                 // Переменная для суточного сброса
 unsigned long time_day = 86400;                     // Переменная секунд в сутках
@@ -203,15 +235,16 @@ void sendTemps()
 	float t2 = sensor2.getTempCByIndex(0);
 	float t3 = sensor3.getTempCByIndex(0);
 	float tsumma = t1 + t2 + t3 + 88.88;
-	int signal = get_rssi();
+	//int signal = get_rssi();
+	int signal = 15;
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
 	//String toSend = formHeader()+DELIM+"temp1="+String(t1)+DELIM+"temp2="+String(t2)+DELIM+"tempint="+String(t3)+ DELIM+"slevel="+String(signal)+DELIM+"ecs="+String(errors)+DELIM+"ec="+String(error_All)+formEnd();
-	String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
+	//String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal)+DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
+	String toSend = formHeader()+DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3);
 
-	//Serial.println(F("String length: "));
-	//Serial.println(toSend.length());
-	//Serial.println(toSend);
+	Serial.println(toSend);
+	Serial.println(toSend.length());
 	gprs_send(toSend);
 }
 
@@ -222,7 +255,7 @@ String formHeader()
 	String uptime = "17/01/15,10:10:10 00";
 
 //	fona.getTime(buffer1, 23);  // make sure replybuffer is at least 23 bytes!
-	return "t1=" + String(imei) + DELIM + String(uptime);
+	return "t1=" + imeiF + DELIM + uptime;
 }
 String formEnd()
 {
@@ -277,7 +310,7 @@ String formEnd()
 }
 
 
-void gprs_send(String data1)
+void gprs_send(String data)
 {
 	//Serial.print(F("Requesting "));               //con.print("Requesting ");
 	//Serial.print(url1);
@@ -285,143 +318,24 @@ void gprs_send(String data1)
 	//Serial.println(data1);
 
 
+		fona.httpConnectStr(url1, data);
 
-			//		// Post data to website
-					uint16_t statuscode;
-					int16_t length;
-					//char url[80] = "http://vps3908.vps.host.ru/recieveReadings.php";
-					//char url[80] = "vps3908.vps.host.ru/recieveReadings.php?";
-				    	char url[80] = "httpbin.org/post";
-					//char data[80] = "t1=861445030362268@17/1/15,13:42:57 00@-127.00@-127.00@-127.00@-292.12";
-					//char data[140]= "t1=861445030362268@17/01/15,15:22:52 00@-127.00@-127.00@-127.00@0@0@0@+79858258846@+79162632701@+79990000000@SMS.RU@-292.12";
-					char data[80] = "\"foo\"";
-					//flushSerial();
-					//Serial.println(F("NOTE: in beta! Use simple websites to post!"));
-					//Serial.println(F("URL to post (e.g. httpbin.org/post):"));
-
-				//	Serial.print(F("http://"));// readline(url, 79);
-
-					Serial.println(url);
-				//	Serial.println(F("Data to post (e.g. \"foo\" or \"{\"simple\":\"json\"}\"):"));
-				//	readline(data, 79);
-			
-
-					Serial.println(data);
-					Serial.println(F("****"));
-		/*			fona.httpConnectStr(url, data);
-
-					while (gprs.httpIsConnected() == 0)
-					{
-						Serial.write('.');
-						for (byte n = 0; n < 25 && !gprs.available(); n++)
-						{
-							delay(10);
-						}
-					}*/
-
-					if (!fona.HTTP_POST_start(url, F("text/plain"), (uint8_t *)data, strlen(data), &statuscode, (uint16_t *)&length)) {
-						Serial.println("Failed!");
-						//break;
-					}
-
-
-					while (length > 0) 
-					{
-						while (fona.available()) 
-						{
-							char c = fona.read();
-			
-			#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
-							loop_until_bit_is_set(UCSR0A, UDRE0); /* Wait until data register empty. */
-							UDR0 = c;
-			#else
-							Serial.write(c);
-			#endif
-			
-							length--;
-							if (!length) break;
-						}
-					}
-
-
-
-
-					Serial.println(F("\n****"));
-					fona.HTTP_POST_end();
-			//		break;
-		
-
-							//		// read website URL
-						/*			uint16_t statuscode;
-									int16_t length;*/
-								//	char url[80]="www.adafruit.com/testwifi/index.html:";
-							
-		/*							flushSerial();
-									Serial.println(F("NOTE: in beta! Use small webpages to read!"));
-									Serial.println(F("URL to read (e.g. www.adafruit.com/testwifi/index.html):"));*/
-							//		Serial.print(F("http://"));// readline(url, 79);
-							//		Serial.println(url);
-							//
-							//		Serial.println(F("****"));
-							//		if (!fona.HTTP_GET_start(url, &statuscode, (uint16_t *)&length)) {
-							//			Serial.println("Failed!");
-							//			//break;
-							//		}
-							//		while (length > 0) {
-							//			while (fona.available()) {
-							//				char c = fona.read();
-							//
-							//				// Serial.write is too slow, we'll write directly to Serial register!
-							//#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
-							//				loop_until_bit_is_set(UCSR0A, UDRE0); /* Wait until data register empty. */
-							//				UDR0 = c;
-							//#else
-							//				Serial.write(c);
-							//#endif
-							//				length--;
-							//				if (!length) break;
-							//			}
-							//		}
-							//		Serial.println(F("\n****"));
-							//		fona.HTTP_GET_end();
-							////		break;
-						
-
-
-
-								//	fona.httpConnectStr(url, data);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	/*
-
-	//gprs.httpConnectStr(url1, data);
 	count++;
 	if (count > 1)
 	{
 		start_error = true;
 	}
-	while (gprs.httpIsConnected() == 0)
+	
+	while (fona.httpIsConnected() == 0)
 	{
 		Serial.write('.');
-		for (byte n = 0; n < 25 && !gprs.available(); n++)
+		for (byte n = 0; n < 25 && !fona.available(); n++)
 		{
 			delay(10);
 		}
 	}
-	if (gprs.httpState == HTTP_ERROR)
+	
+	if (fona.httpState == HTTP_ERROR)
 	{
 		Serial.println(F("Connect error"));
 		//if(start_error)                        // Корректируем ошибку при первом запуске
@@ -437,15 +351,16 @@ void gprs_send(String data1)
 		delay(3000);
 		return;
 	}
-
+	
 	Serial.println();
-	gprs.httpRead();
+	fona.httpRead();
+	
 	int ret;
-	while ((ret = gprs.httpIsRead()) == 0)
+	while ((ret = fona.httpIsRead()) == 0)
 	{
 		// может сделать что-то здесь, во время ожидания
 	}
-	if (gprs.httpState == HTTP_ERROR)
+	if (fona.httpState == HTTP_ERROR)
 	{
 		errors++;
 		errorAllmem();
@@ -457,10 +372,10 @@ void gprs_send(String data1)
 		delay(3000);
 		return;
 	}
-	*/
+	
 	// Теперь мы получили сообщение от сайта.
 	Serial.print(F("[Payload] "));                            //con.print("[Payload] ");
-//	Serial.println(gprs.buffer);
+	Serial.println(fona.buffer);
 
 }
 
@@ -716,9 +631,14 @@ int get_rssi()
 	return n;
 }
 
+//+++++++++++++++++++++++++++ пример FONA ++++++++++++++++++++++++++++++++++++++++
+
+
+//------------------------------------------------------
 
 
 
+//-----------------------------------------------------------------------------------
 
 
 void setup() 
@@ -773,7 +693,21 @@ void setup()
 
 	//fona.setHTTPSRedirect(true);
 
-
+	for (;;)
+	{
+		if (fona.httpInit1()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
+		Serial.print(">");
+		Serial.println(fona.buffer);                          // Не получилось, ("ERROR") 
+		String stringError = fona.buffer;
+		if (stringError.indexOf("ERROR") > -1)                   // if (stringError.indexOf("ERROR") > -1)
+		{
+			Serial.print(F("No internet connection"));                      //con.print("No internet connection");
+			delay(1000);
+			resetFunc();                                //вызываем reset при отсутствии доступа к серверу
+		}
+		fona.httpUninit1();                                  // Не получилось, попробовать снова 
+		delay(1000);
+	}
 
 
 
@@ -834,14 +768,14 @@ void setup()
 	time = millis();                                              // Старт отсчета суток
 	setColor(COLOR_GREEN);
 	Serial.println(F("\nSIM800 setup end"));
-
+	//vps3908.vps.host.ru/recieveReadings.php?t1=861445030362268@17/1/15,13:42:57 00@-127.00@-127.00@-127.00@-292.12
 
 	//printMenu();
 }
 
 void loop()
 {
-/*
+
 	
 	// read all SMS
 	int8_t smsnum = fona.getNumSMS();
@@ -957,8 +891,10 @@ void loop()
 
 	if (millis() - time > time_day * 1000) resetFunc();                       //вызываем reset интервалом в сутки
 	delay(500);
-	*/
+	
 
+
+/*
 	Serial.print(F("FONA> "));
 	while (!Serial.available())
 	{
@@ -1041,7 +977,7 @@ void loop()
 					char c = fona.read();
 			
 	#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
-					loop_until_bit_is_set(UCSR0A, UDRE0); /* Wait until data register empty. */
+					loop_until_bit_is_set(UCSR0A, UDRE0); // Wait until data register empty. 
 					UDR0 = c;
 	#else
 					Serial.write(c);
@@ -1082,10 +1018,11 @@ void loop()
 	{
 		Serial.write(fona.read());
 	}
+	*/
 }
 
 	
-
+/*
 	
 void printMenu(void) 
 {
@@ -1155,7 +1092,7 @@ void printMenu(void)
 }
 
 
-
+*/
 
 
 

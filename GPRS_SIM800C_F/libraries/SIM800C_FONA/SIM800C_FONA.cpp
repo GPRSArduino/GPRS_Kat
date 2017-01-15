@@ -221,13 +221,6 @@ boolean SIM800C_FONA::getBattVoltage(uint16_t *v) {
 }
 
 /* returns value in mV (uint16_t) */
-boolean SIM800C_FONA_3G::getBattVoltage(uint16_t *v) {
-  float f;
-  boolean b = sendParseReply(F("AT+CBC"), F("+CBC: "), &f, ',', 2);
-  *v = f*1000;
-  return b;
-}
-
 
 /* returns the percentage charge of battery as reported by sim800 */
 boolean SIM800C_FONA::getBattPercent(uint16_t *p) {
@@ -381,12 +374,6 @@ boolean SIM800C_FONA::playToolkitTone(uint8_t t, uint16_t len) {
   return sendCheckReply(F("AT+STTONE=1,"), t, len, ok_reply);
 }
 
-boolean SIM800C_FONA_3G::playToolkitTone(uint8_t t, uint16_t len) {
-  if (! sendCheckReply(F("AT+CPTONE="), t, ok_reply))
-    return false;
-  delay(len);
-  return sendCheckReply(F("AT+CPTONE=0"), ok_reply);
-}
 
 boolean SIM800C_FONA::setMicVolume(uint8_t a, uint8_t level) {
   // 0 is headset, 1 is external audio
@@ -431,18 +418,8 @@ boolean SIM800C_FONA::hangUp(void) {
   return sendCheckReply(F("ATH0"), ok_reply);
 }
 
-boolean SIM800C_FONA_3G::hangUp(void) {
-  getReply(F("ATH"));
-
-  return (prog_char_strstr(replybuffer, (prog_char *)F("VOICE CALL: END")) != 0);
-}
-
 boolean SIM800C_FONA::pickUp(void) {
   return sendCheckReply(F("ATA"), ok_reply);
-}
-
-boolean SIM800C_FONA_3G::pickUp(void) {
-  return sendCheckReply(F("ATA"), F("VOICE CALL: BEGIN"));
 }
 
 
@@ -795,26 +772,6 @@ boolean SIM800C_FONA::enableGPS(boolean onoff) {
   return true;
 }
 
-
-
-boolean SIM800C_FONA_3G::enableGPS(boolean onoff) {
-  uint16_t state;
-
-  // first check if its already on or off
-  if (! SIM800C_FONA::sendParseReply(F("AT+CGPS?"), F("+CGPS: "), &state) )
-    return false;
-
-  if (onoff && !state) {
-    if (! sendCheckReply(F("AT+CGPS=1"), ok_reply))
-      return false;
-  } else if (!onoff && state) {
-    if (! sendCheckReply(F("AT+CGPS=0"), ok_reply))
-      return false;
-    // this takes a little time
-    readline(2000); // eat '+CGPS: 0'
-  }
-  return true;
-}
 
 int8_t SIM800C_FONA::GPSstatus(void) {
   if (_type == FONA808_V2) {
@@ -1269,66 +1226,6 @@ boolean SIM800C_FONA::enableGPRS(boolean onoff) {
   return true;
 }
 
-boolean SIM800C_FONA_3G::enableGPRS(boolean onoff) {
-
-  if (onoff) {
-    // disconnect all sockets
-    //sendCheckReply(F("AT+CIPSHUT"), F("SHUT OK"), 5000);
-
-    if (! sendCheckReply(F("AT+CGATT=1"), ok_reply, 10000))
-      return false;
-
-
-    // set bearer profile access point name
-    if (apn) {
-      // Send command AT+CGSOCKCONT=1,"IP","<apn value>" where <apn value> is the configured APN name.
-      if (! sendCheckReplyQuoted(F("AT+CGSOCKCONT=1,\"IP\","), apn, ok_reply, 10000))
-        return false;
-
-      // set username/password
-      if (apnusername) {
-	char authstring[100] = "AT+CGAUTH=1,1,\"";
-	char *strp = authstring + strlen(authstring);
-	prog_char_strcpy(strp, (prog_char *)apnusername);
-	strp+=prog_char_strlen((prog_char *)apnusername);
-	strp[0] = '\"';
-	strp++;
-	strp[0] = 0;
-
-	if (apnpassword) {
-	  strp[0] = ','; strp++;
-	  strp[0] = '\"'; strp++;
-	  prog_char_strcpy(strp, (prog_char *)apnpassword);
-	  strp+=prog_char_strlen((prog_char *)apnpassword);
-	  strp[0] = '\"';
-	  strp++;
-	  strp[0] = 0;
-	}
-
-	if (! sendCheckReply(authstring, ok_reply, 10000))
-	  return false;
-      }
-    }
-
-    // connect in transparent
-    if (! sendCheckReply(F("AT+CIPMODE=1"), ok_reply, 10000))
-      return false;
-    // open network (?)
-    if (! sendCheckReply(F("AT+NETOPEN=,,1"), F("Network opened"), 10000))
-      return false;
-
-    readline(); // eat 'OK'
-  } else {
-    // close GPRS context
-    if (! sendCheckReply(F("AT+NETCLOSE"), F("Network closed"), 10000))
-      return false;
-
-    readline(); // eat 'OK'
-  }
-
-  return true;
-}
-
 uint8_t SIM800C_FONA::GPRSstate(void) {
   uint16_t state;
 
@@ -1612,60 +1509,6 @@ boolean SIM800C_FONA::HTTP_ssl(boolean onoff) {
 }
 
 /********* HTTP HIGH LEVEL FUNCTIONS ***************************/
-
-boolean SIM800C_FONA::httpConnectStr(const char* url, const char* args)
-{
-
-
-	mySerial->write((F("AT+HTTPPARA=\"URL\",\"")));
-
-	DEBUG_PRINT("AT+HTTPPARA=\"URL\",\"");
-
-	mySerial->write(url);
-	DEBUG_PRINT(url);
-	if (args)
-	{
-		mySerial->write('?');
-		DEBUG_PRINT('?');
-		mySerial->write(args);
-		DEBUG_PRINT(args);
-	}
-
-	mySerial->write('\"');
-
-	DEBUG_PRINT('\"');
-	delay(500);
-
-	/*if (available())
-	{
-		char c = read();
-		DEBUG_PRINT(c);
-	}
-*/
-
-
-
-	mySerial->write(F("AT+HTTPACTION=0"));
-
-
-	// Из другой библиотеки!!!!!!!!!!!!!
-
-	//if (sendCommand(0))
-	//{
-	//	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[41])));
-	//	SIM_SERIAL.println(bufcom);              //SIM_SERIAL.println("AT+HTTPACTION=0");
-	//	httpState = HTTP_CONNECTING;
-	//	m_bytesRecv = 0;
-	//	m_checkTimer = millis();
-	//}
-	//else
-	//{
-	//	httpState = HTTP_ERROR;
-	//}
-	//return false;
-}
-
-
 
 boolean SIM800C_FONA::HTTP_GET_start(char *url,
               uint16_t *status, uint16_t *datalen){
@@ -2154,36 +1997,206 @@ boolean SIM800C_FONA::sendParseReply(FONAFlashStringPtr tosend,
 }
 
 
-// needed for CBC and others
+// ------------- Добавил команды ------------------
 
-boolean SIM800C_FONA_3G::sendParseReply(FONAFlashStringPtr tosend,
-				      FONAFlashStringPtr toreply,
-				      float *f, char divider, uint8_t index) {
-  getReply(tosend);
 
-  if (! parseReply(toreply, f, divider, index)) return false;
 
-  readline(); // eat 'OK'
+bool SIM800C_FONA::httpConnectStr(const char* url, String args)
+{
+	mySerial->print("AT+HTTPPARA=\"URL\",\"");    //SIM_SERIAL.print("AT+HTTPPARA=\"URL\",\"");
+	mySerial->print(url);
+	if (args)
+	{
+		mySerial->print('?');
+		mySerial->print(args);
+	}
 
-  return true;
+	mySerial->println('\"');
+	delay(500);
+	if (sendCommand(0))
+	{
+		mySerial->println("AT+HTTPACTION=0");              //SIM_SERIAL.println("AT+HTTPACTION=0");
+		httpState = HTTP_CONNECTING;
+		m_bytesRecv = 0;
+		m_checkTimer = millis();
+	}
+	else
+	{
+		httpState = HTTP_ERROR;
+	}
+	return false;
+}
+
+byte SIM800C_FONA::httpIsConnected()
+{
+	byte ret = checkbuffer("0,200", "0,60", 10000);           // byte ret = checkbuffer("0,200", "0,60", 10000);
+	if (ret >= 2)
+	{
+		httpState = HTTP_ERROR;
+		return -1;
+	}
+	return ret;
+}
+
+void SIM800C_FONA::httpRead()
+{
+	mySerial->println("AT+HTTPREAD");     //SIM_SERIAL.println("AT+HTTPREAD");
+	httpState = HTTP_READING;
+	m_bytesRecv = 0;
+	m_checkTimer = millis();
+}
+int SIM800C_FONA::httpIsRead()
+{
+	byte ret = checkbuffer("+HTTPREAD: ", "Error", 10000) == 1;//byte ret = checkbuffer("+HTTPREAD: ", "Error", 10000) == 1;
+	if (ret == 1)
+	{
+		m_bytesRecv = 0;
+		// read the rest data
+		sendCommand(0, 100, "\r\n");
+		int bytes = atoi(buffer);
+		sendCommand(0);
+		bytes = min(bytes, sizeof(buffer) - 1);
+		buffer[bytes] = 0;
+		return bytes;
+	}
+	else if (ret >= 2)
+	{
+		httpState = HTTP_ERROR;
+		return -1;
+	}
+	return 0;
+}
+bool SIM800C_FONA::httpInit1()
+{
+	if (!sendCommand("AT+HTTPINIT", 10000) || !sendCommand("AT+HTTPPARA=\"CID\",1", 5000))  //if  (!sendCommand("AT+HTTPINIT", 10000) || !sendCommand("AT+HTTPPARA=\"CID\",1", 5000)) 
+	{
+		httpState = HTTP_DISABLED;
+		return false;
+	}
+	httpState = HTTP_READY;
+	return true;
+}
+void SIM800C_FONA::httpUninit1()
+{
+  sendCommand("AT+HTTPTERM");          // sendCommand("AT+HTTPTERM");
+}
+
+byte SIM800C_FONA::sendCommand(const char* cmd, unsigned int timeout, const char* expected)
+{
+	if (cmd)
+	{
+		purgeSerial();
+//#ifdef DEBUG
+//		DEBUG.print('>');
+//		DEBUG.println(cmd);
+//#endif
+		mySerial->println(cmd);
+	}
+	uint32_t t = millis();
+	byte n = 0;
+	do {
+		if (mySerial->available())
+		{
+			char c = mySerial->read();
+			if (n >= sizeof(buffer) - 1)
+			{
+				// buffer full, discard first half
+				n = sizeof(buffer) / 2 - 1;
+				memcpy(buffer, buffer + sizeof(buffer) / 2, n);
+			}
+			buffer[n++] = c;
+			buffer[n] = 0;
+			if (strstr(buffer, expected ? expected : "OK\r"))    // if (strstr(buffer, expected ? expected : "OK\r")) 
+			{
+//#ifdef DEBUG
+//				DEBUG.print("[1]");
+//				DEBUG.println(buffer);
+//#endif
+				return n;
+			}
+		}
+	} while (millis() - t < timeout);
+//#ifdef DEBUG
+//	DEBUG.print("[0]");
+//	DEBUG.println(buffer);
+//#endif
+	return 0;
+}
+byte SIM800C_FONA::sendCommand(const char* cmd, const char* expected1, const char* expected2, unsigned int timeout)
+{
+	if (cmd)
+	{
+		purgeSerial();
+//#ifdef DEBUG
+//		DEBUG.print('>');
+//		DEBUG.println(cmd);
+//#endif
+		mySerial->println(cmd);
+	}
+	uint32_t t = millis();
+	byte n = 0;
+	do {
+		if (mySerial->available())
+		{
+			char c = mySerial->read();
+			if (n >= sizeof(buffer) - 1)
+			{
+				// buffer full, discard first half
+				n = sizeof(buffer) / 2 - 1;
+				memcpy(buffer, buffer + sizeof(buffer) / 2, n);
+			}
+			buffer[n++] = c;
+			buffer[n] = 0;
+			if (strstr(buffer, expected1)) {
+//#ifdef DEBUG
+//				DEBUG.print("[1]");
+//				DEBUG.println(buffer);
+//#endif
+				return 1;
+			}
+			if (strstr(buffer, expected2)) {
+//#ifdef DEBUG
+//				DEBUG.print("[2]");
+//				DEBUG.println(buffer);
+//#endif
+				return 2;
+			}
+		}
+	} while (millis() - t < timeout);
+//#if DEBUG
+//	DEBUG.print("[0]");
+//	DEBUG.println(buffer);
+//#endif
+	return 0;
 }
 
 
-boolean SIM800C_FONA_3G::parseReply(FONAFlashStringPtr toreply,
-          float *f, char divider, uint8_t index) {
-  char *p = prog_char_strstr(replybuffer, (prog_char*)toreply);  // get the pointer to the voltage
-  if (p == 0) return false;
-  p+=prog_char_strlen((prog_char*)toreply);
-  //DEBUG_PRINTLN(p);
-  for (uint8_t i=0; i<index;i++) {
-    // increment dividers
-    p = strchr(p, divider);
-    if (!p) return false;
-    p++;
-    //DEBUG_PRINTLN(p);
+byte SIM800C_FONA::checkbuffer(const char* expected1, const char* expected2, unsigned int timeout)
+{
+	while (mySerial->available())
+	{
+		char c = mySerial->read();
+		if (m_bytesRecv >= sizeof(buffer) - 1)
+		{
+			// buffer full, discard first half буфер заполнен, выбросьте первую половину
+			m_bytesRecv = sizeof(buffer) / 2 - 1;
+			memcpy(buffer, buffer + sizeof(buffer) / 2, m_bytesRecv);
+		}
+		buffer[m_bytesRecv++] = c;
+		buffer[m_bytesRecv] = 0;
+		if (strstr(buffer, expected1))
+		{
+			return 1;
+		}
+		if (expected2 && strstr(buffer, expected2))
+		{
+			return 2;
+		}
+	}
+	return (millis() - m_checkTimer < timeout) ? 0 : 3;
+}
 
-  }
-  *f = atof(p);
-
-  return true;
+void SIM800C_FONA::purgeSerial()
+{
+	while (mySerial->available()) mySerial->read();
 }

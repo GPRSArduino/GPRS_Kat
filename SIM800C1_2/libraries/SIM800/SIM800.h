@@ -147,6 +147,9 @@ public:
     // setup network
     byte setup();
 	// byte setup(const char* apn, const char* user, const char* pwd);
+
+	uint8_t getNetworkStatus();
+
     // get network operator name
     bool getOperatorName();
 	bool getIMEI();

@@ -186,7 +186,7 @@ void sendTemps()
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
 	//String toSend = formHeader()+DELIM+"temp1="+String(t1)+DELIM+"temp2="+String(t2)+DELIM+"tempint="+String(t3)+ DELIM+"slevel="+String(signal)+DELIM+"ecs="+String(errors)+DELIM+"ec="+String(error_All)+formEnd();
-	String toSend = formHeader()+DELIM+String(t1)+DELIM+String(t2)+DELIM+String(t3)+ DELIM+String(signal)+DELIM+String(errors)+DELIM+String(error_All)+formEnd()+DELIM+String(tsumma);
+	String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3)+DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
 
 	
 	//	Serial.println(toSend);
