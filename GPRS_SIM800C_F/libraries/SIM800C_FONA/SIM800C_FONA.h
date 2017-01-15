@@ -99,13 +99,6 @@ class SIM800C_FONA : public FONAStreamType {
   boolean setMicVolume(uint8_t a, uint8_t level);
   boolean playDTMF(char tone);
 
-  // FM radio functions.
-  boolean tuneFMradio(uint16_t station);
-  boolean FMradio(boolean onoff, uint8_t a = FONA_HEADSETAUDIO);
-  boolean setFMVolume(uint8_t i);
-  int8_t getFMVolume();
-  int8_t getFMSignalLevel(uint16_t station);
-
   // SMS handling
   boolean setSMSInterrupt(uint8_t i);
   uint8_t getSMSInterrupt(void);
@@ -145,6 +138,8 @@ class SIM800C_FONA : public FONAStreamType {
   uint16_t TCPread(uint8_t *buff, uint8_t len);
 
   // HTTP low level interface (maps directly to SIM800 commands).
+
+  boolean httpConnectStr(const char* url, const char* args);
   boolean HTTP_init();
   boolean HTTP_term();
   void HTTP_para_start(FONAFlashStringPtr parameter, boolean quoted = true);
