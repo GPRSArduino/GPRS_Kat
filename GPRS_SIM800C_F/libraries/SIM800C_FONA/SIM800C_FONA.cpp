@@ -1615,16 +1615,35 @@ boolean SIM800C_FONA::HTTP_ssl(boolean onoff) {
 
 boolean SIM800C_FONA::httpConnectStr(const char* url, const char* args)
 {
+
+
 	mySerial->write((F("AT+HTTPPARA=\"URL\",\"")));
+
+	DEBUG_PRINT("AT+HTTPPARA=\"URL\",\"");
+
 	mySerial->write(url);
+	DEBUG_PRINT(url);
 	if (args)
 	{
 		mySerial->write('?');
+		DEBUG_PRINT('?');
 		mySerial->write(args);
+		DEBUG_PRINT(args);
 	}
 
 	mySerial->write('\"');
-	delay(5000);
+
+	DEBUG_PRINT('\"');
+	delay(500);
+
+	/*if (available())
+	{
+		char c = read();
+		DEBUG_PRINT(c);
+	}
+*/
+
+
 
 	mySerial->write(F("AT+HTTPACTION=0"));
 

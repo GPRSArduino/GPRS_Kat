@@ -209,20 +209,20 @@ void sendTemps()
 	//String toSend = formHeader()+DELIM+"temp1="+String(t1)+DELIM+"temp2="+String(t2)+DELIM+"tempint="+String(t3)+ DELIM+"slevel="+String(signal)+DELIM+"ecs="+String(errors)+DELIM+"ec="+String(error_All)+formEnd();
 	String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
 
-	Serial.println(F("String length: "));
-	Serial.println(toSend.length());
-	Serial.println(toSend);
-	//gprs_send(toSend);
+	//Serial.println(F("String length: "));
+	//Serial.println(toSend.length());
+	//Serial.println(toSend);
+	gprs_send(toSend);
 }
 
 
 
 String formHeader()
 {
-	//String uptime = "17/01/01,10:10:10 00";
+	String uptime = "17/01/15,10:10:10 00";
 
-	fona.getTime(buffer1, 23);  // make sure replybuffer is at least 23 bytes!
-	return "t1=" + String(imei) + DELIM + String(buffer1);
+//	fona.getTime(buffer1, 23);  // make sure replybuffer is at least 23 bytes!
+	return "t1=" + String(imei) + DELIM + String(uptime);
 }
 String formEnd()
 {
@@ -279,33 +279,35 @@ String formEnd()
 
 void gprs_send(String data1)
 {
-	Serial.print(F("Requesting "));               //con.print("Requesting ");
-	Serial.print(url1);
-	Serial.print('?');
-	Serial.println(data1);
+	//Serial.print(F("Requesting "));               //con.print("Requesting ");
+	//Serial.print(url1);
+	//Serial.print('?');
+	//Serial.println(data1);
 
 
 
 			//		// Post data to website
 					uint16_t statuscode;
 					int16_t length;
-					//char url[80] = "vps3908.vps.host.ru/recieveReadings.php";
-				//	char url[80] = "httpbin.org/post";
-					char data[140]= "t1=861445030362268@17/01/15,15:22:52 00@-127.00@-127.00@-127.00@0@0@0@+79858258846@+79162632701@+79990000000@SMS.RU@-292.12";
-				//	char data[80] = "\"foo\"";
+					//char url[80] = "http://vps3908.vps.host.ru/recieveReadings.php";
+					//char url[80] = "vps3908.vps.host.ru/recieveReadings.php?";
+				    	char url[80] = "httpbin.org/post";
+					//char data[80] = "t1=861445030362268@17/1/15,13:42:57 00@-127.00@-127.00@-127.00@-292.12";
+					//char data[140]= "t1=861445030362268@17/01/15,15:22:52 00@-127.00@-127.00@-127.00@0@0@0@+79858258846@+79162632701@+79990000000@SMS.RU@-292.12";
+					char data[80] = "\"foo\"";
 					//flushSerial();
 					//Serial.println(F("NOTE: in beta! Use simple websites to post!"));
 					//Serial.println(F("URL to post (e.g. httpbin.org/post):"));
 
 				//	Serial.print(F("http://"));// readline(url, 79);
 
-				//	Serial.println(url);
+					Serial.println(url);
 				//	Serial.println(F("Data to post (e.g. \"foo\" or \"{\"simple\":\"json\"}\"):"));
 				//	readline(data, 79);
 			
 
-				//	Serial.println(data);
-				//	Serial.println(F("****"));
+					Serial.println(data);
+					Serial.println(F("****"));
 		/*			fona.httpConnectStr(url, data);
 
 					while (gprs.httpIsConnected() == 0)
@@ -317,78 +319,77 @@ void gprs_send(String data1)
 						}
 					}*/
 
-			//		if (!fona.HTTP_POST_start(url, F("text/plain"), (uint8_t *)data, strlen(data), &statuscode, (uint16_t *)&length)) {
-			//			Serial.println("Failed!");
-			//			//break;
-			//		}
-			//		while (length > 0) 
-			//		{
-			//			while (fona.available()) 
-			//			{
-			//				char c = fona.read();
-			////
-			////#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
-			////				loop_until_bit_is_set(UCSR0A, UDRE0); /* Wait until data register empty. */
-			////				UDR0 = c;
-			////#else
-			//				Serial.write(c);
-			////#endif
-			//
-			//				length--;
-			//				if (!length) break;
-			//			}
-			//		}
+					if (!fona.HTTP_POST_start(url, F("text/plain"), (uint8_t *)data, strlen(data), &statuscode, (uint16_t *)&length)) {
+						Serial.println("Failed!");
+						//break;
+					}
+
+
+					while (length > 0) 
+					{
+						while (fona.available()) 
+						{
+							char c = fona.read();
+			
+			#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
+							loop_until_bit_is_set(UCSR0A, UDRE0); /* Wait until data register empty. */
+							UDR0 = c;
+			#else
+							Serial.write(c);
+			#endif
+			
+							length--;
+							if (!length) break;
+						}
+					}
 
 
 
 
-					//Serial.println(F("\n****"));
-					//fona.HTTP_POST_end();
+					Serial.println(F("\n****"));
+					fona.HTTP_POST_end();
 			//		break;
 		
 
 							//		// read website URL
 						/*			uint16_t statuscode;
 									int16_t length;*/
-									char url[80]="www.adafruit.com/testwifi/index.html:";
+								//	char url[80]="www.adafruit.com/testwifi/index.html:";
 							
 		/*							flushSerial();
 									Serial.println(F("NOTE: in beta! Use small webpages to read!"));
 									Serial.println(F("URL to read (e.g. www.adafruit.com/testwifi/index.html):"));*/
-									Serial.print(F("http://"));// readline(url, 79);
-									Serial.println(url);
-							
-									Serial.println(F("****"));
-									if (!fona.HTTP_GET_start(url, &statuscode, (uint16_t *)&length)) {
-										Serial.println("Failed!");
-										//break;
-									}
-									while (length > 0) {
-										while (fona.available()) {
-											char c = fona.read();
-							
-											// Serial.write is too slow, we'll write directly to Serial register!
-							#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
-											loop_until_bit_is_set(UCSR0A, UDRE0); /* Wait until data register empty. */
-											UDR0 = c;
-							#else
-											Serial.write(c);
-							#endif
-											length--;
-											if (!length) break;
-										}
-									}
-									Serial.println(F("\n****"));
-									fona.HTTP_GET_end();
-							//		break;
+							//		Serial.print(F("http://"));// readline(url, 79);
+							//		Serial.println(url);
+							//
+							//		Serial.println(F("****"));
+							//		if (!fona.HTTP_GET_start(url, &statuscode, (uint16_t *)&length)) {
+							//			Serial.println("Failed!");
+							//			//break;
+							//		}
+							//		while (length > 0) {
+							//			while (fona.available()) {
+							//				char c = fona.read();
+							//
+							//				// Serial.write is too slow, we'll write directly to Serial register!
+							//#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
+							//				loop_until_bit_is_set(UCSR0A, UDRE0); /* Wait until data register empty. */
+							//				UDR0 = c;
+							//#else
+							//				Serial.write(c);
+							//#endif
+							//				length--;
+							//				if (!length) break;
+							//			}
+							//		}
+							//		Serial.println(F("\n****"));
+							//		fona.HTTP_GET_end();
+							////		break;
 						
 
 
 
-
-
-
-
+								//	fona.httpConnectStr(url, data);
 
 
 
@@ -840,8 +841,8 @@ void setup()
 
 void loop()
 {
-
-	/*
+/*
+	
 	// read all SMS
 	int8_t smsnum = fona.getNumSMS();
 	uint16_t smslen;
@@ -1000,7 +1001,7 @@ void loop()
 			
 					// Serial.write is too slow, we'll write directly to Serial register!
 	#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
-					loop_until_bit_is_set(UCSR0A, UDRE0); /* Wait until data register empty. */
+					loop_until_bit_is_set(UCSR0A, UDRE0); // Wait until data register empty. 
 					UDR0 = c;
 	#else
 					Serial.write(c);
@@ -1054,7 +1055,7 @@ void loop()
 			fona.HTTP_POST_end();
 			break;
 		}
-			/*****************************************/
+			//++++++++++++++++++++++++++++++++++++++++++
 			
 		case 'S': {
 			Serial.println(F("Creating SERIAL TUBE"));
