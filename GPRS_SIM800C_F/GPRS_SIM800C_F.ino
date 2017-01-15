@@ -98,9 +98,12 @@ String zero_tel = "";
 unsigned long time;                                 // Переменная для суточного сброса
 unsigned long time_day = 86400;                     // Переменная секунд в сутках
 unsigned long previousMillis = 0;
+unsigned long prevpingMillis = 0;
 unsigned long interval = 30;                        // Интервал передачи данных 30 секунд
-													//unsigned long interval = 300;                     // Интервал передачи данных 5 минут
+// unsigned long interval = 300;                    // Интервал передачи данных 5 минут
+int time_ping = 120;                                 // Интервал передачи ping 120 секунд
 bool time_set = false;                              // Фиксировать интервал заданный СМС
+
 
 int Address_tel1 = 100;                         // Адрес в EEPROM телефона 1
 int Address_tel2 = 120;                         // Адрес в EEPROM телефона 2
@@ -397,38 +400,38 @@ void init_SIM800C()
 			// 5 – роуминг
 	
 
-		if (n == 1 || n == 5)
+		if (n == 1 || n == 5)                      // Если домашняя сеть или роуминг
 		{
-
-			put_operatorName();       // Определить и передать параметры оператора
-			count_init = 0;
-
-
-			delay(2000);
-			do
+			put_operatorName();                    // Определить и передать параметры оператора
+			count_init = 0;                        // Сбросить счетчик попыток подключения
+			if (state_device == 2)                 // Проверить аппаратно подключения модема к оператору
 			{
-				get_rssi();
-				
-				if(!fona.enableGPRS(true))
+			delay(2000);
+				do
 				{
-					count_init++;
-					Serial.println(F("Failed init GPRS"));
-					delay(5000);
-				}
-				else
-				{
-					//while (state_device != 3)  // Ожидание регистрации в сети
-					//{
-					//	delay(50);
-					//}
-
-					setColor(COLOR_GREEN);  // Включить светодиод
-					setup_ok = true;
-				}
-		    } while (!setup_ok);
-			setup_ok = false;
+					get_rssi();                // Получить уровень сигнала
+					delay(1000);
+					Serial.println(F("GPRS connect .."));
+					if (!fona.enableGPRS(true))
+					{
+						count_init++;
+						Serial.println(F("Failed init GPRS"));
+						delay(5000);
+					}
+					else
+					{
+						while (state_device != 3)              // Ожидание регистрации в сети GPRS
+						{
+							delay(50);
+						}
+						Serial.println(F("GPRS connect OK!"));
+						setColor(COLOR_GREEN);                 // Включить зеленый светодиод
+						setup_ok = true;
+					}
+				} while (!setup_ok);
+		    }
 		}
-	}while (count_init >20);    // 20 попыток зарегистрироваться в сети
+	}while (count_init >20|| setup_ok == false);    // 20 попыток зарегистрироваться в сети
 }
 
 
@@ -622,11 +625,24 @@ void setup()
 	Serial.println(interval);
 	Serial.println(SMS_center);
 
-	if(state_device==3)	Serial.println(F("\nGPRS connect"));
+	delay(2000);
 
 	// enable NTP time sync
-	/*		if (!fona.enableNTPTimeSync(true, F("pool.ntp.org")))
-				Serial.println(F("Failed to enable"));*/
+	//if (!fona.enableNTPTimeSync(true, F("pool.ntp.org")))    // Синхронизируем время по сайту "pool.ntp.org"
+	//Serial.println(F("Failed to enable"));
+
+	
+	if (!fona.enableNetworkTimeSync(true))                     // Синхронизируем время по оператору сети
+	{
+		Serial.println(F("Failed to Sync Time"));
+	}
+	else
+	{
+		Serial.println(F("Sync Time Ok!"));
+	}
+	delay(4000);
+	fona.getTime(buffer1, 23);                                     // make sure replybuffer is at least 23 bytes!
+	Serial.print(F("Time = ")); Serial.println(buffer1);
 
 	if (!fona.ping(F("www.yandex.ru")))
 	{
@@ -636,20 +652,7 @@ void setup()
 	{
 		Serial.println(F("Ping Ok!"));
 	}
-	
 
-	delay(2000);
-	if (!fona.enableNetworkTimeSync(true))
-	{
-		Serial.println(F("Failed to Sync Time"));
-	}
-	else
-	{
-		Serial.println(F("Sync Time Ok!"));
-	}
-	delay(4000);
-	fona.getTime(buffer1, 23);  // make sure replybuffer is at least 23 bytes!
-	Serial.print(F("Time = ")); Serial.println(buffer1);
 	time = millis();                                              // Старт отсчета суток
 	setColor(COLOR_GREEN);
 	Serial.println(F("\nSIM800 setup end"));
@@ -669,8 +672,6 @@ void loop()
 		}
 	}*/
 
-
-	
 	// read all SMS
 	int8_t smsnum = fona.getNumSMS();
 	//Serial.println(smsnum);
@@ -753,7 +754,7 @@ void loop()
 
 
 	unsigned long currentMillis = millis();
-	if (!time_set)                                                               // 
+	if (!time_set)                                                             // 
 	{
 		EEPROM.get(Address_interval, interval);                               // Получить интервал из EEPROM Address_interval
 	}
@@ -763,14 +764,29 @@ void loop()
 		Serial.println((currentMillis - previousMillis) / 1000);
 		setColor(COLOR_BLUE);
 		previousMillis = currentMillis;
-		//gprs.sendCommand("AT+CIPPING=\"www.yandex.ru\"", 1000);
 		sendTemps();
 		setColor(COLOR_GREEN);
 		Serial.print(F("\nfree memory: "));
 		Serial.println(freeRam());
 	}
 
-	if (millis() - time > time_day * 1000) resetFunc();                       //вызываем reset интервалом в сутки
+	if ((unsigned long)(currentMillis - prevpingMillis) >= time_ping * 1000)
+	{
+		setColor(COLOR_RED);
+		prevpingMillis = currentMillis;
+		if (!fona.ping(F("www.yandex.ru")))
+		{
+			Serial.println(F("Failed to ping"));
+		}
+		else
+		{
+			Serial.println(F("Ping Ok!"));
+		}
+	//	delay(300);
+		setColor(COLOR_GREEN);
+	}
+
+    if (millis() - time > time_day * 1000) resetFunc();                       //вызываем reset интервалом в сутки
 	delay(500);
 
 

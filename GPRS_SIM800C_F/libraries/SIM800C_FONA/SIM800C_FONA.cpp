@@ -1232,7 +1232,14 @@ boolean SIM800C_FONA::enableGPSNMEA(uint8_t i) {
 
 /********* GPRS **********************************************************/
 
-
+boolean SIM800C_FONA::checkGPRS() 
+{
+	if (!sendCheckReply(F("AT+CGATT?"), ok_reply, 10000))              // Переделать - если не ноль пропустить "AT+CGATT=1"
+	{
+		return false;
+	}
+	return true;
+}
 boolean SIM800C_FONA::enableGPRS(boolean onoff) {
 
   if (onoff) {

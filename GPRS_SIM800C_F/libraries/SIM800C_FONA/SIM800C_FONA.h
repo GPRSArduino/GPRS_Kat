@@ -122,6 +122,7 @@ class SIM800C_FONA : public FONAStreamType {
   boolean getTime(char *buff, uint16_t maxlen);
 
   // GPRS handling
+  boolean checkGPRS();
   boolean enableGPRS(boolean onoff);
   uint8_t GPRSstate(void);
   boolean getGSMLoc(uint16_t *replycode, char *buff, uint16_t maxlen);
