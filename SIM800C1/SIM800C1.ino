@@ -189,7 +189,7 @@ void sendTemps()
 	String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3)+DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
 
 	
-	//	Serial.println(toSend);
+	Serial.println(toSend);
 
 	strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[2])));
     Serial.print(bufmessage);

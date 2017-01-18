@@ -13,15 +13,6 @@ Note that if you need to set a GPRS APN, username, and password scroll down to
 the commented section below at the end of the setup() function.
 
 
-
-Проверить отключение
-
-FONA>
-+SAPBR 1: DEACT
-
-NORMAL POWER DOWN
-
-
 */
 #include "SIM800C_FONA.h"
 #include <SoftwareSerial.h>
@@ -66,38 +57,14 @@ char imei[16] = { 0 }; // MUST use a 16 character buffer for IMEI!
 char ccid[21] = { 0 }; // MUST use a 21 character buffer for ccid!
 
 char buffer1[23] = {0};
-
-
-//+++++++++++++++++ Пример Fona +++++++++++++++++++++++
-uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
-
-
-int Interval = 10000;             // Time between measurements in seconds
-int KeyTime = 2000;               // Time needed to turn on the Fona
-unsigned long Reporting = 30000;  // Time between uploads to Ubidots
-unsigned long TimeOut = 30000;    // How long we will give an AT command to comeplete
-unsigned long LastReading = 0;    // When did we last read the sensors - they are slow so will read between sends
-unsigned long LastReporting = 0;  // When did we last send data to Ubidots
-uint8_t n = 0;
-int f = 0;
-int PersonCount = 0;
-
-//-----------------------------------------------------------------
+// -----------------------------------
 
 char buffer[128];
 byte httpState;
 String val = "";
 
-
-
-
-
-
-
-
-
 // this is a large buffer for replies
-char replybuffer[255];
+//char replybuffer[255];
 
 // We default to using software serial. If you want to use hardware serial
 // (because softserial isnt supported) comment out the following three lines 
@@ -113,19 +80,24 @@ uint8_t readline(char *buff, uint8_t maxbuff, uint16_t timeout = 0);
 
 uint8_t type;
 
-uint32_t count = 0;
-uint32_t errors = 0;
+uint32_t count       = 0;
+uint32_t errors      = 0;
 //String string_imei = "";
-String CSQ = "";                                    // Уровень сигнала приема
-String SMS_center = "";
-String zero_tel = "";
-String imeiF      = "861445030362268";                  // Тест IMEI
+String CSQ           = "";                                    // Уровень сигнала приема
+String SMS_center    = "";
+String zero_tel      = "";
+String imeiF         = "861445030362268";                  // Тест IMEI
+//String master_tel1   ="";
+//String master_tel2   ="";
+//String master_tel3   ="";
+
+
 //#define DELIM "&"
 #define DELIM "@"
 //char mydata[] = "t1=861445030362268@04/01/02,15:22:52 00@24.50@25.60";
 // тел Мегафон +79258110171
 static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
-char url[80] = "http://vps3908.vps.host.ru/recieveReadings.php?";
+//char url[80] = "http://vps3908.vps.host.ru/recieveReadings.php?";
 
 unsigned long time;                                 // Переменная для суточного сброса
 unsigned long time_day = 86400;                     // Переменная секунд в сутках
@@ -160,7 +132,6 @@ DallasTemperature sensor2(&ds18x20_2);
 DallasTemperature sensor3(&ds18x20_3);
 
 
-
 void(*resetFunc) (void) = 0;                         // объявляем функцию reset
 
 void setColor(bool red, bool green, bool blue)       // Включение цвета свечения трехцветного светодиода.
@@ -174,7 +145,6 @@ void setColor(bool red, bool green, bool blue)       // Включение цвета свечения
 	digitalWrite(LED_GREEN, green);
 	digitalWrite(LED_BLUE, blue);
 }
-
 
 
 void blink()
@@ -221,8 +191,6 @@ void blink()
 			setColor(COLOR_BLUE);
 		}
 	}
-
-
 }
 
 void sendTemps()
@@ -235,17 +203,15 @@ void sendTemps()
 	float t2 = sensor2.getTempCByIndex(0);
 	float t3 = sensor3.getTempCByIndex(0);
 	float tsumma = t1 + t2 + t3 + 88.88;
-	//int signal = get_rssi();
-	int signal = 15;
+	int signal = get_rssi();
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
 	//String toSend = formHeader()+DELIM+"temp1="+String(t1)+DELIM+"temp2="+String(t2)+DELIM+"tempint="+String(t3)+ DELIM+"slevel="+String(signal)+DELIM+"ecs="+String(errors)+DELIM+"ec="+String(error_All)+formEnd();
-	//String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal)+DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
-	String toSend = formHeader()+DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3);
+	String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All);// +DELIM + formEnd() + DELIM + String(tsumma);
 
 	Serial.println(toSend);
 	Serial.println(toSend.length());
-	gprs_send(toSend);
+    gprs_send(toSend);
 }
 
 
@@ -257,65 +223,87 @@ String formHeader()
 //	fona.getTime(buffer1, 23);  // make sure replybuffer is at least 23 bytes!
 	return "t1=" + imeiF + DELIM + uptime;
 }
+
+
 String formEnd()
 {
-	char buf[13];
+	char buf1[13];
+	char buf2[13];
+	char buf3[13];
 
-	EEPROM.get(Address_tel1, buf);
-	String master_tel1(buf);
+	//buf1[0] = '+';
+	//buf2[0] = '+';
+	//buf3[0] = '+';
+
+
+	//buf1[12] = '\0';
+	//buf2[12] = '\0';
+	//buf3[12] = '\0';
+
+
+	//for (int i=0;i<12;i++)
+	//{
+	//	buf1[i] = EEPROM.read(Address_tel1 + i);
+	//	buf2[i] = EEPROM.read(Address_tel2 + i);
+	//	buf3[i] = EEPROM.read(Address_tel3 + i);
+	//}
+
+	//Serial.println(buf1);
+	//Serial.println(buf2);
+	//Serial.println(buf3);
+
+
+	EEPROM.get(Address_tel1, buf1);
+	String master_tel1 = buf1;
 	Serial.println(master_tel1);
 
-	EEPROM.get(Address_tel2, buf);
-	String master_tel2(buf);
+	EEPROM.get(Address_tel2, buf2);
+	String master_tel2 = buf2;
 	Serial.println(master_tel2);
 
-	EEPROM.get(Address_tel3, buf);
-	String master_tel3(buf);
+	EEPROM.get(Address_tel3, buf3);
+	String master_tel3 = buf3;
 	Serial.println(master_tel3);
 
-	//EEPROM.get(Address_tel1, master_tel1); 
-	//EEPROM.get(Address_tel2, master_tel3); 
-	//EEPROM.get(Address_tel2, master_tel3); 
 
-
-	EEPROM.get(Address_SMS_center, SMS_center);   //Получить из EEPROM СМС центр
-
-
-	if (EEPROM.read(Address_port1))
-	{
-
-	}
-	else
-	{
-		//dataport1 = digitalRead(port1);
-		//Serial.println(dataport1);
-	}
-
-	if (EEPROM.read(Address_port2))
-	{
-
-	}
-	else
-	{
-		/*dataport2 = digitalRead(port2);
-		Serial.println(dataport2);*/
-	}
-	String mytel = "mytel=" + master_tel1;
-	String tel1 = "tel1=" + master_tel2;
-	String tel2 = "tel2=" + master_tel3;
 
 	//return DELIM + mytel + DELIM +tel1 + DELIM + tel2;
-	return DELIM + master_tel1 + DELIM + master_tel2 + DELIM + master_tel3 + DELIM + SMS_center;
+	//return String(buf1) + DELIM + String(buf2) + DELIM + String(buf3);// +DELIM + SMS_center;
+	//return master_tel1+DELIM+master_tel2+DELIM+master_tel3;// +DELIM + SMS_center;
 
+	return master_tel1 + DELIM + master_tel2 + DELIM + master_tel3 +DELIM + SMS_center;
 }
+
+void save_tel_EEPROM()
+{
+	char buf1[] = { "+79858258846" };
+	char buf2[] = { "+79162632701" };
+	char buf3[] = { "+79000000000" };
+
+	//char buf1[13] = { '+','7','9','1','6','2','6','3','2','7','0','1','\0' };
+	//char buf2[13] = { '+','7','9','1','6','2','6','3','2','7','0','1','\0' };
+	//char buf3[13] = { '+','7','9','1','6','2','6','3','2','7','0','1','\0' };
+
+	for (int i = 0; i<13; i++)
+	{
+		EEPROM.write(Address_tel1 + i, buf1[i]);
+		EEPROM.write(Address_tel2 + i, buf2[i]);
+		EEPROM.write(Address_tel3 + i, buf3[i]);
+	}
+}
+
+
+
+
+
 
 
 void gprs_send(String data)
 {
-	//Serial.print(F("Requesting "));               //con.print("Requesting ");
-	//Serial.print(url1);
-	//Serial.print('?');
-	//Serial.println(data1);
+	Serial.print(F("Requesting "));               //con.print("Requesting ");
+	Serial.print(url1);
+	Serial.print('?');
+	Serial.println(data);
 
 
 		fona.httpConnectStr(url1, data);
@@ -380,19 +368,11 @@ void gprs_send(String data)
 }
 
 
-
-
-
-
-
-
-
-
 void init_SIM800C()
 {
 	bool setup_ok = false;
 	bool success = false;
-	uint8_t count_init = 0;
+	uint8_t count_init = 0; 
 	do
 	{
 		Serial.println(F("Initializing....(May take 5 seconds)"));
@@ -415,33 +395,10 @@ void init_SIM800C()
 		delay(2000);
 		Serial.println(F("Power SIM800 On"));
 
-
 		fonaSerial->begin(19200);
 		if (!fona.begin(*fonaSerial)) {
 			Serial.println(F("Couldn't find module GPRS"));
 			while (1);
-		}
-		type = fona.type();
-		Serial.println(F("Module GPRS is OK"));
-		Serial.print(F("Found "));
-		switch (type) 
-		{
-		case FONA800L:
-			Serial.println(F("SIM800L")); break;
-		case FONA800H:
-			Serial.println(F("SIM800H")); break;
-		case FONA808_V1:
-			Serial.println(F("SIM808 (v1)")); break;
-		case FONA808_V2:
-			Serial.println(F("SIM808 (v2)")); break;
-		case FONA3G_A:
-			Serial.println(F("FONA 3G (American)")); break;
-		case FONA3G_E:
-			Serial.println(F("FONA 3G (European)")); break;
-		case FONA800C:
-			Serial.println(F("SIM800C")); break;
-		default:
-			Serial.println(F("???")); break;
 		}
 
 		uint8_t ccidLen = fona.getSIMCCID(ccid);                 // read the CCID make sure replybuffer is at least 21 bytes!
@@ -532,12 +489,12 @@ void put_operatorName()
 {
 	int n_operator = 0;
 	// Здесь определить оператора
-	if (fona.getOperatorName(replybuffer))
+	if (fona.getOperatorName(buffer))
 	{
 		Serial.print(F("Operator: "));
-		Serial.println(replybuffer);
+		Serial.println(buffer);
 
-		String OperatorName = replybuffer;
+		String OperatorName = buffer;
 		cleanStr(OperatorName);
 
 
@@ -631,15 +588,6 @@ int get_rssi()
 	return n;
 }
 
-//+++++++++++++++++++++++++++ пример FONA ++++++++++++++++++++++++++++++++++++++++
-
-
-//------------------------------------------------------
-
-
-
-//-----------------------------------------------------------------------------------
-
 
 void setup() 
 {
@@ -722,8 +670,12 @@ void setup()
 		EEPROM.put(Address_interval, interval);                     // строка начальной установки интервалов
 		EEPROM.put(Address_tel1, "+79858258846");
 		EEPROM.put(Address_tel2, "+79162632701");
-		EEPROM.put(Address_tel3, "+79990000000");
+		EEPROM.put(Address_tel3, "+79000000000");
 		EEPROM.put(Address_SMS_center, "+79990000000");
+
+		//save_tel_EEPROM();
+
+
 		Serial.println(F("Clear EEPROM End"));
 	}
 
@@ -786,7 +738,7 @@ void loop()
 		for (; smsn <= smsnum; smsn++)
 		{
 			Serial.print(F("\n\rReading SMS #")); Serial.println(smsn);
-			if (!fona.readSMS(smsn, replybuffer, 250, &smslen)) {  // pass in buffer and max len!
+			if (!fona.readSMS(smsn, buffer, 250, &smslen)) {  // pass in buffer and max len!
 				Serial.println(F("Failed!"));
 				break;
 			}
@@ -801,16 +753,16 @@ void loop()
 
 			Serial.print(F("***** SMS #")); Serial.print(smsn);
 			Serial.print(" ("); Serial.print(smslen); Serial.println(F(") bytes *****"));
-			Serial.println(replybuffer);
+			Serial.println(buffer);
 			Serial.println(F("*****"));
 			// Обработать SMS
 
-			String gprs_val = replybuffer;               // Записать текст СМС
+			String gprs_val = buffer;               // Записать текст СМС
 
-			if (fona.getSMSSender(smsn, replybuffer, 13))
+			if (fona.getSMSSender(smsn, buffer, 13))
 			{
-				Serial.println(replybuffer);
-				String gprs_tel = replybuffer;            // Записать номер телефона отправителя
+				Serial.println(buffer);
+				String gprs_tel = buffer;            // Записать номер телефона отправителя
 
 				// Удалить текущую СМС
 				Serial.print(F("\n\rDeleting SMS #")); Serial.println(smsn);

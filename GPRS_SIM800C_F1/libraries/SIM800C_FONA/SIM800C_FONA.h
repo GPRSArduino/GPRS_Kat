@@ -10,17 +10,15 @@
 #include "includes/FONAExtIncludes.h"
 #include "includes/platform/FONAPlatform.h"
 
-
-
-#define FONA800L 1
-#define FONA800H 6
-#define FONA800C 7
-
-#define FONA808_V1 2
-#define FONA808_V2 3
-
-#define FONA3G_A 4
-#define FONA3G_E 5
+//#define FONA800L 1
+//#define FONA800H 6
+//#define FONA800C 7
+//
+//#define FONA808_V1 2
+//#define FONA808_V2 3
+//
+//#define FONA3G_A 4
+//#define FONA3G_E 5
 
 // Uncomment to changed the preferred SMS storage
 //#define FONA_PREF_SMS_STORAGE "SM"
@@ -97,10 +95,10 @@ class SIM800C_FONA : public FONAStreamType {
   boolean enableRTC(uint8_t i);
   boolean readRTC(uint8_t *year, uint8_t *month, uint8_t *date, uint8_t *hr, uint8_t *min, uint8_t *sec);
 
-  // Battery and ADC
-  boolean getADCVoltage(uint16_t *v);
-  boolean getBattPercent(uint16_t *p);
-  boolean getBattVoltage(uint16_t *v);
+  //// Battery and ADC
+  //boolean getADCVoltage(uint16_t *v);
+  //boolean getBattPercent(uint16_t *p);
+  //boolean getBattVoltage(uint16_t *v);
 
   // SIM query
   uint8_t unlockSIM(char *pin);
@@ -111,13 +109,13 @@ class SIM800C_FONA : public FONAStreamType {
   // IMEI
   uint8_t getIMEI(char *imei);
 
-  // set Audio output
-  boolean setAudio(uint8_t a);
-  boolean setVolume(uint8_t i);
-  uint8_t getVolume(void);
-  boolean playToolkitTone(uint8_t t, uint16_t len);
-  boolean setMicVolume(uint8_t a, uint8_t level);
-  boolean playDTMF(char tone);
+  //// set Audio output
+  //boolean setAudio(uint8_t a);
+  //boolean setVolume(uint8_t i);
+  //uint8_t getVolume(void);
+  //boolean playToolkitTone(uint8_t t, uint16_t len);
+  //boolean setMicVolume(uint8_t a, uint8_t level);
+  //boolean playDTMF(char tone);
 
   // SMS handling
   boolean setSMSInterrupt(uint8_t i);
@@ -143,12 +141,12 @@ class SIM800C_FONA : public FONAStreamType {
   void setGPRSNetworkSettings(FONAFlashStringPtr apn, FONAFlashStringPtr username=0, FONAFlashStringPtr password=0);
 
   // GPS handling
-  boolean enableGPS(boolean onoff);
+ /* boolean enableGPS(boolean onoff);
   int8_t GPSstatus(void);
   uint8_t getGPS(uint8_t arg, char *buffer, uint8_t maxbuff);
   boolean getGPS(float *lat, float *lon, float *speed_kph=0, float *heading=0, float *altitude=0);
   boolean enableGPSNMEA(uint8_t nmea);
-
+*/
   // TCP raw connections
   boolean TCPconnect(char *server, uint16_t port);
   boolean TCPclose(void);
@@ -190,16 +188,16 @@ class SIM800C_FONA : public FONAStreamType {
   void setHTTPSRedirect(boolean onoff);
 
   // PWM (buzzer)
-  boolean setPWM(uint16_t period, uint8_t duty = 50);
+ // boolean setPWM(uint16_t period, uint8_t duty = 50);
 
   // Phone calls
-  boolean callPhone(char *phonenum);
+ /* boolean callPhone(char *phonenum);
   uint8_t getCallStatus(void);
   boolean hangUp(void);
   boolean pickUp(void);
   boolean callerIdNotification(boolean enable, uint8_t interrupt = 0);
   boolean incomingCallNumber(char* phonenum);
-
+*/
   // Helper functions to verify responses.
   boolean expectReply(FONAFlashStringPtr reply, uint16_t timeout = 10000);
   boolean sendCheckReply(char *send, char *reply, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);

@@ -8,8 +8,6 @@
 #include "SIM800C_FONA.h"
 
 
-
-
 SIM800C_FONA::SIM800C_FONA(int8_t rst)
 {
   _rstpin = rst;
@@ -46,7 +44,6 @@ bool SIM800C_FONA::getOperatorName(char *OperatorName)
 
 void SIM800C_FONA::put_operator(int8_t home_operator)
 {
-
 	switch (home_operator) 
 	{
 	case 1:
@@ -79,7 +76,6 @@ void SIM800C_FONA::put_operator(int8_t home_operator)
 	}
 	/*DEBUG_PRINT(F("\nOperator .. "));
 	DEBUG_PRINTLN(apn);*/
-
 }
 
 
@@ -147,7 +143,7 @@ boolean SIM800C_FONA::begin(Stream &port) {
 
   DEBUG_PRINT (F("\t<--- ")); DEBUG_PRINTLN(replybuffer);
 
-
+  /*
 
 	if (prog_char_strstr(replybuffer, (prog_char *)F("SIM808 R14")) != 0) {
 		_type = FONA808_V2;
@@ -164,7 +160,8 @@ boolean SIM800C_FONA::begin(Stream &port) {
 		_type = FONA800C;
 	}
 
-
+	*/
+  /*
   if (_type == FONA800L) 
   {
     // determine if L or H
@@ -182,7 +179,7 @@ boolean SIM800C_FONA::begin(Stream &port) {
       _type = FONA800H;
     }
   }
-
+  */
 #if defined(FONA_PREF_SMS_STORAGE)
   sendCheckReply(F("AT+CPMS=\"" FONA_PREF_SMS_STORAGE "\""), ok_reply);
 #endif
@@ -214,22 +211,22 @@ boolean SIM800C_FONA::enableRTC(uint8_t i) {
 
 
 /********* BATTERY & ADC ********************************************/
-
-/* returns value in mV (uint16_t) */
-boolean SIM800C_FONA::getBattVoltage(uint16_t *v) {
-  return sendParseReply(F("AT+CBC"), F("+CBC: "), v, ',', 2);
-}
-
-/* returns value in mV (uint16_t) */
-
-/* returns the percentage charge of battery as reported by sim800 */
-boolean SIM800C_FONA::getBattPercent(uint16_t *p) {
-  return sendParseReply(F("AT+CBC"), F("+CBC: "), p, ',', 1);
-}
-
-boolean SIM800C_FONA::getADCVoltage(uint16_t *v) {
-  return sendParseReply(F("AT+CADC?"), F("+CADC: 1,"), v);
-}
+//
+///* returns value in mV (uint16_t) */
+//boolean SIM800C_FONA::getBattVoltage(uint16_t *v) {
+//  return sendParseReply(F("AT+CBC"), F("+CBC: "), v, ',', 2);
+//}
+//
+///* returns value in mV (uint16_t) */
+//
+///* returns the percentage charge of battery as reported by sim800 */
+//boolean SIM800C_FONA::getBattPercent(uint16_t *p) {
+//  return sendParseReply(F("AT+CBC"), F("+CBC: "), p, ',', 1);
+//}
+//
+//boolean SIM800C_FONA::getADCVoltage(uint16_t *v) {
+//  return sendParseReply(F("AT+CADC?"), F("+CADC: 1,"), v);
+//}
 
 /********* SIM ***********************************************************/
 
@@ -340,132 +337,132 @@ boolean SIM800C_FONA::ping(FONAFlashStringPtr pingserver)
 
 
 /********* AUDIO *******************************************************/
-
-boolean SIM800C_FONA::setAudio(uint8_t a) {
-  // 0 is headset, 1 is external audio
-  if (a > 1) return false;
-
-  return sendCheckReply(F("AT+CHFA="), a, ok_reply);
-}
-
-uint8_t SIM800C_FONA::getVolume(void) {
-  uint16_t reply;
-
-  if (! sendParseReply(F("AT+CLVL?"), F("+CLVL: "), &reply) ) return 0;
-
-  return reply;
-}
-
-boolean SIM800C_FONA::setVolume(uint8_t i) {
-  return sendCheckReply(F("AT+CLVL="), i, ok_reply);
-}
-
-
-boolean SIM800C_FONA::playDTMF(char dtmf) {
-  char str[4];
-  str[0] = '\"';
-  str[1] = dtmf;
-  str[2] = '\"';
-  str[3] = 0;
-  return sendCheckReply(F("AT+CLDTMF=3,"), str, ok_reply);
-}
-
-boolean SIM800C_FONA::playToolkitTone(uint8_t t, uint16_t len) {
-  return sendCheckReply(F("AT+STTONE=1,"), t, len, ok_reply);
-}
-
-
-boolean SIM800C_FONA::setMicVolume(uint8_t a, uint8_t level) {
-  // 0 is headset, 1 is external audio
-  if (a > 1) return false;
-
-  return sendCheckReply(F("AT+CMIC="), a, level, ok_reply);
-}
-
+//
+//boolean SIM800C_FONA::setAudio(uint8_t a) {
+//  // 0 is headset, 1 is external audio
+//  if (a > 1) return false;
+//
+//  return sendCheckReply(F("AT+CHFA="), a, ok_reply);
+//}
+//
+//uint8_t SIM800C_FONA::getVolume(void) {
+//  uint16_t reply;
+//
+//  if (! sendParseReply(F("AT+CLVL?"), F("+CLVL: "), &reply) ) return 0;
+//
+//  return reply;
+//}
+//
+//boolean SIM800C_FONA::setVolume(uint8_t i) {
+//  return sendCheckReply(F("AT+CLVL="), i, ok_reply);
+//}
+//
+//
+//boolean SIM800C_FONA::playDTMF(char dtmf) {
+//  char str[4];
+//  str[0] = '\"';
+//  str[1] = dtmf;
+//  str[2] = '\"';
+//  str[3] = 0;
+//  return sendCheckReply(F("AT+CLDTMF=3,"), str, ok_reply);
+//}
+//
+//boolean SIM800C_FONA::playToolkitTone(uint8_t t, uint16_t len) {
+//  return sendCheckReply(F("AT+STTONE=1,"), t, len, ok_reply);
+//}
+//
+//
+//boolean SIM800C_FONA::setMicVolume(uint8_t a, uint8_t level) {
+//  // 0 is headset, 1 is external audio
+//  if (a > 1) return false;
+//
+//  return sendCheckReply(F("AT+CMIC="), a, level, ok_reply);
+//}
+//
 
 /********* PWM/BUZZER **************************************************/
+//
+//boolean SIM800C_FONA::setPWM(uint16_t period, uint8_t duty) {
+//  if (period > 2000) return false;
+//  if (duty > 100) return false;
+//
+//  return sendCheckReply(F("AT+SPWM=0,"), period, duty, ok_reply);
+//}
 
-boolean SIM800C_FONA::setPWM(uint16_t period, uint8_t duty) {
-  if (period > 2000) return false;
-  if (duty > 100) return false;
-
-  return sendCheckReply(F("AT+SPWM=0,"), period, duty, ok_reply);
-}
-
-/********* CALL PHONES **************************************************/
-boolean SIM800C_FONA::callPhone(char *number) {
-  char sendbuff[35] = "ATD";
-  strncpy(sendbuff+3, number, min(30, strlen(number)));
-  uint8_t x = strlen(sendbuff);
-  sendbuff[x] = ';';
-  sendbuff[x+1] = 0;
-  //DEBUG_PRINTLN(sendbuff);
-
-  return sendCheckReply(sendbuff, ok_reply);
-}
-
-
-uint8_t SIM800C_FONA::getCallStatus(void) {
-  uint16_t phoneStatus;
-
-  if (! sendParseReply(F("AT+CPAS"), F("+CPAS: "), &phoneStatus)) 
-    return FONA_CALL_FAILED; // 1, since 0 is actually a known, good reply
-
-  return phoneStatus;  // 0 ready, 2 unkown, 3 ringing, 4 call in progress
-}
-
-boolean SIM800C_FONA::hangUp(void) {
-  return sendCheckReply(F("ATH0"), ok_reply);
-}
-
-boolean SIM800C_FONA::pickUp(void) {
-  return sendCheckReply(F("ATA"), ok_reply);
-}
-
-
-void SIM800C_FONA::onIncomingCall() {
-
-  DEBUG_PRINT(F("> ")); DEBUG_PRINTLN(F("Incoming call..."));
-
-  SIM800C_FONA::_incomingCall = true;
-}
-
-boolean SIM800C_FONA::_incomingCall = false;
-
-boolean SIM800C_FONA::callerIdNotification(boolean enable, uint8_t interrupt) {
-  if(enable){
-    attachInterrupt(interrupt, onIncomingCall, FALLING);
-    return sendCheckReply(F("AT+CLIP=1"), ok_reply);
-  }
-
-  detachInterrupt(interrupt);
-  return sendCheckReply(F("AT+CLIP=0"), ok_reply);
-}
-
-boolean SIM800C_FONA::incomingCallNumber(char* phonenum) {
-  //+CLIP: "<incoming phone number>",145,"",0,"",0
-  if(!SIM800C_FONA::_incomingCall)
-    return false;
-
-  readline();
-  while(!prog_char_strcmp(replybuffer, (prog_char*)F("RING")) == 0) {
-    flushInput();
-    readline();
-  }
-
-  readline(); //reads incoming phone number line
-
-  parseReply(F("+CLIP: \""), phonenum, '"');
-
-
-  DEBUG_PRINT(F("Phone Number: "));
-  DEBUG_PRINTLN(replybuffer);
-
-
-  SIM800C_FONA::_incomingCall = false;
-  return true;
-}
-
+///********* CALL PHONES **************************************************/
+//boolean SIM800C_FONA::callPhone(char *number) {
+//  char sendbuff[35] = "ATD";
+//  strncpy(sendbuff+3, number, min(30, strlen(number)));
+//  uint8_t x = strlen(sendbuff);
+//  sendbuff[x] = ';';
+//  sendbuff[x+1] = 0;
+//  //DEBUG_PRINTLN(sendbuff);
+//
+//  return sendCheckReply(sendbuff, ok_reply);
+//}
+//
+//
+//uint8_t SIM800C_FONA::getCallStatus(void) {
+//  uint16_t phoneStatus;
+//
+//  if (! sendParseReply(F("AT+CPAS"), F("+CPAS: "), &phoneStatus)) 
+//    return FONA_CALL_FAILED; // 1, since 0 is actually a known, good reply
+//
+//  return phoneStatus;  // 0 ready, 2 unkown, 3 ringing, 4 call in progress
+//}
+//
+//boolean SIM800C_FONA::hangUp(void) {
+//  return sendCheckReply(F("ATH0"), ok_reply);
+//}
+//
+//boolean SIM800C_FONA::pickUp(void) {
+//  return sendCheckReply(F("ATA"), ok_reply);
+//}
+//
+//
+//void SIM800C_FONA::onIncomingCall() {
+//
+//  DEBUG_PRINT(F("> ")); DEBUG_PRINTLN(F("Incoming call..."));
+//
+//  SIM800C_FONA::_incomingCall = true;
+//}
+//
+//boolean SIM800C_FONA::_incomingCall = false;
+//
+//boolean SIM800C_FONA::callerIdNotification(boolean enable, uint8_t interrupt) {
+//  if(enable){
+//    attachInterrupt(interrupt, onIncomingCall, FALLING);
+//    return sendCheckReply(F("AT+CLIP=1"), ok_reply);
+//  }
+//
+//  detachInterrupt(interrupt);
+//  return sendCheckReply(F("AT+CLIP=0"), ok_reply);
+//}
+//
+//boolean SIM800C_FONA::incomingCallNumber(char* phonenum) {
+//  //+CLIP: "<incoming phone number>",145,"",0,"",0
+//  if(!SIM800C_FONA::_incomingCall)
+//    return false;
+//
+//  readline();
+//  while(!prog_char_strcmp(replybuffer, (prog_char*)F("RING")) == 0) {
+//    flushInput();
+//    readline();
+//  }
+//
+//  readline(); //reads incoming phone number line
+//
+//  parseReply(F("+CLIP: \""), phonenum, '"');
+//
+//
+//  DEBUG_PRINT(F("Phone Number: "));
+//  DEBUG_PRINTLN(replybuffer);
+//
+//
+//  SIM800C_FONA::_incomingCall = false;
+//  return true;
+//}
+//
 /********* SMS **********************************************************/
 
 
@@ -598,13 +595,13 @@ boolean SIM800C_FONA::sendSMS(char *smsaddr, char *smsmsg) {
 
   DEBUG_PRINTLN("^Z");
 
-  if ( (_type == FONA3G_A) || (_type == FONA3G_E) ) {
-    // Eat two sets of CRLF
-    readline(200);
-    //DEBUG_PRINT("Line 1: "); DEBUG_PRINTLN(strlen(replybuffer));
-    readline(200);
-    //DEBUG_PRINT("Line 2: "); DEBUG_PRINTLN(strlen(replybuffer));
-  }
+  //if ( (_type == FONA3G_A) || (_type == FONA3G_E) ) {
+  //  // Eat two sets of CRLF
+  //  readline(200);
+  //  //DEBUG_PRINT("Line 1: "); DEBUG_PRINTLN(strlen(replybuffer));
+  //  readline(200);
+  //  //DEBUG_PRINT("Line 2: "); DEBUG_PRINTLN(strlen(replybuffer));
+  //}
   readline(10000); // read the +CMGS reply, wait up to 10 seconds!!!
   //DEBUG_PRINT("Line 3: "); DEBUG_PRINTLN(strlen(replybuffer));
   if (strstr(replybuffer, "+CMGS") == 0) {
@@ -737,394 +734,394 @@ boolean SIM800C_FONA::getTime(char *buff, uint16_t maxlen) {
 }
 
 /********* GPS **********************************************************/
-
-
-boolean SIM800C_FONA::enableGPS(boolean onoff) {
-  uint16_t state;
-
-  // first check if its already on or off
-
-  if (_type == FONA808_V2) {
-    if (! sendParseReply(F("AT+CGNSPWR?"), F("+CGNSPWR: "), &state) )
-      return false;
-  } else {
-    if (! sendParseReply(F("AT+CGPSPWR?"), F("+CGPSPWR: "), &state))
-      return false;
-  }
-
-  if (onoff && !state) {
-    if (_type == FONA808_V2) {
-      if (! sendCheckReply(F("AT+CGNSPWR=1"), ok_reply))  // try GNS command
-	return false;
-    } else {
-      if (! sendCheckReply(F("AT+CGPSPWR=1"), ok_reply))
-	return false;
-    }
-  } else if (!onoff && state) {
-    if (_type == FONA808_V2) {
-      if (! sendCheckReply(F("AT+CGNSPWR=0"), ok_reply)) // try GNS command
-	return false;
-    } else {
-      if (! sendCheckReply(F("AT+CGPSPWR=0"), ok_reply))
-	return false;
-    }
-  }
-  return true;
-}
-
-
-int8_t SIM800C_FONA::GPSstatus(void) {
-  if (_type == FONA808_V2) {
-    // 808 V2 uses GNS commands and doesn't have an explicit 2D/3D fix status.
-    // Instead just look for a fix and if found assume it's a 3D fix.
-    getReply(F("AT+CGNSINF"));
-    char *p = prog_char_strstr(replybuffer, (prog_char*)F("+CGNSINF: "));
-    if (p == 0) return -1;
-    p+=10;
-    readline(); // eat 'OK'
-    if (p[0] == '0') return 0; // GPS is not even on!
-
-    p+=2; // Skip to second value, fix status.
-    //DEBUG_PRINTLN(p);
-    // Assume if the fix status is '1' then we have a 3D fix, otherwise no fix.
-    if (p[0] == '1') return 3;
-    else return 1;
-  }
-  if (_type == FONA3G_A || _type == FONA3G_E) {
-    // FONA 3G doesn't have an explicit 2D/3D fix status.
-    // Instead just look for a fix and if found assume it's a 3D fix.
-    getReply(F("AT+CGPSINFO"));
-    char *p = prog_char_strstr(replybuffer, (prog_char*)F("+CGPSINFO:"));
-    if (p == 0) return -1;
-    if (p[10] != ',') return 3; // if you get anything, its 3D fix
-    return 0;
-  }
-  else {
-    // 808 V1 looks for specific 2D or 3D fix state.
-    getReply(F("AT+CGPSSTATUS?"));
-    char *p = prog_char_strstr(replybuffer, (prog_char*)F("SSTATUS: Location "));
-    if (p == 0) return -1;
-    p+=18;
-    readline(); // eat 'OK'
-    //DEBUG_PRINTLN(p);
-    if (p[0] == 'U') return 0;
-    if (p[0] == 'N') return 1;
-    if (p[0] == '2') return 2;
-    if (p[0] == '3') return 3;
-  }
-  // else
-  return 0;
-}
-
-uint8_t SIM800C_FONA::getGPS(uint8_t arg, char *buffer, uint8_t maxbuff) {
-  int32_t x = arg;
-
-  if ( (_type == FONA3G_A) || (_type == FONA3G_E) ) {
-    getReply(F("AT+CGPSINFO"));
-  } else if (_type == FONA808_V1) {
-    getReply(F("AT+CGPSINF="), x);
-  } else {
-    getReply(F("AT+CGNSINF"));
-  }
-
-  char *p = prog_char_strstr(replybuffer, (prog_char*)F("SINF"));
-  if (p == 0) {
-    buffer[0] = 0;
-    return 0;
-  }
-
-  p+=6;
-
-  uint8_t len = max(maxbuff-1, strlen(p));
-  strncpy(buffer, p, len);
-  buffer[len] = 0;
-
-  readline(); // eat 'OK'
-  return len;
-}
-
-boolean SIM800C_FONA::getGPS(float *lat, float *lon, float *speed_kph, float *heading, float *altitude) {
-
-  char gpsbuffer[120];
-
-  // we need at least a 2D fix
-  if (GPSstatus() < 2)
-    return false;
-
-  // grab the mode 2^5 gps csv from the sim808
-  uint8_t res_len = getGPS(32, gpsbuffer, 120);
-
-  // make sure we have a response
-  if (res_len == 0)
-    return false;
-
-  if (_type == FONA3G_A || _type == FONA3G_E) {
-    // Parse 3G respose
-    // +CGPSINFO:4043.000000,N,07400.000000,W,151015,203802.1,-12.0,0.0,0
-    // skip beginning
-    char *tok;
-
-   // grab the latitude
-    char *latp = strtok(gpsbuffer, ",");
-    if (! latp) return false;
-
-    // grab latitude direction
-    char *latdir = strtok(NULL, ",");
-    if (! latdir) return false;
-
-    // grab longitude
-    char *longp = strtok(NULL, ",");
-    if (! longp) return false;
-
-    // grab longitude direction
-    char *longdir = strtok(NULL, ",");
-    if (! longdir) return false;
-
-    // skip date & time
-    tok = strtok(NULL, ",");
-    tok = strtok(NULL, ",");
-
-   // only grab altitude if needed
-    if (altitude != NULL) {
-      // grab altitude
-      char *altp = strtok(NULL, ",");
-      if (! altp) return false;
-      *altitude = atof(altp);
-    }
-
-    // only grab speed if needed
-    if (speed_kph != NULL) {
-      // grab the speed in km/h
-      char *speedp = strtok(NULL, ",");
-      if (! speedp) return false;
-
-      *speed_kph = atof(speedp);
-    }
-
-    // only grab heading if needed
-    if (heading != NULL) {
-
-      // grab the speed in knots
-      char *coursep = strtok(NULL, ",");
-      if (! coursep) return false;
-
-      *heading = atof(coursep);
-    }
-
-    double latitude = atof(latp);
-    double longitude = atof(longp);
-
-    // convert latitude from minutes to decimal
-    float degrees = floor(latitude / 100);
-    double minutes = latitude - (100 * degrees);
-    minutes /= 60;
-    degrees += minutes;
-
-    // turn direction into + or -
-    if (latdir[0] == 'S') degrees *= -1;
-
-    *lat = degrees;
-
-    // convert longitude from minutes to decimal
-    degrees = floor(longitude / 100);
-    minutes = longitude - (100 * degrees);
-    minutes /= 60;
-    degrees += minutes;
-
-    // turn direction into + or -
-    if (longdir[0] == 'W') degrees *= -1;
-
-    *lon = degrees;
-
-  } else if (_type == FONA808_V2) {
-   
-    // skip GPS run status
-    char *tok = strtok(gpsbuffer, ",");
-    if (! tok) return false;
-
-    // skip fix status
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // skip date
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // grab the latitude
-    char *latp = strtok(NULL, ",");
-    if (! latp) return false;
-
-    // grab longitude
-    char *longp = strtok(NULL, ",");
-    if (! longp) return false;
-
-    *lat = atof(latp);
-    *lon = atof(longp);
-
-    // only grab altitude if needed
-    if (altitude != NULL) {
-      // grab altitude
-      char *altp = strtok(NULL, ",");
-      if (! altp) return false;
-
-      *altitude = atof(altp);
-    }
-
-    // only grab speed if needed
-    if (speed_kph != NULL) {
-      // grab the speed in km/h
-      char *speedp = strtok(NULL, ",");
-      if (! speedp) return false;
-
-      *speed_kph = atof(speedp);
-    }
-
-    // only grab heading if needed
-    if (heading != NULL) {
-
-      // grab the speed in knots
-      char *coursep = strtok(NULL, ",");
-      if (! coursep) return false;
-
-      *heading = atof(coursep);
-    }
-  }
-  else {
-    // Parse 808 V1 response.
-
-    // skip mode
-    char *tok = strtok(gpsbuffer, ",");
-    if (! tok) return false;
-
-    // skip date
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // skip fix
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // grab the latitude
-    char *latp = strtok(NULL, ",");
-    if (! latp) return false;
-
-    // grab latitude direction
-    char *latdir = strtok(NULL, ",");
-    if (! latdir) return false;
-
-    // grab longitude
-    char *longp = strtok(NULL, ",");
-    if (! longp) return false;
-
-    // grab longitude direction
-    char *longdir = strtok(NULL, ",");
-    if (! longdir) return false;
-
-    double latitude = atof(latp);
-    double longitude = atof(longp);
-
-    // convert latitude from minutes to decimal
-    float degrees = floor(latitude / 100);
-    double minutes = latitude - (100 * degrees);
-    minutes /= 60;
-    degrees += minutes;
-
-    // turn direction into + or -
-    if (latdir[0] == 'S') degrees *= -1;
-
-    *lat = degrees;
-
-    // convert longitude from minutes to decimal
-    degrees = floor(longitude / 100);
-    minutes = longitude - (100 * degrees);
-    minutes /= 60;
-    degrees += minutes;
-
-    // turn direction into + or -
-    if (longdir[0] == 'W') degrees *= -1;
-
-    *lon = degrees;
-
-    // only grab speed if needed
-    if (speed_kph != NULL) {
-
-      // grab the speed in knots
-      char *speedp = strtok(NULL, ",");
-      if (! speedp) return false;
-
-      // convert to kph
-      *speed_kph = atof(speedp) * 1.852;
-
-    }
-
-    // only grab heading if needed
-    if (heading != NULL) {
-
-      // grab the speed in knots
-      char *coursep = strtok(NULL, ",");
-      if (! coursep) return false;
-
-      *heading = atof(coursep);
-
-    }
-
-    // no need to continue
-    if (altitude == NULL)
-      return true;
-
-    // we need at least a 3D fix for altitude
-    if (GPSstatus() < 3)
-      return false;
-
-    // grab the mode 0 gps csv from the sim808
-    res_len = getGPS(0, gpsbuffer, 120);
-
-    // make sure we have a response
-    if (res_len == 0)
-      return false;
-
-    // skip mode
-    tok = strtok(gpsbuffer, ",");
-    if (! tok) return false;
-
-    // skip lat
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // skip long
-    tok = strtok(NULL, ",");
-    if (! tok) return false;
-
-    // grab altitude
-    char *altp = strtok(NULL, ",");
-    if (! altp) return false;
-
-    *altitude = atof(altp);
-  }
-
-  return true;
-
-}
-
-boolean SIM800C_FONA::enableGPSNMEA(uint8_t i) {
-
-  char sendbuff[15] = "AT+CGPSOUT=000";
-  sendbuff[11] = (i / 100) + '0';
-  i %= 100;
-  sendbuff[12] = (i / 10) + '0';
-  i %= 10;
-  sendbuff[13] = i + '0';
-
-  if (_type == FONA808_V2) {
-    if (i)
-      return sendCheckReply(F("AT+CGNSTST=1"), ok_reply);
-    else
-      return sendCheckReply(F("AT+CGNSTST=0"), ok_reply);
-  } else {
-    return sendCheckReply(sendbuff, ok_reply, 2000);
-  }
-}
-
+//
+//
+//boolean SIM800C_FONA::enableGPS(boolean onoff) {
+//  uint16_t state;
+//
+//  // first check if its already on or off
+//
+//  if (_type == FONA808_V2) {
+//    if (! sendParseReply(F("AT+CGNSPWR?"), F("+CGNSPWR: "), &state) )
+//      return false;
+//  } else {
+//    if (! sendParseReply(F("AT+CGPSPWR?"), F("+CGPSPWR: "), &state))
+//      return false;
+//  }
+//
+//  if (onoff && !state) {
+//    if (_type == FONA808_V2) {
+//      if (! sendCheckReply(F("AT+CGNSPWR=1"), ok_reply))  // try GNS command
+//	return false;
+//    } else {
+//      if (! sendCheckReply(F("AT+CGPSPWR=1"), ok_reply))
+//	return false;
+//    }
+//  } else if (!onoff && state) {
+//    if (_type == FONA808_V2) {
+//      if (! sendCheckReply(F("AT+CGNSPWR=0"), ok_reply)) // try GNS command
+//	return false;
+//    } else {
+//      if (! sendCheckReply(F("AT+CGPSPWR=0"), ok_reply))
+//	return false;
+//    }
+//  }
+//  return true;
+//}
+//
+//
+//int8_t SIM800C_FONA::GPSstatus(void) {
+//  if (_type == FONA808_V2) {
+//    // 808 V2 uses GNS commands and doesn't have an explicit 2D/3D fix status.
+//    // Instead just look for a fix and if found assume it's a 3D fix.
+//    getReply(F("AT+CGNSINF"));
+//    char *p = prog_char_strstr(replybuffer, (prog_char*)F("+CGNSINF: "));
+//    if (p == 0) return -1;
+//    p+=10;
+//    readline(); // eat 'OK'
+//    if (p[0] == '0') return 0; // GPS is not even on!
+//
+//    p+=2; // Skip to second value, fix status.
+//    //DEBUG_PRINTLN(p);
+//    // Assume if the fix status is '1' then we have a 3D fix, otherwise no fix.
+//    if (p[0] == '1') return 3;
+//    else return 1;
+//  }
+//  if (_type == FONA3G_A || _type == FONA3G_E) {
+//    // FONA 3G doesn't have an explicit 2D/3D fix status.
+//    // Instead just look for a fix and if found assume it's a 3D fix.
+//    getReply(F("AT+CGPSINFO"));
+//    char *p = prog_char_strstr(replybuffer, (prog_char*)F("+CGPSINFO:"));
+//    if (p == 0) return -1;
+//    if (p[10] != ',') return 3; // if you get anything, its 3D fix
+//    return 0;
+//  }
+//  else {
+//    // 808 V1 looks for specific 2D or 3D fix state.
+//    getReply(F("AT+CGPSSTATUS?"));
+//    char *p = prog_char_strstr(replybuffer, (prog_char*)F("SSTATUS: Location "));
+//    if (p == 0) return -1;
+//    p+=18;
+//    readline(); // eat 'OK'
+//    //DEBUG_PRINTLN(p);
+//    if (p[0] == 'U') return 0;
+//    if (p[0] == 'N') return 1;
+//    if (p[0] == '2') return 2;
+//    if (p[0] == '3') return 3;
+//  }
+//  // else
+//  return 0;
+//}
+//
+//uint8_t SIM800C_FONA::getGPS(uint8_t arg, char *buffer, uint8_t maxbuff) {
+//  int32_t x = arg;
+//
+//  if ( (_type == FONA3G_A) || (_type == FONA3G_E) ) {
+//    getReply(F("AT+CGPSINFO"));
+//  } else if (_type == FONA808_V1) {
+//    getReply(F("AT+CGPSINF="), x);
+//  } else {
+//    getReply(F("AT+CGNSINF"));
+//  }
+//
+//  char *p = prog_char_strstr(replybuffer, (prog_char*)F("SINF"));
+//  if (p == 0) {
+//    buffer[0] = 0;
+//    return 0;
+//  }
+//
+//  p+=6;
+//
+//  uint8_t len = max(maxbuff-1, strlen(p));
+//  strncpy(buffer, p, len);
+//  buffer[len] = 0;
+//
+//  readline(); // eat 'OK'
+//  return len;
+//}
+//
+//boolean SIM800C_FONA::getGPS(float *lat, float *lon, float *speed_kph, float *heading, float *altitude) {
+//
+//  char gpsbuffer[120];
+//
+//  // we need at least a 2D fix
+//  if (GPSstatus() < 2)
+//    return false;
+//
+//  // grab the mode 2^5 gps csv from the sim808
+//  uint8_t res_len = getGPS(32, gpsbuffer, 120);
+//
+//  // make sure we have a response
+//  if (res_len == 0)
+//    return false;
+//
+//  if (_type == FONA3G_A || _type == FONA3G_E) {
+//    // Parse 3G respose
+//    // +CGPSINFO:4043.000000,N,07400.000000,W,151015,203802.1,-12.0,0.0,0
+//    // skip beginning
+//    char *tok;
+//
+//   // grab the latitude
+//    char *latp = strtok(gpsbuffer, ",");
+//    if (! latp) return false;
+//
+//    // grab latitude direction
+//    char *latdir = strtok(NULL, ",");
+//    if (! latdir) return false;
+//
+//    // grab longitude
+//    char *longp = strtok(NULL, ",");
+//    if (! longp) return false;
+//
+//    // grab longitude direction
+//    char *longdir = strtok(NULL, ",");
+//    if (! longdir) return false;
+//
+//    // skip date & time
+//    tok = strtok(NULL, ",");
+//    tok = strtok(NULL, ",");
+//
+//   // only grab altitude if needed
+//    if (altitude != NULL) {
+//      // grab altitude
+//      char *altp = strtok(NULL, ",");
+//      if (! altp) return false;
+//      *altitude = atof(altp);
+//    }
+//
+//    // only grab speed if needed
+//    if (speed_kph != NULL) {
+//      // grab the speed in km/h
+//      char *speedp = strtok(NULL, ",");
+//      if (! speedp) return false;
+//
+//      *speed_kph = atof(speedp);
+//    }
+//
+//    // only grab heading if needed
+//    if (heading != NULL) {
+//
+//      // grab the speed in knots
+//      char *coursep = strtok(NULL, ",");
+//      if (! coursep) return false;
+//
+//      *heading = atof(coursep);
+//    }
+//
+//    double latitude = atof(latp);
+//    double longitude = atof(longp);
+//
+//    // convert latitude from minutes to decimal
+//    float degrees = floor(latitude / 100);
+//    double minutes = latitude - (100 * degrees);
+//    minutes /= 60;
+//    degrees += minutes;
+//
+//    // turn direction into + or -
+//    if (latdir[0] == 'S') degrees *= -1;
+//
+//    *lat = degrees;
+//
+//    // convert longitude from minutes to decimal
+//    degrees = floor(longitude / 100);
+//    minutes = longitude - (100 * degrees);
+//    minutes /= 60;
+//    degrees += minutes;
+//
+//    // turn direction into + or -
+//    if (longdir[0] == 'W') degrees *= -1;
+//
+//    *lon = degrees;
+//
+//  } else if (_type == FONA808_V2) {
+//   
+//    // skip GPS run status
+//    char *tok = strtok(gpsbuffer, ",");
+//    if (! tok) return false;
+//
+//    // skip fix status
+//    tok = strtok(NULL, ",");
+//    if (! tok) return false;
+//
+//    // skip date
+//    tok = strtok(NULL, ",");
+//    if (! tok) return false;
+//
+//    // grab the latitude
+//    char *latp = strtok(NULL, ",");
+//    if (! latp) return false;
+//
+//    // grab longitude
+//    char *longp = strtok(NULL, ",");
+//    if (! longp) return false;
+//
+//    *lat = atof(latp);
+//    *lon = atof(longp);
+//
+//    // only grab altitude if needed
+//    if (altitude != NULL) {
+//      // grab altitude
+//      char *altp = strtok(NULL, ",");
+//      if (! altp) return false;
+//
+//      *altitude = atof(altp);
+//    }
+//
+//    // only grab speed if needed
+//    if (speed_kph != NULL) {
+//      // grab the speed in km/h
+//      char *speedp = strtok(NULL, ",");
+//      if (! speedp) return false;
+//
+//      *speed_kph = atof(speedp);
+//    }
+//
+//    // only grab heading if needed
+//    if (heading != NULL) {
+//
+//      // grab the speed in knots
+//      char *coursep = strtok(NULL, ",");
+//      if (! coursep) return false;
+//
+//      *heading = atof(coursep);
+//    }
+//  }
+//  else {
+//    // Parse 808 V1 response.
+//
+//    // skip mode
+//    char *tok = strtok(gpsbuffer, ",");
+//    if (! tok) return false;
+//
+//    // skip date
+//    tok = strtok(NULL, ",");
+//    if (! tok) return false;
+//
+//    // skip fix
+//    tok = strtok(NULL, ",");
+//    if (! tok) return false;
+//
+//    // grab the latitude
+//    char *latp = strtok(NULL, ",");
+//    if (! latp) return false;
+//
+//    // grab latitude direction
+//    char *latdir = strtok(NULL, ",");
+//    if (! latdir) return false;
+//
+//    // grab longitude
+//    char *longp = strtok(NULL, ",");
+//    if (! longp) return false;
+//
+//    // grab longitude direction
+//    char *longdir = strtok(NULL, ",");
+//    if (! longdir) return false;
+//
+//    double latitude = atof(latp);
+//    double longitude = atof(longp);
+//
+//    // convert latitude from minutes to decimal
+//    float degrees = floor(latitude / 100);
+//    double minutes = latitude - (100 * degrees);
+//    minutes /= 60;
+//    degrees += minutes;
+//
+//    // turn direction into + or -
+//    if (latdir[0] == 'S') degrees *= -1;
+//
+//    *lat = degrees;
+//
+//    // convert longitude from minutes to decimal
+//    degrees = floor(longitude / 100);
+//    minutes = longitude - (100 * degrees);
+//    minutes /= 60;
+//    degrees += minutes;
+//
+//    // turn direction into + or -
+//    if (longdir[0] == 'W') degrees *= -1;
+//
+//    *lon = degrees;
+//
+//    // only grab speed if needed
+//    if (speed_kph != NULL) {
+//
+//      // grab the speed in knots
+//      char *speedp = strtok(NULL, ",");
+//      if (! speedp) return false;
+//
+//      // convert to kph
+//      *speed_kph = atof(speedp) * 1.852;
+//
+//    }
+//
+//    // only grab heading if needed
+//    if (heading != NULL) {
+//
+//      // grab the speed in knots
+//      char *coursep = strtok(NULL, ",");
+//      if (! coursep) return false;
+//
+//      *heading = atof(coursep);
+//
+//    }
+//
+//    // no need to continue
+//    if (altitude == NULL)
+//      return true;
+//
+//    // we need at least a 3D fix for altitude
+//    if (GPSstatus() < 3)
+//      return false;
+//
+//    // grab the mode 0 gps csv from the sim808
+//    res_len = getGPS(0, gpsbuffer, 120);
+//
+//    // make sure we have a response
+//    if (res_len == 0)
+//      return false;
+//
+//    // skip mode
+//    tok = strtok(gpsbuffer, ",");
+//    if (! tok) return false;
+//
+//    // skip lat
+//    tok = strtok(NULL, ",");
+//    if (! tok) return false;
+//
+//    // skip long
+//    tok = strtok(NULL, ",");
+//    if (! tok) return false;
+//
+//    // grab altitude
+//    char *altp = strtok(NULL, ",");
+//    if (! altp) return false;
+//
+//    *altitude = atof(altp);
+//  }
+//
+//  return true;
+//
+//}
+//
+//boolean SIM800C_FONA::enableGPSNMEA(uint8_t i) {
+//
+//  char sendbuff[15] = "AT+CGPSOUT=000";
+//  sendbuff[11] = (i / 100) + '0';
+//  i %= 100;
+//  sendbuff[12] = (i / 10) + '0';
+//  i %= 10;
+//  sendbuff[13] = i + '0';
+//
+//  if (_type == FONA808_V2) {
+//    if (i)
+//      return sendCheckReply(F("AT+CGNSTST=1"), ok_reply);
+//    else
+//      return sendCheckReply(F("AT+CGNSTST=0"), ok_reply);
+//  } else {
+//    return sendCheckReply(sendbuff, ok_reply, 2000);
+//  }
+//}
+//
 
 /********* GPRS **********************************************************/
 
@@ -2003,7 +2000,7 @@ boolean SIM800C_FONA::sendParseReply(FONAFlashStringPtr tosend,
 
 bool SIM800C_FONA::httpConnectStr(const char* url, String args)
 {
-	mySerial->print("AT+HTTPPARA=\"URL\",\"");    //SIM_SERIAL.print("AT+HTTPPARA=\"URL\",\"");
+	mySerial->print(F("AT+HTTPPARA=\"URL\",\""));    //SIM_SERIAL.print("AT+HTTPPARA=\"URL\",\"");
 	mySerial->print(url);
 	if (args)
 	{
@@ -2040,7 +2037,7 @@ byte SIM800C_FONA::httpIsConnected()
 
 void SIM800C_FONA::httpRead()
 {
-	mySerial->println("AT+HTTPREAD");     //SIM_SERIAL.println("AT+HTTPREAD");
+	mySerial->println(F("AT+HTTPREAD"));     //SIM_SERIAL.println("AT+HTTPREAD");
 	httpState = HTTP_READING;
 	m_bytesRecv = 0;
 	m_checkTimer = millis();
