@@ -147,39 +147,35 @@ void(* resetFunc) (void) = 0;                         // объявляем функцию reset
  }
 
 
-void sendTemps() 
+void sendTemps()
 {
-	con.println(F("\nTemp"));
+	//Serial.println("\nTemp");
 	sensor1.requestTemperatures();
 	sensor2.requestTemperatures();
-	sensor3.requestTemperatures();  
+	sensor3.requestTemperatures();
 	float t1 = sensor1.getTempCByIndex(0);
 	float t2 = sensor2.getTempCByIndex(0);
 	float t3 = sensor3.getTempCByIndex(0);
-	float tsumma = t1+t2+t3+88.88;
+	float tsumma = t1 + t2 + t3 + 88.88;
 	int signal = gprs.getSignalQuality();
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
 	//String toSend = formHeader()+DELIM+"temp1="+String(t1)+DELIM+"temp2="+String(t2)+DELIM+"tempint="+String(t3)+ DELIM+"slevel="+String(signal)+DELIM+"ecs="+String(errors)+DELIM+"ec="+String(error_All)+formEnd();
-	String toSend = formHeader()+DELIM+String(t1)+DELIM+String(t2)+DELIM+String(t3)+ DELIM+String(signal)+DELIM+String(errors)+DELIM+String(error_All)+formEnd()+DELIM+String(tsumma);
+	String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
 
-	con.println(F("String length: "));
+
+	Serial.println(toSend);
+
+	/*strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[2])));
+	Serial.print(bufmessage);*/
 	Serial.println(toSend.length());
-	/*if (gprs.ping(url2))
-	{
-		Serial.println("ping Ok");
-	}
-	else
-	{
-		Serial.println("ping No");
-	}
-*/
-
-	//gprs.ping("AT+CIPPING=\"www.yandex.ru\"");
-	gprs.ping("www.yandex.ru");
-	//delay(2000);
-	//gprs_send(toSend);
+	gprs_send(toSend);
 }
+
+//gprs.ping("www.yandex.ru");
+
+
+
 
 String formHeader() 
 {
@@ -413,8 +409,6 @@ void gprs_send(String data)
 	con.print(errors);
   }
   con.println();
-
- // gprs.ping("AT+CIPPING=\"www.yandex.ru\"");
 }
 
 void errorAllmem()
@@ -467,7 +461,7 @@ void blink()
 
 	metering_NETLIGHT = current_M - metering_temp;
 	metering_temp = current_M;
-	Serial.println(metering_NETLIGHT);
+	//Serial.println(metering_NETLIGHT);
 	if (metering_NETLIGHT > 3055 && metering_NETLIGHT < 3070)
 	{
 		state_device = 2;                 // 2 - Зарегистрировано в сети
@@ -509,12 +503,10 @@ void blink()
 
 void start_init()
 {
-
 	bool setup_ok = false;
-	bool success = false;
 	uint8_t count_init = 0;
-	//do
-	//{
+	do
+	{
 		con.println(F("Initializing....(May take 5 seconds)"));
 
 		digitalWrite(SIM800_RESET_PIN, LOW);               // Сигнал сброс в исходное состояние
@@ -535,7 +527,6 @@ void start_init()
 		delay(2000);
 		con.println(F("Power SIM800 On"));
 
-
 		while (!gprs.begin(speed_Serial))
 		{
 			con.write('.');
@@ -543,213 +534,79 @@ void start_init()
 		con.println(F("OK"));                  // 
 
 
-		//uint8_t ccidLen = fona.getSIMCCID(ccid);                 // read the CCID make sure replybuffer is at least 21 bytes!
-		//if (ccidLen > 0)
-		//{
-		//	Serial.print(F("SIM CCID = ")); Serial.println(ccid);
-		//}
-
-		if (gprs.getIMEI())                     // Получить IMEI
+		if (gprs.getIMEI())                       // Получить IMEI
 		{
 			con.print(F("\nIMEI:"));
-			//imei = gprs.buffer;                // Отключить на время отладки
+			//imei = gprs.buffer;                 // Отключить на время отладки
 			//gprs.cleanStr(imei);                // Отключить на время отладки
 			con.println(imei);
+		}
+		else
+		{
+			// IMEI не определился
+
 		}
 
 		while (state_device != 2)  // Ожидание регистрации в сети
 		{
 			delay(1000);
-			// Уточнить программу перезапуска  если модуль не зарегистрировался
+			// Уточнить программу перезапуска  если модуль не зарегистрировался через 60 секунд
 		}
 		delay(1000);
 		Serial.print(F("Setting up network..."));
 
-
-		byte ret = gprs.setup();
-		if (ret == 0)
-		{
-			while (state_device != 3)  // Ожидание регистрации в сети
-			{
-				delay(50);
-				// Уточнить программу перезапуска  если модуль не зарегистрировался
-			}
-
-			setColor(COLOR_GREEN);  // Включить светодиод
-			//break;
-		}
-
-
-
-
-
-		byte n = gprs.getNetworkStatus();
+		char n = gprs.getNetworkStatus();
 		
 		Serial.print(F("\nNetwork status "));
 		Serial.print(n);
 		Serial.print(F(": "));
-		if (n == 0) Serial.println(F("\nNot registered"));
-		if (n == 1) Serial.println(F("\nRegistered (home)"));
-		if (n == 2) Serial.println(F("\nNot registered (searching)"));
-		if (n == 3) Serial.println(F("\nDenied"));
-		if (n == 4) Serial.println(F("\nUnknown"));
-		if (n == 5) Serial.println(F("\nRegistered roaming"));
+		if (n == '0') Serial.println(F("\nNot registered"));                      // 0 – не зарегистрирован, поиска сети нет
+		if (n == '1') Serial.println(F("\nRegistered (home)"));                   // 1 – зарегистрирован, домашняя сеть
+		if (n == '2') Serial.println(F("\nNot registered (searching)"));          // 2 – не зарегистрирован, идёт поиск новой сети
+		if (n == '3') Serial.println(F("\nDenied"));                              // 3 – регистрация отклонена
+		if (n == '4') Serial.println(F("\nUnknown"));                             // 4 – неизвестно
+		if (n == '5') Serial.println(F("\nRegistered roaming"));                  // 5 – роуминг
 
-		// Первый параметр:
-		// 0 – нет кода регистрации сети
-		// 1 – есть код регистрации сети
-		// 2 – есть код регистрации сети + доп параметры
-		// Второй параметр:
-		// 0 – не зарегистрирован, поиска сети нет
-		// 1 – зарегистрирован, домашняя сеть
-		// 2 – не зарегистрирован, идёт поиск новой сети
-		// 3 – регистрация отклонена
-		// 4 – неизвестно
-		// 5 – роуминг
-
-
-		if (n == 1 || n == 5)                      // Если домашняя сеть или роуминг
+		if (n == '1' || n == '5')                                                 // Если домашняя сеть или роуминг
 		{
-			/*
-			put_operatorName();                    // Определить и передать параметры оператора
-			count_init = 0;                        // Сбросить счетчик попыток подключения
 			if (state_device == 2)                 // Проверить аппаратно подключения модема к оператору
 			{
 				delay(2000);
 				do
 				{
-					get_rssi();                    // Получить уровень сигнала
+					int signal = gprs.getSignalQuality();
+					Serial.print(F("rssi ..")); Serial.println(signal);
 					delay(1000);
 					Serial.println(F("GPRS connect .."));
-					if (!fona.enableGPRS(true))
+					byte ret = gprs.setup();                                              // Подключение к GPRS
+					//Serial.print("ret - "); Serial.print(ret);
+					if (ret == 0)
+					{
+						while (state_device != 3)  // Ожидание регистрации в сети
+						{
+							delay(50);
+							// Уточнить программу перезапуска  если модуль не зарегистрировался не зарегистрировался через 60 секунд
+						}
+						Serial.println(F("\nGPRS connect OK!+"));
+						setColor(COLOR_GREEN);                 // Включить зеленый светодиод
+						setup_ok = true;
+					}
+					else
 					{
 						count_init++;
 						Serial.println(F("Failed init GPRS"));
 						delay(5000);
 						if (state_device == 3)
 						{
-							Serial.println(F("GPRS connect OK!"));
+							Serial.println(F("GPRS connect OK!-"));
 							setColor(COLOR_GREEN);                 // Включить зеленый светодиод
 							setup_ok = true;
 						}
 					}
-					else
-					{
-						while (state_device != 3)              // Ожидание регистрации в сети GPRS
-						{
-							delay(50);
-						}
-						Serial.println(F("GPRS connect OK!"));
-						setColor(COLOR_GREEN);                 // Включить зеленый светодиод
-						setup_ok = true;
-					}
 				} while (!setup_ok);
 			}
-			*/
 		}
-	//} while (count_init >20 || setup_ok == false);    // 20 попыток зарегистрироваться в сети
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-	for (;;)
-	{
-		Serial.println(F("Initializing....(May take 5 seconds)"));
-
-		digitalWrite(SIM800_RESET_PIN,   LOW);               // Сигнал сброс в исходное состояние
-		digitalWrite(LED13,    LOW);
-		digitalWrite(PWR_On,   HIGH);                        // Кратковременно отключаем питание модуля GPRS
-		delay(2000);
-		digitalWrite(LED13,    HIGH);
-		digitalWrite(PWR_On,   LOW);
-		delay(1500);                           
-		digitalWrite(SIM800_RESET_PIN,   HIGH);              // Производим сброс модема после включения питания
-		delay(1000);
-		digitalWrite(SIM800_RESET_PIN,   LOW);               
-
-		while (digitalRead(STATUS) == LOW)
-		{
-			// Уточнить программу перезапуска  если модуль не включился
-		}
-		delay(2000);
-		Serial.println(F("Power SIM800 On"));
-
-			while (!gprs.begin(speed_Serial))
-			{
-				con.write('.');
-			}
-		con.println(F("OK"));                  // con.println("OK");
-
-		if (gprs.getIMEI())                     // Получить IMEI
-		{
-			con.print(F("\nIMEI:"));
-			//imei = gprs.buffer;
-			gprs.cleanStr(imei);
-			con.println(imei);
-		}
-
-
-		while (state_device != 2)  // Ожидание регистрации в сети
-		{
-			delay(1000);
-			// Уточнить программу перезапуска  если модуль не зарегистрировался
-		}
-
-
-		con.print(F("Setting up network..."));
-
-	
-		byte ret = gprs.setup();
-		if (ret == 0)
-		{
-			while (state_device != 3)  // Ожидание регистрации в сети
-				{
-					delay(50);
-					// Уточнить программу перезапуска  если модуль не зарегистрировался
-				}
-
-			setColor(COLOR_GREEN);  // Включить светодиод
-			break;
-		}
-		con.print("Error code:");
-		con.println(ret);
-		con.println(gprs.buffer);
-		delay(2000);
-		if (ret == 4 || ret == 5)
-		{
-			setColor(COLOR_RED);
-			con.print(F("The network is not defined"));
-			delay(1000);
-			resetFunc();             //вызываем reset при отсутствии регистрации в сети
-		}
-
-
-	}
-	*/
+	} while (count_init > 20 || setup_ok == false);    // 20 попыток зарегистрироваться в сети
 }
 
 void setup()
@@ -789,7 +646,7 @@ void setup()
 	attachInterrupt(1, blink, RISING);            // Включить прерывания. Индикация состояния модема
 
 	start_init();
-	/*
+	
 
 	con.println(F("OK"));           // con.println("OK");
 	for (;;) 
@@ -815,11 +672,11 @@ void setup()
 		{
 			EEPROM.write(i,0);
 		}
-		EEPROM.write(0,31);
+		EEPROM.write(0,32);
 		EEPROM.put(Address_interval, interval);                     // строка начальной установки интервалов
 		EEPROM.put(Address_tel1, "+79858258846");
 		// EEPROM.put(Address_tel1, "+79990000000");
-		EEPROM.put(Address_tel2, "+79990000000");
+		EEPROM.put(Address_tel2, "+79162632701");
 		EEPROM.put(Address_tel3, "+79990000000");
 		EEPROM.put(Address_SMS_center, "+79990000000");
 		con.println (F("Clear EEPROM End"));                              
@@ -837,14 +694,14 @@ void setup()
 //	setColor(COLOR_GREEN);
 	con.println(F("\nSIM800 setup end"));                        
 	time = millis();                                              // Старт отсчета суток
-	*/
+	
 //	gprs.sendCommand("AT+CIPPING=\"www.yandex.ru\"", 1000);
 	//delay(3000);
 }
 
 void loop()
 {
-	/*
+	
 
  if (gprs.checkSMSU()) 
   {
@@ -907,5 +764,4 @@ void loop()
 
 	if(millis() - time > time_day*1000) resetFunc();                       //вызываем reset интервалом в сутки
 	delay(500);
-	*/
 }

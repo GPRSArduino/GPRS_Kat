@@ -13,6 +13,7 @@ SoftwareSerial SIM_SERIAL(PIN_RX, PIN_TX);                // RX, TX
 
 bool CGPRS_SIM800::begin(long speed_serial)
 {
+
 	SIM_SERIAL.begin(speed_serial);
 
 	int16_t timeout = 7000;
@@ -70,164 +71,117 @@ bool CGPRS_SIM800::begin(long speed_serial)
 		return true;
 	}
 	return false;
-
 }
 
 
 byte CGPRS_SIM800::setup()
 {
-  bool success = false;
-  for (byte n = 0; n < 30; n++) 
+  for (byte n = 0; n < 30; n++)
   {
-    strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[7])));
-	if (sendCommand(bufcom, 2000)) 
-   // if (sendCommand("AT+CREG?", 2000))  // “ип регистрации сети
-										// ѕервый параметр:
-										// 0 Ц нет кода регистрации сети
-										// 1 Ц есть код регистрации сети
-										// 2 Ц есть код регистрации сети + доп параметры
-										// ¬торой параметр:
-										// 0 Ц не зарегистрирован, поиска сети нет
-										// 1 Ц зарегистрирован, домашн€€ сеть
-										// 2 Ц не зарегистрирован, идЄт поиск новой сети
-										// 3 Ц регистраци€ отклонена
-										// 4 Ц неизвестно
-										// 5 Ц роуминг
-	{
-        char *p = strstr(buffer, "0,");
-        if (p) 
-		{
-          char mode = *(p + 2);
-#if DEBUG
-          DEBUG.print("Mode:");
-          DEBUG.println(mode);
-#endif
-          if (mode == '1' || mode == '5') 
-		  {
-            strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[8])));
-            sendCommand(bufcom,1000); 	//sendCommand("AT+CSQ",1000); 
-			char *p = strstr(buffer, "CSQ: ");
-	/*		Serial.println();
-			Serial.println(p);   */   
-            success = true;
-            break;
-          }
-        }
-    }
-    delay(1000);
+	  sendCommand("AT+CIPSHUT",20000);
+	
+	 // if (!sendCommand("AT+CGATT=1")) return 2;    // –егистраци€ в GPRS
+
+	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));
+	  if (!sendCommand(bufcom)) return 2;   // if (!sendCommand("AT+CGATT?"))     // –егистраци€ в GPRS
+
+	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[10])));
+	  if (!sendCommand(bufcom)) return 3;   // if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))     return 3;// 
+	 
+	  getOperatorName();
+	  String OperatorName = buffer;
+	  cleanStr(OperatorName);
+	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[12]))); //"MTS"
+	  if (OperatorName.indexOf(bufcom) > -1)
+	  {
+		  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[11])));
+		  apn = bufcom;
+		  //apn  = "internet.mts.ru";
+		  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[13])));
+		  user = bufcom;
+		  pwd = bufcom;
+		  /*	user = "mts";
+			  pwd  = "mts";*/
+		  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[11])));
+		  cont = bufcom;
+		  //cont = "internet.mts.ru";
+		  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[12]))); //"MTS"
+		  Serial.println(bufcom);
+	  }
+	  else if (OperatorName.indexOf("Bee Line GSM") > -1)
+	  {
+		  strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[15])));
+		  apn = bufcom1;                                                 //apn = "internet.beeline.ru";
+		  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[16])));
+		  user = bufcom;                                                 //user = "beeline";
+		  pwd = bufcom;                                                  //pwd = "beeline";
+		  cont = bufcom1;                                                //cont = "internet.beeline.ru";
+		  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[14])));
+		  Serial.println(bufcom);                                        //Serial.println("Beeline");
+	  }
+	  else if (OperatorName.indexOf("MegaFon") > -1)
+	  {
+		  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[17])));
+		  strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[18])));
+		  apn = bufcom1;	                                                   //apn = "internet";
+		  user = "";
+		  pwd = "";
+		  cont = bufcom1;	                                                   //cont = "internet";
+		  Serial.println(bufcom);                                            //Serial.println("MEGAFON");
+	  }
+	
+	  //  Ќастройки дл€ операторов:
+	  //  ћ“— - APN internet.mts.ru »м€ пользовател€ и пароль mts , номер дозвона *99#
+	  //  ћ≈√ј‘ќЌ - APN internet »м€ пользовател€ и пароль internet , номер дозвона *99#
+	  //  Ѕ»Ћј…Ќ - APN internet.beeline.ru »м€ пользовател€ и пароль beeline , номер дозвона *99# - дл€ —им карты от телефона
+	  //  Ѕ»Ћј…Ќ - APN home.beeline.ru »м€ пользовател€ и пароль beeline , номер дозвона *99# - дл€ специальной сим дл€ модема
+
+	  //  AT+CGDCONT=1,"IP","home.beeline.ru" и сохран€ем. 
+	  //  дл€ сим от телефона Ѕилайн AT+CGDCONT=1,"IP","internet.beeline.ru" 
+	  //  дл€ ћегафона AT+CGDCONT=1,"IP","internet"
+	  //  дл€ ћ“— AT+CGDCONT=1,"IP","internet.mts.ru"
+	 
+	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[22])));
+	  SIM_SERIAL.print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"APN\",\"");
+	  SIM_SERIAL.print(apn);
+	  SIM_SERIAL.println('\"');
+	  if (!sendCommand(0))   return 4;
+
+	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[23])));
+	  SIM_SERIAL.print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"USER\",\"");
+	  SIM_SERIAL.print(user);
+	  SIM_SERIAL.println('\"');
+	  if (!sendCommand(0))   return 4;
+
+	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[24])));
+	  SIM_SERIAL.print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"PWD\",\"");
+	  SIM_SERIAL.print(pwd);
+	  SIM_SERIAL.println('\"');
+	  if (!sendCommand(0))   return 4;
+
+	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[25])));
+	  SIM_SERIAL.print(bufcom);                                      //SIM_SERIAL.print("AT+CGDCONT=1,\"IP\",\"");
+	  SIM_SERIAL.print(cont);
+	  SIM_SERIAL.println('\"');
+	  if (!sendCommand(0))   return 4;
+
+	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[26])));
+	  sendCommand(bufcom, 10000);                                    //sendCommand("AT+SAPBR=1,1", 10000);                     // установка GPRS св€зи
+	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[27])));
+	  sendCommand(bufcom, 10000);                                    //sendCommand("AT+SAPBR=2,1", 10000);                     // полученный IP адрес
+
+	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[28])));
+	  sendCommand(bufcom);                                           //sendCommand("AT+CMGF=1");                               // sets the SMS mode to text
+	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[29])));
+	  sendCommand(bufcom);                                           //sendCommand("AT+CPMS=\"SM\",\"SM\",\"SM\"");            // selects the memory
+	  return 0;                                                   // ”спешна€ регистраци€
   }
-  		
-  if (!success)
-    return 1;
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));
-	if (!sendCommand(bufcom)) return 2;   // if (!sendCommand("AT+CGATT?"))     // –егистраци€ в GPRS
- 
-    strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[10])));
-    if (!sendCommand(bufcom)) return 3;  // 
-    // if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))     return 3;// 
-
-     getOperatorName();
-	 String OperatorName = buffer;
-	 cleanStr(OperatorName);
-     strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[12]))); //"MTS"
-	if (OperatorName.indexOf(bufcom) > -1) 
-	{
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[11])));
-		apn  = bufcom;
-		//apn  = "internet.mts.ru";
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[13]))); 
-		user = bufcom;
-		pwd  = bufcom;
-	/*	user = "mts";
-		pwd  = "mts";*/
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[11])));
-		cont = bufcom;
-		//cont = "internet.mts.ru";
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[12]))); //"MTS"
-		Serial.println(bufcom);
-	}
-    else if (OperatorName.indexOf("Beeline") > -1) 
-	{
-	    strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[15])));
-		apn = bufcom1;                                                 //apn = "internet.beeline.ru";
-	    strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[16])));
-		user = bufcom;                                                 //user = "beeline";
-		pwd = bufcom;                                                  //pwd = "beeline";
-		cont = bufcom1;                                                //cont = "internet.beeline.ru";
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[14])));
-		Serial.println(bufcom);                                        //Serial.println("Beeline");
-	}
-	else if (OperatorName.indexOf("MegaFon") > -1) 
-	{
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[17])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[18])));
-	apn = bufcom1;	                                                   //apn = "internet";
-	user = "";
-	pwd = "";
-	cont = bufcom1;	                                                   //cont = "internet";
-	Serial.println(bufcom);                                            //Serial.println("MEGAFON");
-	}
-	else if (OperatorName.indexOf("TELE2") > -1) 
-	{
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[20])));
-		strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[21])));
-		apn = bufcom1;                                                 //apn = "internet.TELE2.ru";
-		user = "";
-		pwd = "";
-		apn = bufcom1;                                                 //cont = "internet.TELE2.ru";
-		Serial.println(bufcom);	                                       // Serial.println("TELE2");
-	}
-
-	//  Ќастройки дл€ операторов:
-	//  ћ“— - APN internet.mts.ru »м€ пользовател€ и пароль mts , номер дозвона *99#
-	//  ћ≈√ј‘ќЌ - APN internet »м€ пользовател€ и пароль internet , номер дозвона *99#
-	//  “≈Ћ≈2 - APN internet.tele2.ru »м€ пользовател€ и пароль пусто , номер дозвона *99#
-	//  Ѕ»Ћј…Ќ - APN internet.beeline.ru »м€ пользовател€ и пароль beeline , номер дозвона *99# - дл€ —им карты от телефона
-	//  Ѕ»Ћј…Ќ - APN home.beeline.ru »м€ пользовател€ и пароль beeline , номер дозвона *99# - дл€ специальной сим дл€ модема
-
-	//	AT+CGDCONT=1,"IP","home.beeline.ru" и сохран€ем. 
-	//  дл€ сим от телефона Ѕилайн AT+CGDCONT=1,"IP","internet.beeline.ru" 
-	//  дл€ ћегафона AT+CGDCONT=1,"IP","internet"
-	//  дл€ ћ“— AT+CGDCONT=1,"IP","internet.mts.ru"
-	//  дл€ “≈Ћ≈2 AT+CGDCONT=1,"IP","internet.tele2.ru"
-
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[22])));
-	SIM_SERIAL.print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"APN\",\"");
-	SIM_SERIAL.print(apn);
-	SIM_SERIAL.println('\"');
-	if (!sendCommand(0))   return 4;
-
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[23])));
-	SIM_SERIAL.print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"USER\",\"");
-	SIM_SERIAL.print(user);
-	SIM_SERIAL.println('\"');
-	if (!sendCommand(0))   return 4;
-
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[24])));
-	SIM_SERIAL.print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"PWD\",\"");
-	SIM_SERIAL.print(pwd);
-	SIM_SERIAL.println('\"');
-	if (!sendCommand(0))   return 4;
-
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[25])));
-	SIM_SERIAL.print(bufcom);                                      //SIM_SERIAL.print("AT+CGDCONT=1,\"IP\",\"");
-	SIM_SERIAL.print(cont);
-	SIM_SERIAL.println('\"');
-	if (!sendCommand(0))   return 4;
-
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[26])));
-	sendCommand(bufcom, 10000);                                    //sendCommand("AT+SAPBR=1,1", 10000);                     // установка GPRS св€зи
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[27])));
-	sendCommand(bufcom, 10000);                                    //sendCommand("AT+SAPBR=2,1", 10000);                     // полученный IP адрес
-
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[28])));
-	sendCommand(bufcom);                                           //sendCommand("AT+CMGF=1");                               // sets the SMS mode to text
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[29])));
-	sendCommand(bufcom);                                           //sendCommand("AT+CPMS=\"SM\",\"SM\",\"SM\"");            // selects the memory
-
-	if (!success)   return 5;
-	return 0;
+	return 5;                                                   // Ќеуспешна€ регистраци€
 }
+
+
+
+
 
 void CGPRS_SIM800::cleanStr(String & str) 
 {
@@ -240,7 +194,6 @@ void CGPRS_SIM800::cleanStr(String & str)
 
 uint8_t CGPRS_SIM800::getNetworkStatus()
 {
-
 	for (byte n = 0; n < 30; n++)
 	{
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[7])));
@@ -259,7 +212,7 @@ uint8_t CGPRS_SIM800::getNetworkStatus()
 			// 4 Ц неизвестно
 			// 5 Ц роуминг
 		
-			char *p = strstr(buffer, "0,");
+			char *p = strstr(buffer, "0,");    // ѕолучить второй параметр
 			if (p)
 			{
 				char mode = *(p + 2);
@@ -273,110 +226,39 @@ uint8_t CGPRS_SIM800::getNetworkStatus()
 					strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[8])));
 					sendCommand(bufcom, 1000); 	//sendCommand("AT+CSQ",1000); 
 					char *p = strstr(buffer, "CSQ: ");
-					/*		Serial.println();
-					Serial.println(p);   */
-					//success = true;
-					//break;
-
-					uint8_t status = atoi(mode);
-					return  status;
-
+					return mode;
 				}
 			}
 		}
 		delay(1000);
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[7])));
-	if (sendCommand(bufcom, 2000))
-	{	// if (sendCommand("AT+CREG?", 2000))  // “ип регистрации сети
-		// ѕервый параметр:
-		// 0 Ц нет кода регистрации сети
-		// 1 Ц есть код регистрации сети
-		// 2 Ц есть код регистрации сети + доп параметры
-		// ¬торой параметр:
-		// 0 Ц не зарегистрирован, поиска сети нет
-		// 1 Ц зарегистрирован, домашн€€ сеть
-		// 2 Ц не зарегистрирован, идЄт поиск новой сети
-		// 3 Ц регистраци€ отклонена
-		// 4 Ц неизвестно
-		// 5 Ц роуминг
-		uint8_t status;
-		char *p = strstr(buffer, "0,");
-	
-		if (p)
-		{
-			char mode = *(p + 2);
-#if DEBUG
-			DEBUG.print("Mode:");
-			DEBUG.println(mode);
-#endif
-			status =  atoi(mode);
-			return  status;
-			
-			
-			//	return  mode;
-			if (mode == '1' || mode == '5')
-			{
-				//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[8])));
-				//sendCommand(bufcom, 1000); 	//sendCommand("AT+CSQ",1000); 
-				//char *p = strstr(buffer, "CSQ: ");
-				//		Serial.println();
-				//Serial.println(p);   
-				//success = true;
-				//break;
-				status = atoi(mode);
-				return  status;
-
-			}
-		}
-	}
-	*/
 }
 
 
 bool CGPRS_SIM800::getIMEI()
 {
-
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[30])));
     sendCommand(bufcom);                                          //sendCommand("AT+GSN");
     delay(1000);
 
-  //if (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
- // {
- //   char *p = strstr(buffer, "\r");          //‘ункци€ strstr() возвращает указатель на первое вхождение в строку, 
+  if (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
+  {
+    char *p = strstr(buffer, "\r");          //‘ункци€ strstr() возвращает указатель на первое вхождение в строку, 
 	                                         //на которую указывает str1, строки, указанной str2 (исключа€ завершающий нулевой символ).
 	                                         //≈сли совпадений не обнаружено, возвращаетс€ NULL.
-     // if (p) 
-	 // {
-   //     p += 2;
+      if (p) 
+	  {
+        p += 2;
 		
-		 ////  char *s = strstr(buffer, "OK");  // »щем завершени€ операции
-   //      char *s = strchr(p, '\r');       // ‘ункци€ strchr() возвращает указатель на первое вхождение символа ch в строку, 
-			//							    //на которую указывает str. ≈сли символ ch не найден,
-			//							    //возвращаетс€ NULL. 
-   //      if (s) *s = 0;   strcpy(buffer, p);
+		 // char *s = strstr(buffer, "OK");  // »щем завершени€ операции
+         char *s = strchr(p, '\r');       // ‘ункци€ strchr() возвращает указатель на первое вхождение символа ch в строку, 
+										    //на которую указывает str. ≈сли символ ch не найден,
+										    //возвращаетс€ NULL. 
+         if (s) *s = 0;   strcpy(buffer, p);
 	     return true;
-      //}
- // }
- // return false;
+      }
+  }
+  return false;
 }
 
 bool CGPRS_SIM800::getOperatorName()
@@ -517,6 +399,7 @@ bool CGPRS_SIM800::httpInit()
 	httpState = HTTP_READY;
 	return true;
 }
+
 bool CGPRS_SIM800::httpConnect(const char* url, const char* args)
 {
   	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[38])));
@@ -590,6 +473,7 @@ byte CGPRS_SIM800::httpIsConnected()
     }
     return ret;
 }
+
 void CGPRS_SIM800::httpRead()
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[44])));
@@ -625,6 +509,7 @@ int CGPRS_SIM800::httpIsRead()
     }
     return 0;
 }
+
 byte CGPRS_SIM800::sendCommand(const char* cmd, unsigned int timeout, const char* expected)
 {
   if (cmd) 
@@ -667,6 +552,10 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, unsigned int timeout, const char
 #endif
   return 0;
 }
+
+
+
+
 byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1, const char* expected2, unsigned int timeout)
 {
   if (cmd) 
