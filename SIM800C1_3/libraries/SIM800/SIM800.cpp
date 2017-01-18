@@ -9,18 +9,14 @@
 #include <SoftwareSerial.h>
 #include <avr/pgmspace.h>
 
-SoftwareSerial SIM_SERIAL(PIN_RX, PIN_TX);                // RX, TX
-
-bool CGPRS_SIM800::begin(long speed_serial)
+bool CGPRS_SIM800::begin(Stream &port)
 {
-
-	SIM_SERIAL.begin(speed_serial);
-
+	SIM_SERIAL = &port;
 	int16_t timeout = 7000;
 
 	while (timeout > 0)
 	{
-		while (SIM_SERIAL.available()) SIM_SERIAL.read();
+		while (SIM_SERIAL->available()) SIM_SERIAL->read();
 		if (sendCommand("AT"))
 		{
 			break;
@@ -62,9 +58,9 @@ bool CGPRS_SIM800::begin(long speed_serial)
 		sendCommand(bufcom);                                            // режим кодировки текста
 		delay(100);																//sendCommand("AT+CSCS=\"GSM\"");                               // режим кодировки текста
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[6])));
-		sendCommand(bufcom);                                            // отображение смс в терминале сразу после приема (без этого 
+		//sendCommand(bufcom);                                            // отображение смс в терминале сразу после приема (без этого 
 		delay(100);															//sendCommand("AT+CNMI=2,2");                                   // отображение смс в терминале сразу после приема (без этого сообщения молча падают в память)tln("AT+CSCS=\"GSM\""); 
-		sendCommand("AT+CMGDA=\"DEL ALL\"");                            // AT+CMGDA=«DEL ALL» команда удалит все сообщения
+		//sendCommand("AT+CMGDA=\"DEL ALL\"");                            // AT+CMGDA=«DEL ALL» команда удалит все сообщения
 		delay(100);
 		//sendCommand("AT+CMGDA=\"DEL ALL\"");                            // AT+CMGDA=«DEL ALL» команда удалит все сообщения
 		//delay(100);
@@ -142,27 +138,27 @@ byte CGPRS_SIM800::setup()
 	  //  для МТС AT+CGDCONT=1,"IP","internet.mts.ru"
 	 
 	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[22])));
-	  SIM_SERIAL.print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"APN\",\"");
-	  SIM_SERIAL.print(apn);
-	  SIM_SERIAL.println('\"');
+	  SIM_SERIAL->print(bufcom);                                       //SIM_SERIAL->print("AT+SAPBR=3,1,\"APN\",\"");
+	  SIM_SERIAL->print(apn);
+	  SIM_SERIAL->println('\"');
 	  if (!sendCommand(0))   return 4;
 
 	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[23])));
-	  SIM_SERIAL.print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"USER\",\"");
-	  SIM_SERIAL.print(user);
-	  SIM_SERIAL.println('\"');
+	  SIM_SERIAL->print(bufcom);                                       //SIM_SERIAL->print("AT+SAPBR=3,1,\"USER\",\"");
+	  SIM_SERIAL->print(user);
+	  SIM_SERIAL->println('\"');
 	  if (!sendCommand(0))   return 4;
 
 	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[24])));
-	  SIM_SERIAL.print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"PWD\",\"");
-	  SIM_SERIAL.print(pwd);
-	  SIM_SERIAL.println('\"');
+	  SIM_SERIAL->print(bufcom);                                       //SIM_SERIAL->print("AT+SAPBR=3,1,\"PWD\",\"");
+	  SIM_SERIAL->print(pwd);
+	  SIM_SERIAL->println('\"');
 	  if (!sendCommand(0))   return 4;
 
 	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[25])));
-	  SIM_SERIAL.print(bufcom);                                      //SIM_SERIAL.print("AT+CGDCONT=1,\"IP\",\"");
-	  SIM_SERIAL.print(cont);
-	  SIM_SERIAL.println('\"');
+	  SIM_SERIAL->print(bufcom);                                      //SIM_SERIAL->print("AT+CGDCONT=1,\"IP\",\"");
+	  SIM_SERIAL->print(cont);
+	  SIM_SERIAL->println('\"');
 	  if (!sendCommand(0))   return 4;
 
 	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[26])));
@@ -178,10 +174,6 @@ byte CGPRS_SIM800::setup()
   }
 	return 5;                                                   // Неуспешная регистрация
 }
-
-
-
-
 
 void CGPRS_SIM800::cleanStr(String & str) 
 {
@@ -300,9 +292,9 @@ bool CGPRS_SIM800::ping(const char* url)
 	//return false;
 	//sendCommand(url, 3000);
 
-	SIM_SERIAL.print("AT+CIPPING=\"");
-	SIM_SERIAL.print(url);
-	SIM_SERIAL.println('\"');
+	SIM_SERIAL->print("AT+CIPPING=\"");
+	SIM_SERIAL->print(url);
+	SIM_SERIAL->println('\"');
 
 }
 
@@ -312,10 +304,39 @@ bool CGPRS_SIM800::checkSMS()
  if (sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1) 
   {
     // reads the data of the SMS
+
+	 //if (SIM_SERIAL->available())             //есть данные от GSM модуля
+	 //{
+		// delay(100);                          //выждем, чтобы строка успела попасть в порт целиком раньше чем будет считана
+		// while (SIM_SERIAL->available())       //есть данные от GSM модуля
+		// {
+		//	 ch = SIM_SERIAL->read();
+		//	 val += char(ch);                   //сохраняем входную строку в переменную val
+		//	 delay(10);
+		// }
+		// /*	Serial.println(val);
+		// return true;*/
+	 //}
+
+
     sendCommand(0, 100, "\r\n");
     if (sendCommand(0)) {
+
+		//if (SIM_SERIAL->available())             //есть данные от GSM модуля
+		//{
+		//	delay(100);                          //выждем, чтобы строка успела попасть в порт целиком раньше чем будет считана
+		//	while (SIM_SERIAL->available())       //есть данные от GSM модуля
+		//	{
+		//		ch = SIM_SERIAL->read();
+		//		val += char(ch);                   //сохраняем входную строку в переменную val
+		//		delay(10);
+		//	}
+		///*	Serial.println(val);
+		//	return true;*/
+		//}
+
       // remove the SMS
-      sendCommand("AT+CMGD=1");
+	  sendCommand("AT+CMGD=1");
       return true;
     }
   }
@@ -323,12 +344,12 @@ bool CGPRS_SIM800::checkSMS()
 }
 bool CGPRS_SIM800::checkSMSU()
 {
- if (SIM_SERIAL.available())             //есть данные от GSM модуля
+ if (SIM_SERIAL->available())             //есть данные от GSM модуля
  {          
     delay(100);                          //выждем, чтобы строка успела попасть в порт целиком раньше чем будет считана
-    while (SIM_SERIAL.available())       //есть данные от GSM модуля
+    while (SIM_SERIAL->available())       //есть данные от GSM модуля
 	{    
-      ch = SIM_SERIAL.read();
+      ch = SIM_SERIAL->read();
       val += char(ch);                   //сохраняем входную строку в переменную val
       delay(10);
     }
@@ -403,20 +424,20 @@ bool CGPRS_SIM800::httpInit()
 bool CGPRS_SIM800::httpConnect(const char* url, const char* args)
 {
   	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[38])));
-    SIM_SERIAL.print(bufcom);                    //SIM_SERIAL.print("AT+HTTPPARA=\"URL\",\"");
-    SIM_SERIAL.print(url);
+    SIM_SERIAL->print(bufcom);                    //SIM_SERIAL->print("AT+HTTPPARA=\"URL\",\"");
+    SIM_SERIAL->print(url);
     if (args) 
 	{
-        SIM_SERIAL.print('?');
-        SIM_SERIAL.print(args);
+        SIM_SERIAL->print('?');
+        SIM_SERIAL->print(args);
     }
 
-    SIM_SERIAL.println('\"');
+    SIM_SERIAL->println('\"');
     if (sendCommand(0))
     {
         // Starts GET action
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[39])));
-        SIM_SERIAL.println(bufcom);                         //SIM_SERIAL.println("AT+HTTPACTION=0");
+        SIM_SERIAL->println(bufcom);                         //SIM_SERIAL->println("AT+HTTPACTION=0");
         httpState = HTTP_CONNECTING;
         m_bytesRecv = 0;
         m_checkTimer = millis();
@@ -431,20 +452,20 @@ bool CGPRS_SIM800::httpConnect(const char* url, const char* args)
 bool CGPRS_SIM800::httpConnectStr(const char* url, String args)
 {
  	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[40])));
-    SIM_SERIAL.print(bufcom);    //SIM_SERIAL.print("AT+HTTPPARA=\"URL\",\"");
-    SIM_SERIAL.print(url);
+    SIM_SERIAL->print(bufcom);    //SIM_SERIAL->print("AT+HTTPPARA=\"URL\",\"");
+    SIM_SERIAL->print(url);
     if (args) 
 	{
-        SIM_SERIAL.print('?');
-        SIM_SERIAL.print(args);
+        SIM_SERIAL->print('?');
+        SIM_SERIAL->print(args);
     }
 
-    SIM_SERIAL.println('\"');
+    SIM_SERIAL->println('\"');
 	delay(500);
     if (sendCommand(0))
     {
         strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[41])));
-        SIM_SERIAL.println(bufcom);              //SIM_SERIAL.println("AT+HTTPACTION=0");
+        SIM_SERIAL->println(bufcom);              //SIM_SERIAL->println("AT+HTTPACTION=0");
         httpState = HTTP_CONNECTING;
         m_bytesRecv = 0;
         m_checkTimer = millis();
@@ -477,7 +498,7 @@ byte CGPRS_SIM800::httpIsConnected()
 void CGPRS_SIM800::httpRead()
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[44])));
-	SIM_SERIAL.println(bufcom);     //SIM_SERIAL.println("AT+HTTPREAD");
+	SIM_SERIAL->println(bufcom);     //SIM_SERIAL->println("AT+HTTPREAD");
     httpState = HTTP_READING;
     m_bytesRecv = 0;
     m_checkTimer = millis();
@@ -519,14 +540,14 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, unsigned int timeout, const char
     DEBUG.print('>');
     DEBUG.println(cmd);
 #endif
-    SIM_SERIAL.println(cmd);
+    SIM_SERIAL->println(cmd);
   }
   uint32_t t = millis();
   byte n = 0;
   do {
-    if (SIM_SERIAL.available()) 
+    if (SIM_SERIAL->available()) 
 	{
-      char c = SIM_SERIAL.read();
+      char c = SIM_SERIAL->read();
       if (n >= sizeof(buffer) - 1) 
 	  {
         // buffer full, discard first half
@@ -565,14 +586,14 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1, const cha
 	    DEBUG.print('>');
 	    DEBUG.println(cmd);
 	#endif
-	SIM_SERIAL.println(cmd);
+	SIM_SERIAL->println(cmd);
   }
   uint32_t t = millis();
   byte n = 0;
 	do {
-		if (SIM_SERIAL.available()) 
+		if (SIM_SERIAL->available()) 
 		{
-		  char c = SIM_SERIAL.read();
+		  char c = SIM_SERIAL->read();
 		  if (n >= sizeof(buffer) - 1) 
 		  {
 			// buffer full, discard first half
@@ -608,9 +629,9 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1, const cha
 
 byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, unsigned int timeout)
 {
-    while (SIM_SERIAL.available()) 
+    while (SIM_SERIAL->available()) 
 	{
-        char c = SIM_SERIAL.read();
+        char c = SIM_SERIAL->read();
         if (m_bytesRecv >= sizeof(buffer) - 1) 
 		{
             // buffer full, discard first half буфер заполнен, выбросьте первую половину
@@ -633,9 +654,9 @@ byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, uns
 
 void CGPRS_SIM800::purgeSerial()    // Очистить приемный буффер
 {
-   while (SIM_SERIAL.available()) SIM_SERIAL.read();
+   while (SIM_SERIAL->available()) SIM_SERIAL->read();
 }
 bool CGPRS_SIM800::available()
 {
-    return SIM_SERIAL.available(); 
+    return SIM_SERIAL->available(); 
 }

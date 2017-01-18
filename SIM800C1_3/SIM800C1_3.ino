@@ -53,6 +53,14 @@ static const char* url2 = "AT+CIPPING=\"www.yandex.ru\"";
 static const char* url3 = "www.yandex.ru";
 
 
+#define PIN_TX           7                             // Подключить  к выводу 7 сигнал RX модуля GPRS
+#define PIN_RX           8                              // Подключить  к выводу 8 сигнал TX модуля GPRS
+
+SoftwareSerial fonaSS = SoftwareSerial(PIN_RX, PIN_TX);
+SoftwareSerial *GPRSSerial = &fonaSS;
+
+
+
 #define PWR_On           5                          // Включение питания модуля SIM800
 #define SIM800_RESET_PIN 6                          // Сброс модуля SIM800
 #define LED13           13                          // Индикация светодиодом
@@ -507,16 +515,16 @@ void start_init()
 	uint8_t count_init = 0;
 	do
 	{
-		con.println(F("Initializing....(May take 5 seconds)"));
+		con.println(F("Initializing....(May take 5-10 seconds)"));
 
-		digitalWrite(SIM800_RESET_PIN, LOW);               // Сигнал сброс в исходное состояние
+		digitalWrite(SIM800_RESET_PIN, LOW);                      // Сигнал сброс в исходное состояние
 		digitalWrite(LED13, LOW);
-		digitalWrite(PWR_On, HIGH);                // Кратковременно отключаем питание модуля GPRS
+		digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
 		delay(2000);
 		digitalWrite(LED13, HIGH);
 		digitalWrite(PWR_On, LOW);
 		delay(1500);
-		digitalWrite(SIM800_RESET_PIN, HIGH);              // Производим сброс модема после включения питания
+		digitalWrite(SIM800_RESET_PIN, HIGH);                     // Производим сброс модема после включения питания
 		delay(1000);
 		digitalWrite(SIM800_RESET_PIN, LOW);
 
@@ -527,9 +535,13 @@ void start_init()
 		delay(2000);
 		con.println(F("Power SIM800 On"));
 
-		while (!gprs.begin(speed_Serial))
+
+		GPRSSerial->begin(19200);                               // Скорость обмена с модемом SIM800C
+
+		while (!gprs.begin(*GPRSSerial))
 		{
-			con.write('.');
+			Serial.println(F("Couldn't find module GPRS"));
+			while (1);
 		}
 		con.println(F("OK"));                  // 
 
@@ -701,12 +713,12 @@ void setup()
 
 void loop()
 {
-	
-
- if (gprs.checkSMSU()) 
+ if (gprs.checkSMS()) 
   {
 	con.print(F("SMS:"));                    //  con.print("SMS:");
 	con.println(gprs.val);
+	con.println(gprs.buffer);
+
 	if (gprs.val.indexOf(F("+CMT")) > -1)  //если обнаружен СМС (для определения звонка вместо "+CMT" вписать "RING", трубку он не берет, но реагировать на факт звонка можно)
 	{    
 	//------------- поиск кодового слова в СМС 
@@ -742,7 +754,7 @@ void loop()
 		
 		gprs.val = "";
   }
-
+ 
  
 	unsigned long currentMillis = millis();
 	if(!time_set)                                                               // 
