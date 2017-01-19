@@ -306,10 +306,24 @@ bool CGPRS_SIM800::ifSMSNow(void)
 
 boolean CGPRS_SIM800::sim800_check_with_cmd(const char* cmd, const char *resp, DataType type, unsigned int timeout, unsigned int chartimeout)
 {
-	//sim900_send_cmd(cmd);
-	sendCommand(cmd);
+	sim800_send_cmd(cmd);
+	//sendCommand("AT+CMGR=1");
 	return sim800_wait_for_resp(resp, type, timeout, chartimeout);
 }
+
+void CGPRS_SIM800::sim800_send_cmd(const char* cmd)
+{
+	for (int i = 0; i<strlen(cmd); i++)
+	{
+		sim800_send_byte(cmd[i]);
+	}
+}
+
+void CGPRS_SIM800::sim800_send_byte(uint8_t data)
+{
+	SIM_SERIAL->write(data);
+}
+
 
 boolean CGPRS_SIM800::sim800_wait_for_resp(const char* resp, DataType type, unsigned int timeout, unsigned int chartimeout)
 {

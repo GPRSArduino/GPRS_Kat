@@ -177,7 +177,8 @@ public:
 	
 	void sim800_read_buffer(char* buffer, int count, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
 	boolean  sim800_wait_for_resp(const char* resp, DataType type, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
-
+	void  sim800_send_cmd(const char* cmd);
+	void  sim800_send_byte(uint8_t data);
 	bool checkSMSU();
     // get signal quality level (in dB)
     int getSignalQuality();
