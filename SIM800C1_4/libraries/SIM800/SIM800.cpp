@@ -303,39 +303,10 @@ bool CGPRS_SIM800::checkSMS()
 {
  if (sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1) 
   {
-    // reads the data of the SMS
-
-	 //if (SIM_SERIAL->available())             //есть данные от GSM модуля
-	 //{
-		// delay(100);                          //выждем, чтобы строка успела попасть в порт целиком раньше чем будет считана
-		// while (SIM_SERIAL->available())       //есть данные от GSM модуля
-		// {
-		//	 ch = SIM_SERIAL->read();
-		//	 val += char(ch);                   //сохраняем входную строку в переменную val
-		//	 delay(10);
-		// }
-		// /*	Serial.println(val);
-		// return true;*/
-	 //}
-
-
-    sendCommand(0, 100, "\r\n");
+      sendCommand(0, 100, "\r\n");
     if (sendCommand(0)) {
 
-		//if (SIM_SERIAL->available())             //есть данные от GSM модуля
-		//{
-		//	delay(100);                          //выждем, чтобы строка успела попасть в порт целиком раньше чем будет считана
-		//	while (SIM_SERIAL->available())       //есть данные от GSM модуля
-		//	{
-		//		ch = SIM_SERIAL->read();
-		//		val += char(ch);                   //сохраняем входную строку в переменную val
-		//		delay(10);
-		//	}
-		///*	Serial.println(val);
-		//	return true;*/
-		//}
-
-      // remove the SMS
+	  // remove the SMS
 	  sendCommand("AT+CMGD=1");
       return true;
     }
@@ -359,6 +330,92 @@ bool CGPRS_SIM800::checkSMSU()
   return false; 
 }
 
+int8_t CGPRS_SIM800::getNumSMS(void) 
+{
+	uint16_t numsms;
+	// get into text mode
+	if (!sendCheckReply("AT+CMGF=1", ok_reply)) return -1;
+
+	// ask how many sms are stored
+	if (sendParseReply("AT+CPMS?", "\"SM\",", &numsms))
+		return numsms;
+	if (sendParseReply("AT+CPMS?", "\"SM_P\",", &numsms))
+		return numsms;
+	return -1;
+}
+
+boolean CGPRS_SIM800::readSMS(uint8_t i, char *smsbuff,	uint16_t maxlen, uint16_t *readlen) 
+{
+	// text mode
+	if (!sendCheckReply("AT+CMGF=1", ok_reply)) return false;
+
+	// show all text mode parameters
+	if (!sendCheckReply("AT+CSDH=1", ok_reply)) return false;
+
+	// parse out the SMS len
+	uint16_t thesmslen = 0;
+
+
+	//DEBUG_PRINT(F("AT+CMGR="));
+	//DEBUG_PRINTLN(i);
+
+
+	//getReply(F("AT+CMGR="), i, 1000);  //  do not print debug!
+	SIM_SERIAL->print("AT+CMGR=");
+	SIM_SERIAL->println(i);
+	readline(1000); // timeout
+
+					//DEBUG_PRINT(F("Reply: ")); DEBUG_PRINTLN(replybuffer);
+					// parse it out...
+
+
+	//DEBUG_PRINTLN(buffer);
+
+
+	if (!parseReply("+CMGR:", &thesmslen, ',', 11)) {
+		*readlen = 0;
+		return false;
+	}
+
+	readRaw(thesmslen);
+
+	flushInput();
+
+	uint16_t thelen = min(maxlen, strlen(buffer));
+	strncpy(smsbuff, buffer, thelen);
+	smsbuff[thelen] = 0; // end the string
+
+
+	//DEBUG_PRINTLN(buffer);
+
+	*readlen = thelen;
+	return true;
+}
+boolean CGPRS_SIM800::getSMSSender(uint8_t i, char *sender, int senderlen)
+{
+	// Ensure text mode and all text mode parameters are sent.
+	if (!sendCheckReply("AT+CMGF=1", ok_reply)) return false;
+	if (!sendCheckReply("AT+CSDH=1", ok_reply)) return false;
+
+
+	//DEBUG_PRINT(F("AT+CMGR="));
+	//DEBUG_PRINTLN(i);
+
+
+	// Send command to retrieve SMS message and parse a line of response.
+	SIM_SERIAL->print("AT+CMGR=");
+	SIM_SERIAL->println(i);
+	readline(1000);
+
+	//DEBUG_PRINTLN(buffer);
+
+
+	// Parse the second field in the response.
+	boolean result = parseReplyQuoted("+CMGR:", sender, senderlen, ',', 1);
+	// Drop any remaining data from the response.
+	flushInput();
+	return result;
+}
 
 int CGPRS_SIM800::getSignalQuality()
 {
@@ -574,9 +631,6 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, unsigned int timeout, const char
   return 0;
 }
 
-
-
-
 byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1, const char* expected2, unsigned int timeout)
 {
   if (cmd) 
@@ -659,4 +713,173 @@ void CGPRS_SIM800::purgeSerial()    // Очистить приемный буффер
 bool CGPRS_SIM800::available()
 {
     return SIM_SERIAL->available(); 
+}
+
+// Добавлены программы
+boolean CGPRS_SIM800::sendCheckReply(char* send, char* reply, uint16_t timeout) 
+{
+	if (!getReply(send, timeout))
+		return false;
+
+	return (prog_char_strcmp(buffer, (prog_char*)reply) == 0);
+}
+uint8_t CGPRS_SIM800::getReply(char *send, uint16_t timeout) 
+{
+	flushInput();
+	SIM_SERIAL->println(send);
+	uint8_t l = readline(timeout);
+	return l;
+}
+
+
+void  CGPRS_SIM800::flushInput() 
+{
+	// Read all available serial input to flush pending data.
+	uint16_t timeoutloop = 0;
+	while (timeoutloop++ < 40) {
+		while (available()) {
+			read();
+			timeoutloop = 0;  // If char was received reset the timer
+		}
+		delay(1);
+	}
+}
+inline int CGPRS_SIM800::read(void)
+{
+	return SIM_SERIAL->read();
+}
+uint16_t CGPRS_SIM800::readRaw(uint16_t b) {
+	uint16_t idx = 0;
+
+	while (b && (idx < sizeof(buffer) - 1)) {
+		if (SIM_SERIAL->available()) {
+			buffer[idx] = SIM_SERIAL->read();
+			idx++;
+			b--;
+		}
+	}
+	buffer[idx] = 0;
+
+	return idx;
+}
+uint8_t CGPRS_SIM800::readline(uint16_t timeout, boolean multiline) 
+{
+	uint16_t replyidx = 0;
+
+	while (timeout--) {
+		if (replyidx >= 254) {
+			//DEBUG_PRINTLN(F("SPACE"));
+			break;
+		}
+
+		while (SIM_SERIAL->available()) {
+			char c = SIM_SERIAL->read();
+			if (c == '\r') continue;
+			if (c == 0xA) {
+				if (replyidx == 0)   // the first 0x0A is ignored
+					continue;
+
+				if (!multiline) {
+					timeout = 0;         // the second 0x0A is the end of the line
+					break;
+				}
+			}
+			buffer[replyidx] = c;
+			//DEBUG_PRINT(c, HEX); DEBUG_PRINT("#"); DEBUG_PRINTLN(c);
+			replyidx++;
+		}
+
+		if (timeout == 0) {
+			//DEBUG_PRINTLN(F("TIMEOUT"));
+			break;
+		}
+		delay(1);
+	}
+	buffer[replyidx] = 0;  // null term
+	return replyidx;
+}
+boolean CGPRS_SIM800::sendParseReply(char* tosend, char* toreply,	uint16_t *v, char divider, uint8_t index) 
+{
+	getReply(tosend);
+
+	if (!parseReply(toreply, v, divider, index)) return false;
+
+	readline(); // eat 'OK'
+
+	return true;
+}
+boolean CGPRS_SIM800::parseReply(char* toreply,	uint16_t *v, char divider, uint8_t index) 
+{
+	char *p = prog_char_strstr(buffer, (prog_char*)toreply);  // get the pointer to the voltage
+	if (p == 0) return false;
+	p += prog_char_strlen((prog_char*)toreply);
+	//DEBUG_PRINTLN(p);
+	for (uint8_t i = 0; i<index; i++) {
+		// increment dividers
+		p = strchr(p, divider);
+		if (!p) return false;
+		p++;
+		//DEBUG_PRINTLN(p);
+
+	}
+	*v = atoi(p);
+
+	return true;
+}
+boolean CGPRS_SIM800::parseReply(char* toreply,	char *v, char divider, uint8_t index) 
+{
+	uint8_t i = 0;
+	char *p = prog_char_strstr(buffer, (prog_char*)toreply);
+	if (p == 0) return false;
+	p += prog_char_strlen((prog_char*)toreply);
+
+	for (i = 0; i<index; i++) {
+		// increment dividers
+		p = strchr(p, divider);
+		if (!p) return false;
+		p++;
+	}
+
+	for (i = 0; i<strlen(p); i++) {
+		if (p[i] == divider)
+			break;
+		v[i] = p[i];
+	}
+
+	v[i] = '\0';
+
+	return true;
+}
+boolean CGPRS_SIM800::parseReplyQuoted(char* toreply,char *v, int maxlen, char divider, uint8_t index) 
+{
+	uint8_t i = 0, j;
+	// Verify response starts with toreply.
+	char *p = prog_char_strstr(buffer, (prog_char*)toreply);
+	if (p == 0) return false;
+	p += prog_char_strlen((prog_char*)toreply);
+
+	// Find location of desired response field.
+	for (i = 0; i<index; i++) {
+		// increment dividers
+		p = strchr(p, divider);
+		if (!p) return false;
+		p++;
+	}
+
+	// Copy characters from response field into result string.
+	for (i = 0, j = 0; j<maxlen && i<strlen(p); ++i) {
+		// Stop if a divier is found.
+		if (p[i] == divider)
+			break;
+		// Skip any quotation marks.
+		else if (p[i] == '"')
+			continue;
+		v[j++] = p[i];
+	}
+
+	// Add a null terminator if result string buffer was not filled.
+	if (j < maxlen)
+		v[j] = '\0';
+
+	return true;
 }

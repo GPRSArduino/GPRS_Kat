@@ -5,10 +5,21 @@
 * For more information, please visit http://arduinodev.com
 *************************************************************************/
 
+#ifndef SIM800C_H
+#define SIM800C_H
+
+
+
+
 #include <Arduino.h>
 #include <avr/pgmspace.h>
+#include "includes/FONAConfig.h"
+#include "includes/FONAExtIncludes.h"
+#include "includes/platform/FONAPlatform.h"
 
-typedef	Stream 						FONAStreamType;
+
+#define FONA_DEFAULT_TIMEOUT_MS 500
+
 
 
 
@@ -142,10 +153,14 @@ typedef struct {
   uint8_t second;
 } GSM_LOCATION;
 
-class CGPRS_SIM800 {
+class CGPRS_SIM800  {
 public:
     CGPRS_SIM800():httpState(HTTP_DISABLED) {}
     // initialize the module
+
+	int read(void);
+
+
    
 	bool begin(Stream &port);
     // setup network
@@ -161,6 +176,9 @@ public:
     // check for incoming SMS
     bool checkSMS();
 	bool checkSMSU();
+	int8_t getNumSMS(void);
+	boolean readSMS(uint8_t i, char *smsbuff, uint16_t max, uint16_t *readsize);
+	boolean getSMSSender(uint8_t i, char *sender, int senderlen);
     // get signal quality level (in dB)
     int getSignalQuality();
     // get GSM location and network time
@@ -191,18 +209,34 @@ public:
       return sendCommand(enabled ? "AT+CFUN=0" : "AT+CFUN=1");
     }
     // check if there is available serial data
+	boolean sendCheckReply(char *send, char *reply, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
+
     bool available();
 	void cleanStr(String & str);
 
     //{
     // // return SIM_SERIAL->available(); 
     //}
-    char buffer[128];
+    char buffer[255];
     byte httpState;
 	String val = "";
+	
+
+
+
 
 private:
     byte checkbuffer(const char* expected1, const char* expected2 = 0, unsigned int timeout = 2000);
+	uint8_t getReply(char *send, uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS);
+	uint8_t readline(uint16_t timeout = FONA_DEFAULT_TIMEOUT_MS, boolean multiline = false);
+	char* ok_reply;
+	boolean sendParseReply(char* tosend, char* toreply,uint16_t *v, char divider = ',', uint8_t index = 0);
+	boolean parseReply(char* toreply, uint16_t *v, char divider = ',', uint8_t index = 0);
+	boolean parseReply(char* toreply, char *v, char divider = ',', uint8_t index = 0);
+	uint16_t readRaw(uint16_t b);
+	boolean parseReplyQuoted(char* toreply, char *v, int maxlen, char divider, uint8_t index);
+	void flushInput();
+
     void purgeSerial();
     byte m_bytesRecv;
     uint32_t m_checkTimer;
@@ -219,3 +253,4 @@ private:
 	FONAStreamType *SIM_SERIAL;
 };
 
+#endif
