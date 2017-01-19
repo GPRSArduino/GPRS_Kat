@@ -105,6 +105,9 @@ String imei = "861445030362268";                  // Тест IMEI
 //char mydata[] = "t1=861445030362268@04/01/02,15:22:52 00@24.50@25.60";
 // тел Мегафон +79258110171
 
+char buffer[48];
+
+
 unsigned long time;                                 // Переменная для суточного сброса
 unsigned long time_day = 86400;                     // Переменная секунд в сутках
 unsigned long previousMillis = 0;
@@ -712,6 +715,95 @@ void setup()
 
 void loop()
 {
+
+	// read all SMS
+	int8_t smsnum = gprs.getNumSMS();
+	uint16_t smslen;
+	int8_t smsn = 1; // 1 indexed
+	if (smsnum > 0)
+	{
+		for (; smsn <= smsnum; smsn++)
+		{
+			Serial.print(F("\n\rReading SMS #")); Serial.println(smsn);
+			if (!gprs.readSMS(smsn, buffer, 250, &smslen)) {  // pass in buffer and max len!
+				Serial.println(F("Failed!"));
+				break;
+			}
+			// if the length is zero, its a special case where the index number is higher
+			// so increase the max we'll look at!
+			if (smslen == 0)
+			{
+				Serial.println(F("[empty slot]"));
+				smsnum++;
+				continue;
+			}
+
+			Serial.print(F("***** SMS #")); Serial.print(smsn);
+			Serial.print(" ("); Serial.print(smslen); Serial.println(F(") bytes *****"));
+			Serial.println(buffer);
+			Serial.println(F("*****"));
+			// Обработать SMS
+
+			String gprs_val = buffer;               // Записать текст СМС
+
+			if (gprs.getSMSSender(smsn, buffer, 13))
+			{
+				Serial.println(buffer);
+				String gprs_tel = buffer;            // Записать номер телефона отправителя
+
+													 // Удалить текущую СМС
+				Serial.print(F("\n\rDeleting SMS #")); Serial.println(smsn);
+				if (gprs.deleteSMS(smsn))
+				{
+					Serial.println(F("OK!"));
+				}
+				else
+				{
+					Serial.println(F("Couldn't delete"));
+				}
+
+				//---поиск номера телефона отправителя кодового слова в СМС
+				char buf[13];
+
+				EEPROM.get(Address_tel2, buf);                                         // Восстановить телефон хозяина 1
+				String master_tel2(buf);
+				EEPROM.get(Address_tel3, buf);                                         // Восстановить телефон хозяина 2
+				String master_tel3(buf);
+				EEPROM.get(Address_SMS_center, buf);                                   // Восстановить телефон СМС центра
+				String master_SMS_center(buf);
+
+				if (gprs_tel.indexOf(master_tel2) > -1)                              //если СМС от хозяина 1
+				{
+					Serial.println(F("Commanda tel1"));
+					setTime(gprs_val, master_tel2);
+				}
+				else if (gprs_tel.indexOf(master_tel3) > -1)                          //если СМС от хозяина 2
+				{
+					Serial.println(F("Commanda tel2"));
+					setTime(gprs_val, master_tel3);
+				}
+				else if (gprs_tel.indexOf(master_SMS_center) > -1)                    //если СМС от хозяина 2
+				{
+					Serial.println(F("SMS centr"));
+					setTime(gprs_val, master_SMS_center);
+				}
+				else
+				{
+					Serial.println(F("phone ignored"));
+				}
+			}
+		}
+	}
+
+
+
+
+
+
+
+
+	/*
+
  if (gprs.checkSMS()) 
   {
 	con.print(F("SMS:"));                    //  con.print("SMS:");
@@ -753,7 +845,7 @@ void loop()
 		
 		gprs.val = "";
   }
- 
+ */
  
 	unsigned long currentMillis = millis();
 	if(!time_set)                                                               // 

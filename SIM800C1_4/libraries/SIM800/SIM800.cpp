@@ -416,7 +416,18 @@ boolean CGPRS_SIM800::getSMSSender(uint8_t i, char *sender, int senderlen)
 	flushInput();
 	return result;
 }
-
+boolean CGPRS_SIM800::deleteSMS(uint8_t i)
+{
+	if (!sendCheckReply("AT+CMGF=1", ok_reply)) return false;
+	// read an sms
+	char sendbuff[12] = "AT+CMGD=000";
+	sendbuff[8] = (i / 100) + '0';
+	i %= 100;
+	sendbuff[9] = (i / 10) + '0';
+	i %= 10;
+	sendbuff[10] = i + '0';
+	return sendCheckReply(sendbuff, ok_reply, 2000);
+}
 int CGPRS_SIM800::getSignalQuality()
 {
   strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[8])));

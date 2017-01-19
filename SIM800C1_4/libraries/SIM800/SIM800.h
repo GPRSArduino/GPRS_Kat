@@ -179,6 +179,7 @@ public:
 	int8_t getNumSMS(void);
 	boolean readSMS(uint8_t i, char *smsbuff, uint16_t max, uint16_t *readsize);
 	boolean getSMSSender(uint8_t i, char *sender, int senderlen);
+	boolean deleteSMS(uint8_t i);
     // get signal quality level (in dB)
     int getSignalQuality();
     // get GSM location and network time
