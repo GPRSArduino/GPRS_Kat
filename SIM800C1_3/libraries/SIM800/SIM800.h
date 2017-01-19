@@ -122,6 +122,12 @@ const char* const table_message[] PROGMEM =
  txt_r_n                      // 47 "\r\n";  
 };
 
+enum DataType {
+	CMD = 0,
+	DATA = 1,
+};
+
+
 
 typedef enum {
     HTTP_DISABLED = 0,
@@ -147,11 +153,15 @@ public:
     CGPRS_SIM800():httpState(HTTP_DISABLED) {}
     // initialize the module
    
+
+#define DEFAULT_TIMEOUT     		 5   //seconds
+#define DEFAULT_INTERCHAR_TIMEOUT 1500   //miliseconds
+
+
+
 	bool begin(Stream &port);
     // setup network
     byte setup();
-	// byte setup(const char* apn, const char* user, const char* pwd);
-
 	uint8_t getNetworkStatus();
 
     // get network operator name
@@ -160,6 +170,14 @@ public:
 	bool ping(const char* url);
     // check for incoming SMS
     bool checkSMS();
+	bool ifSMSNow(void);
+	boolean  sim800_check_with_cmd(const char* cmd, const char *resp, DataType type, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
+
+	void readSMS(char *message, char *phone, char *datetime);
+	
+	void sim800_read_buffer(char* buffer, int count, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
+	boolean  sim800_wait_for_resp(const char* resp, DataType type, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
+
 	bool checkSMSU();
     // get signal quality level (in dB)
     int getSignalQuality();
@@ -185,19 +203,12 @@ public:
     byte sendCommand(const char* cmd, unsigned int timeout = 2000, const char* expected = 0);
     // send AT command and check for two possible responses
     byte sendCommand(const char* cmd, const char* expected1, const char* expected2, unsigned int timeout = 2000);
-    // toggle low-power mode
-    bool sleep(bool enabled)
-    {
-      return sendCommand(enabled ? "AT+CFUN=0" : "AT+CFUN=1");
-    }
+  
     // check if there is available serial data
     bool available();
 	void cleanStr(String & str);
 
-    //{
-    // // return SIM_SERIAL->available(); 
-    //}
-    char buffer[128];
+    char buffer[160];
     byte httpState;
 	String val = "";
 
@@ -210,8 +221,7 @@ private:
     String user = "";
     String pwd  = "";
     String cont = "";
-	int _PWR_On           ;                            // Включение питания модуля SIM800
-    int _SIM800_RESET_PIN ;                            // Сброс модуля SIM800
+
     int _LED13            ;                            // Индикация светодиодом
 	char bufcom[40];
 	char bufcom1[20];

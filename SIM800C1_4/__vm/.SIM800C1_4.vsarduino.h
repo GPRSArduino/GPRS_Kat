@@ -66,5 +66,4 @@ typedef void *__builtin_va_list;
 #undef PSTR
 #define PSTR(string_literal) ((const PROGMEM char *)(string_literal))
 #include "SIM800C1_4.ino"
-#include "SIM800C1_3.ino"
 #endif

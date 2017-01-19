@@ -47,17 +47,17 @@
 #include <EEPROM.h>
 
 #define con Serial
-#define speed_Serial 19200
+#define speed_Serial 115200
 static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
-static const char* url2 = "AT+CIPPING=\"www.yandex.ru\"";
-static const char* url3 = "www.yandex.ru";
+//static const char* url2 = "AT+CIPPING=\"www.yandex.ru\"";
+//static const char* url3 = "www.yandex.ru";
 
 
 #define PIN_TX           7                             // Подключить  к выводу 7 сигнал RX модуля GPRS
 #define PIN_RX           8                              // Подключить  к выводу 8 сигнал TX модуля GPRS
 
-SoftwareSerial fonaSS = SoftwareSerial(PIN_RX, PIN_TX);
-SoftwareSerial *GPRSSerial = &fonaSS;
+SoftwareSerial SIM800CSS = SoftwareSerial(PIN_RX, PIN_TX);
+SoftwareSerial *GPRSSerial = &SIM800CSS;
 
 
 
@@ -102,8 +102,6 @@ String zero_tel   = "";
 String imei = "861445030362268";                  // Тест IMEI
 //#define DELIM "&"
 #define DELIM "@"
-//char mydata[] = "t1=861445030362268@04/01/02,15:22:52 00@24.50@25.60";
-// тел Мегафон +79258110171
 
 unsigned long time;                                 // Переменная для суточного сброса
 unsigned long time_day = 86400;                     // Переменная секунд в сутках
@@ -111,6 +109,27 @@ unsigned long previousMillis = 0;
 unsigned long interval = 30;                        // Интервал передачи данных 30 секунд
 //unsigned long interval = 300;                     // Интервал передачи данных 5 минут
 bool time_set = false;                              // Фиксировать интервал заданный СМС
+
+
+													// длина сообщения
+#define MESSAGE_LENGTH 20
+
+													// номер сообщения в памяти сим-карты
+int messageIndex = 0;
+
+// текст сообщения
+char message[MESSAGE_LENGTH];
+// номер, с которого пришло сообщение
+//char phone[16];
+// дата отправки сообщения
+char datetime[24];
+char data_tel[16];                                  // Буфер для номера телефоа
+
+
+
+
+
+
 
 
 int Address_tel1       = 100;                         // Адрес в EEPROM телефона 1
@@ -122,10 +141,10 @@ int Address_port2      = 190;                         // Адрес в EEPROM порт дан
 int Address_interval   = 200;                         // Адрес в EEPROM величины интервала
 int Address_SMS_center = 220;                         // Адрес в EEPROM SMS центра
 
-char data_tel[13];                                  // Буфер для номера телефоа
+//char data_tel[16];                                  // Буфер для номера телефоа
 
-int dataport1 = 0;                                  // порт данных (незадействован)
-int dataport2 = 0;                                  // порт данных (незадействован)
+//int dataport1 = 0;                                  // порт данных (незадействован)
+//int dataport2 = 0;                                  // порт данных (незадействован)
 
 
 uint8_t oneWirePins[]={16, 17, 4};                     //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
@@ -172,10 +191,8 @@ void sendTemps()
 	String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
 
 
-	Serial.println(toSend);
+	//Serial.println(toSend);
 
-	/*strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[2])));
-	Serial.print(bufmessage);*/
 	Serial.println(toSend.length());
 	gprs_send(toSend);
 }
@@ -203,20 +220,15 @@ String formEnd()
 
 	EEPROM.get(Address_tel1, buf);
 	String master_tel1(buf);
-	con.println(master_tel1);
+	//con.println(master_tel1);
 
 	EEPROM.get(Address_tel2, buf);
 	String master_tel2(buf);
-	con.println(master_tel2);
+	//con.println(master_tel2);
 	
 	EEPROM.get(Address_tel3, buf);
 	String master_tel3(buf);
-	con.println(master_tel3);
-
-	 //EEPROM.get(Address_tel1, master_tel1); 
-	 //EEPROM.get(Address_tel2, master_tel3); 
-	 //EEPROM.get(Address_tel2, master_tel3); 
-
+	//con.println(master_tel3);
 
 	 EEPROM.get(Address_SMS_center, SMS_center);   //Получить из EEPROM СМС центр
 
@@ -713,6 +725,29 @@ void setup()
 
 void loop()
 {
+	
+	if (gprs.ifSMSNow())
+	{
+		// читаем его
+		gprs.readSMS(message, data_tel, datetime);
+
+		// выводим номер, с которого пришло смс
+		Serial.print(F("From number: "));
+		Serial.println(data_tel);
+
+		// выводим дату, когда пришло смс
+		Serial.print(F("Datetime: "));
+		Serial.println(datetime);
+
+		// выводим текст сообщения
+		Serial.print(F("Recieved Message: "));
+		Serial.println(message);
+	}
+
+
+
+/*
+
  if (gprs.checkSMS()) 
   {
 	con.print(F("SMS:"));                    //  con.print("SMS:");
@@ -754,7 +789,7 @@ void loop()
 		
 		gprs.val = "";
   }
- 
+ */
  
 	unsigned long currentMillis = millis();
 	if(!time_set)                                                               // 

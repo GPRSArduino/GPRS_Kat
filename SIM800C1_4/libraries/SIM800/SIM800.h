@@ -9,14 +9,15 @@
 #define SIM800C_H
 
 
+typedef	Stream 						FONAStreamType;
 
 
 #include <Arduino.h>
 #include <avr/pgmspace.h>
-#include "includes/FONAConfig.h"
-#include "includes/FONAExtIncludes.h"
-#include "includes/platform/FONAPlatform.h"
-
+//#include "includes/FONAConfig.h"
+//#include "includes/FONAExtIncludes.h"
+//#include "includes/platform/FONAPlatform.h"
+//
 
 #define FONA_DEFAULT_TIMEOUT_MS 500
 

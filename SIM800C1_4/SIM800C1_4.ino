@@ -715,7 +715,7 @@ void setup()
 
 void loop()
 {
-
+	/*
 	// read all SMS
 	int8_t smsnum = gprs.getNumSMS();
 	uint16_t smslen;
@@ -796,7 +796,7 @@ void loop()
 	}
 
 
-
+	*/
 
 
 
