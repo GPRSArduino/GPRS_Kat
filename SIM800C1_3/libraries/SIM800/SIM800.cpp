@@ -359,20 +359,19 @@ boolean CGPRS_SIM800::sim800_wait_for_resp(const char* resp, DataType type, unsi
 
 bool CGPRS_SIM800::checkSMS()
 {
- if (sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1) 
-  {
-	 Serial.print("**SMS**  ");
-	 Serial.println(buffer);
-
-	sendCommand(0, 100, "\r\n");
-	if (sendCommand(0)) {
-	  // remove the SMS
-	  sendCommand("AT+CMGD=1");
+ if (sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1)   // отправляет команду "AT+CMGR=1", поиск ответного сообщения +CMGR:
+  {           // Сообщение найдено 
+	sendCommand(0, 100, "\r\n");               // Чтение сообщения только СМС, отсечен телефон - исправить
+	if (sendCommand(0)) {             		   // по умолчанию  - timeout = 2000, const char* expected = 0);
+	  sendCommand("AT+CMGD=1");                // remove the SMS
 	  return true;
 	}
   }
   return false; 
 }
+
+
+
 /*
 
 void CGPRS_SIM800::sim800_read_buffer(char *buffer1, int count, unsigned int timeout, unsigned int chartimeout)
@@ -406,9 +405,9 @@ void CGPRS_SIM800::sim800_read_buffer(char *buffer1, int count, unsigned int tim
 
 
 
-/*
 
-void CGPRS_SIM800::readSMS(char *message, char *phone, char *datetime)
+
+bool CGPRS_SIM800::readSMS(char *message, char *phone, char *datetime)
 {
 	// Response is like:
 	//+CMT: "+79772941911","","15/12/15,01:51:24+12"
@@ -419,95 +418,93 @@ void CGPRS_SIM800::readSMS(char *message, char *phone, char *datetime)
 	//+CMTI: "SM",2
 	//62632701","","17/01/20,01:14:36+12"
 
-	
-
-
-
-
-
-	int i = 0;
-	int j = 0;
-
-	//char gprsBuffer[160];
-
-	purgeSerial();
-
-	
-	//sim900_clean_buffer(gprsBuffer, sizeof(gprsBuffer));
-	sim800_read_buffer(buffer, sizeof(buffer));
-
-
-	int len = strlen(buffer);
-	Serial.println(buffer);
-
-	j = 0;
-	while (i < len - 2)
-		message[j++] = buffer[i++];
-
-	message[j] = '\0';
-
-
-
-
-	
-	
-	if (buffer[i] == '\"') 
+	if (sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1)   // отправляет команду "AT+CMGR=1", поиск ответного сообщения +CMGR:
 	{
-		i++;
+
+		int i = 0;
+		int j = 0;
+
+		//char gprsBuffer[160];
+
+		//purgeSerial();
+		//sim800_read_buffer(buffer, sizeof(buffer));
+		sendCommand(0);
+
+		int len = strlen(buffer);
+#if DEBUG
+		DEBUG.print("SMS:");
+		DEBUG.println(buffer);
+#endif
+
+
+
+		Serial.println(buffer);
+
 		j = 0;
-		while (buffer[i] != '\"') 
+		while (i < len - 2)
+			message[j++] = buffer[i++];
+
+		message[j] = '\0';
+
+		if (buffer[i] == '\"')
 		{
-			phone[j++] = buffer[i++];
-		}
-		phone[j] = '\0';
-		i++;
-	}
-
-	if (buffer[i] == ',')
-		i++;
-
-	if (buffer[i] == '\"') {
-		i++;
-		while (buffer[i] != '\"') {
+			i++;
+			j = 0;
+			while (buffer[i] != '\"')
+			{
+				phone[j++] = buffer[i++];
+			}
+			phone[j] = '\0';
 			i++;
 		}
-		i++;
-	}
 
-	if (buffer[i] == ',')
-		i++;
+		if (buffer[i] == ',')
+			i++;
 
-	if (buffer[i] == '\"') {
-		i++;
-		j = 0;
-		while (buffer[i] != '\"') {
-			datetime[j++] = buffer[i++];
+		if (buffer[i] == '\"') {
+			i++;
+			while (buffer[i] != '\"') {
+				i++;
+			}
+			i++;
 		}
-		datetime[j] = '\0';
-		i++;
+
+		if (buffer[i] == ',')
+			i++;
+
+		if (buffer[i] == '\"') {
+			i++;
+			j = 0;
+			while (buffer[i] != '\"') {
+				datetime[j++] = buffer[i++];
+			}
+			datetime[j] = '\0';
+			i++;
+		}
+
+		if (buffer[i] == '\r')
+			i++;
+
+		if (buffer[i] == '\n')
+			i++;
+
+		j = 0;
+		while (i < len - 2)
+			message[j++] = buffer[i++];
+
+		message[j] = '\0';
+		return true;
 	}
-
-	if (buffer[i] == '\r')
-		i++;
-
-	if (buffer[i] == '\n')
-		i++;
-
-	j = 0;
-	while (i < len - 2)
-		message[j++] = buffer[i++];
-
-	message[j] = '\0';
-	
+	return false;
 }
 
-*/
 
 
 
 
 
 
+/*
 
 bool CGPRS_SIM800::checkSMSU()
 {
@@ -529,7 +526,7 @@ bool CGPRS_SIM800::checkSMSU()
   }
   return false; 
 }
-
+*/
 
 int CGPRS_SIM800::getSignalQuality()
 {
@@ -703,53 +700,52 @@ int CGPRS_SIM800::httpIsRead()
 }
 
 byte CGPRS_SIM800::sendCommand(const char* cmd, unsigned int timeout, const char* expected)
-{
-  if (cmd) 
+{      // синтаксис - команда, 
+  if (cmd)                                 // Если есть команда - отправить.
   {
-	purgeSerial();   // Очистить приемный буффер
+	purgeSerial();                         // Очистить приемный буффер
 #ifdef DEBUG
 	DEBUG.print('>');
 	DEBUG.println(cmd);
 #endif
-	SIM_SERIAL->println(cmd);
+	SIM_SERIAL->println(cmd);                            // Отправить команду в модем
   }
-  uint32_t t = millis();
+  uint32_t t = millis();                                 // Записать текущее время в начале чтения ответа
   byte n = 0;
-  do {
+  do {                                                   // Читает ответ с модема
 	if (SIM_SERIAL->available()) 
 	{
 	  char c = SIM_SERIAL->read();
-	  if (n >= sizeof(buffer) - 1) 
+	  if (n >= sizeof(buffer) - 1)                       // Если буффер переполнен - удалить первую часть  
 	  {
 		// buffer full, discard first half
-		n = sizeof(buffer) / 2 - 1;
-		memcpy(buffer, buffer + sizeof(buffer) / 2, n);
+		n = sizeof(buffer) / 2 - 1;                      // Буфер заполнен, выбросьте первую половину
+		memcpy(buffer, buffer + sizeof(buffer) / 2, n);  // Переместить вторую половину сообщения
 	  }
-	  buffer[n++] = c;
-	  buffer[n] = 0;
-	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[32])));
-	if (strstr(buffer, expected ? expected : bufcom))    // if (strstr(buffer, expected ? expected : "OK\r")) 
-	  {
-#ifdef DEBUG
+	  buffer[n++] = c;                                   // Записать символ  в буфер и увеличить счетчик на 1                                    
+	  buffer[n] = 0;                                     // Записать 0 в конец строки
+	 if (strstr(buffer, expected ? expected : "OK\r"))   // возвращает указатель на первое вхождение в строку,
+		                                                 // на которую указывает buffer, строки, указанной expected (исключая завершающий нулевой символ). 
+		                                                 // Если совпадений не обнаружено, возвращается NULL.
+	  {                                                  // Переместит указатель на текст expected или "OK\r".
+#ifdef DEBUG                                             
 	   DEBUG.print("[1]");
-	   DEBUG.println(buffer);
+	   DEBUG.println(buffer);                            // в буфере сообщение после отсечки указателя содержимого в expected
 #endif
-	  return n;
+	  return n;                                          // Позиция текущего указателя , Контрольная строка обнаружена 
 	  }
 	}
-  } while (millis() - t < timeout);
+  } while (millis() - t < timeout);                      // Считывать сообщение не более timeout миллисекунд.
 #ifdef DEBUG
-   DEBUG.print("[0]");
+   DEBUG.print("[0]");  
    DEBUG.println(buffer);
 #endif
-  return 0;
+  return 0;                                              // Контрольная строка не обнаружена 
 }
 
 
-
-
 byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1, const char* expected2, unsigned int timeout)
-{
+{        // Поиск в буфере по строкам expected1 или expected2 в течении timeout
   if (cmd) 
   {
 	purgeSerial();   // Очистить приемный буффер
@@ -773,7 +769,7 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1, const cha
 		  }
 		  buffer[n++] = c;
 		  buffer[n] = 0;
-		  if (strstr(buffer, expected1)) 
+		  if (strstr(buffer, expected1))   // Искать по строке  expected1, указатель перемещен
 		  {
 			#ifdef DEBUG
 				   DEBUG.print("[1]");
@@ -781,7 +777,7 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1, const cha
 			#endif
 		   return 1;
 		  }
-		  if (strstr(buffer, expected2)) 
+		  if (strstr(buffer, expected2))  // Искать по строке  expected2, указатель перемещен
 		  {
 			#ifdef DEBUG
 				   DEBUG.print("[2]");
@@ -795,7 +791,7 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1, const cha
    DEBUG.print("[0]");
    DEBUG.println(buffer);
 #endif
-  return 0;
+  return 0;                      // Строка expected1 или expected2 не найдена.
 }
 
 byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, unsigned int timeout)
@@ -803,7 +799,7 @@ byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, uns
 	while (SIM_SERIAL->available()) 
 	{
 		char c = SIM_SERIAL->read();
-		if (m_bytesRecv >= sizeof(buffer) - 1) 
+		if (m_bytesRecv >= sizeof(buffer) - 1)        // m_bytesRecv сбрасывается при применении http
 		{
 			// buffer full, discard first half буфер заполнен, выбросьте первую половину
 			m_bytesRecv = sizeof(buffer) / 2 - 1;
@@ -820,7 +816,7 @@ byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, uns
 			return 2;
 		}
 	}
-	return (millis() - m_checkTimer < timeout) ? 0 : 3;
+	return (millis() - m_checkTimer < timeout) ? 0 : 3;   // m_checkTimer используется при применении http
 }
 
 void CGPRS_SIM800::purgeSerial()    // Очистить приемный буффер

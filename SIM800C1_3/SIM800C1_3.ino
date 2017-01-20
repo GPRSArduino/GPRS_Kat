@@ -725,12 +725,9 @@ void setup()
 
 void loop()
 {
-	/*
-	if (gprs.ifSMSNow())
+	
+	if (gprs.readSMS(message, data_tel, datetime))
 	{
-		// читаем его
-		gprs.readSMS(message, data_tel, datetime);
-
 		// выводим номер, с которого пришло смс
 		Serial.print(F("From number: "));
 		Serial.println(data_tel);
@@ -743,23 +740,6 @@ void loop()
 		Serial.print(F("Recieved Message: "));
 		Serial.println(message);
 	}
-
-	*/
-
-
-	if (gprs.checkSMS())
-	{
-
-		if (gprs.checkSMSU())
-		{
-			con.print(F("SMS:"));                    //  con.print("SMS:");
-			con.println(gprs.val);
-			con.println(gprs.buffer);
-
-
-		}
-	}
-
 
 
 

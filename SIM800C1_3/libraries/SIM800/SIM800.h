@@ -11,12 +11,6 @@
 typedef	Stream 						FONAStreamType;
 
 
-
-// change this to the pin connect with SIM800 reset pin
-//#define PIN_TX           7                             // Подключить  к выводу 7 сигнал RX модуля GPRS
-//#define PIN_RX           8                              // Подключить  к выводу 8 сигнал TX модуля GPRS
-
-
 // define DEBUG to one serial UART to enable debug information output
 //#define DEBUG Serial
 
@@ -169,17 +163,18 @@ public:
 	bool getIMEI();
 	bool ping(const char* url);
     // check for incoming SMS
-    bool checkSMS();
-	bool ifSMSNow(void);
-	boolean  sim800_check_with_cmd(const char* cmd, const char *resp, DataType type, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
-
-	void readSMS(char *message, char *phone, char *datetime);
+	bool checkSMS();
 	
-	void sim800_read_buffer(char* buffer, int count, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
-	boolean  sim800_wait_for_resp(const char* resp, DataType type, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
-	void  sim800_send_cmd(const char* cmd);
-	void  sim800_send_byte(uint8_t data);
-	bool checkSMSU();
+	//bool ifSMSNow(void);
+	//boolean  sim800_check_with_cmd(const char* cmd, const char *resp, DataType type, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
+
+	bool readSMS(char *message, char *phone, char *datetime);
+	
+	//void sim800_read_buffer(char* buffer, int count, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
+	//boolean  sim800_wait_for_resp(const char* resp, DataType type, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
+	//void  sim800_send_cmd(const char* cmd);
+	//void  sim800_send_byte(uint8_t data);
+	//bool checkSMSU();
     // get signal quality level (in dB)
     int getSignalQuality();
     // get GSM location and network time
