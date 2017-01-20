@@ -334,14 +334,14 @@ int8_t CGPRS_SIM800::getNumSMS(void)
 {
 	uint16_t numsms;
 	// get into text mode
-	if (!sendCheckReply("AT+CMGF=1", ok_reply)) return -1;
+	//if (!sendCheckReply("AT+CMGF=1", ok_reply)) return -1;
 
 	// ask how many sms are stored
 	if (sendParseReply("AT+CPMS?", "\"SM\",", &numsms))
 		return numsms;
 	if (sendParseReply("AT+CPMS?", "\"SM_P\",", &numsms))
 		return numsms;
-	return -1;
+	return -2;
 }
 
 boolean CGPRS_SIM800::readSMS(uint8_t i, char *smsbuff,	uint16_t maxlen, uint16_t *readlen) 

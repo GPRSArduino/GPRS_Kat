@@ -60,7 +60,7 @@ bool CGPRS_SIM800::begin(Stream &port)
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[6])));
 		//sendCommand(bufcom);                                            // отображение смс в терминале сразу после приема (без этого 
 		delay(100);															//sendCommand("AT+CNMI=2,2");                                   // отображение смс в терминале сразу после приема (без этого сообщения молча падают в память)tln("AT+CSCS=\"GSM\""); 
-		sendCommand("AT+CMGDA=\"DEL ALL\"");                            // AT+CMGDA=«DEL ALL» команда удалит все сообщения
+		//sendCommand("AT+CMGDA=\"DEL ALL\"");                            // AT+CMGDA=«DEL ALL» команда удалит все сообщения
 		delay(100);
 		//sendCommand("AT+CMGDA=\"DEL ALL\"");                            // AT+CMGDA=«DEL ALL» команда удалит все сообщения
 		//delay(100);
@@ -298,10 +298,10 @@ bool CGPRS_SIM800::ping(const char* url)
 
 }
 
-
+/*
 bool CGPRS_SIM800::ifSMSNow(void)
 {
-	return sim800_check_with_cmd("AT+CMGR=1", "+CMTI: ", CMD);
+	return sim800_check_with_cmd("AT+CMGR=1", "+CMT: ", CMD);
 }
 
 boolean CGPRS_SIM800::sim800_check_with_cmd(const char* cmd, const char *resp, DataType type, unsigned int timeout, unsigned int chartimeout)
@@ -352,11 +352,11 @@ boolean CGPRS_SIM800::sim800_wait_for_resp(const char* resp, DataType type, unsi
 	if (type == CMD) purgeSerial();
 	return true;
 }
+*/
 
 
 
 
-/*
 bool CGPRS_SIM800::checkSMS()
 {
  if (sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1) 
@@ -365,16 +365,15 @@ bool CGPRS_SIM800::checkSMS()
 	 Serial.println(buffer);
 
 	sendCommand(0, 100, "\r\n");
-	
 	if (sendCommand(0)) {
 	  // remove the SMS
-	 // sendCommand("AT+CMGD=1");
+	  sendCommand("AT+CMGD=1");
 	  return true;
 	}
   }
   return false; 
 }
-*/
+/*
 
 void CGPRS_SIM800::sim800_read_buffer(char *buffer1, int count, unsigned int timeout, unsigned int chartimeout)
 {
@@ -403,24 +402,24 @@ void CGPRS_SIM800::sim800_read_buffer(char *buffer1, int count, unsigned int tim
 }
 
 
+*/
 
 
 
-
-
+/*
 
 void CGPRS_SIM800::readSMS(char *message, char *phone, char *datetime)
 {
-	/* Response is like:
-	+CMT: "+79772941911","","15/12/15,01:51:24+12"
-	+CMGR: "REC READ","XXXXXXXXXXX","","14/10/09,17:30:17+08"
-	SMS text here
+	// Response is like:
+	//+CMT: "+79772941911","","15/12/15,01:51:24+12"
+	//+CMGR: "REC READ","XXXXXXXXXXX","","14/10/09,17:30:17+08"
+	//SMS text here
 
 
-	+CMTI: "SM",2
-	62632701","","17/01/20,01:14:36+12"
+	//+CMTI: "SM",2
+	//62632701","","17/01/20,01:14:36+12"
 
-	*/
+	
 
 
 
@@ -441,11 +440,23 @@ void CGPRS_SIM800::readSMS(char *message, char *phone, char *datetime)
 	int len = strlen(buffer);
 	Serial.println(buffer);
 
+	j = 0;
+	while (i < len - 2)
+		message[j++] = buffer[i++];
+
+	message[j] = '\0';
+
+
+
+
 	
-	if (buffer[i] == '\"') {
+	
+	if (buffer[i] == '\"') 
+	{
 		i++;
 		j = 0;
-		while (buffer[i] != '\"') {
+		while (buffer[i] != '\"') 
+		{
 			phone[j++] = buffer[i++];
 		}
 		phone[j] = '\0';
@@ -490,13 +501,13 @@ void CGPRS_SIM800::readSMS(char *message, char *phone, char *datetime)
 	
 }
 
+*/
 
 
 
 
 
 
-/*
 
 bool CGPRS_SIM800::checkSMSU()
 {
@@ -510,11 +521,15 @@ bool CGPRS_SIM800::checkSMSU()
 	  delay(10);
 	}
 	Serial.println(val);
+	Serial.print("**SMS**  ");
+	Serial.println(buffer);
+
+
 	return true;
   }
   return false; 
 }
-*/
+
 
 int CGPRS_SIM800::getSignalQuality()
 {

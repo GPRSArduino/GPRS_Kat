@@ -47,7 +47,7 @@
 #include <EEPROM.h>
 
 #define con Serial
-#define speed_Serial 115200
+#define speed_Serial 19200
 static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
 //static const char* url2 = "AT+CIPPING=\"www.yandex.ru\"";
 //static const char* url3 = "www.yandex.ru";
@@ -725,7 +725,7 @@ void setup()
 
 void loop()
 {
-	
+	/*
 	if (gprs.ifSMSNow())
 	{
 		// читаем его
@@ -743,6 +743,23 @@ void loop()
 		Serial.print(F("Recieved Message: "));
 		Serial.println(message);
 	}
+
+	*/
+
+
+	if (gprs.checkSMS())
+	{
+
+		if (gprs.checkSMSU())
+		{
+			con.print(F("SMS:"));                    //  con.print("SMS:");
+			con.println(gprs.val);
+			con.println(gprs.buffer);
+
+
+		}
+	}
+
 
 
 

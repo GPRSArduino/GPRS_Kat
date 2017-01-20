@@ -9,19 +9,17 @@
 #define SIM800C_H
 
 
-typedef	Stream 						FONAStreamType;
-
-
 #include <Arduino.h>
 #include <avr/pgmspace.h>
-//#include "includes/FONAConfig.h"
-//#include "includes/FONAExtIncludes.h"
-//#include "includes/platform/FONAPlatform.h"
+#include "includes/FONAConfig.h"
+#include "includes/FONAExtIncludes.h"
+#include "includes/platform/FONAPlatform.h"
 //
 
 #define FONA_DEFAULT_TIMEOUT_MS 500
 
 
+typedef	Stream 						FONAStreamType;
 
 
 // change this to the pin connect with SIM800 reset pin
@@ -219,7 +217,7 @@ public:
     //{
     // // return SIM_SERIAL->available(); 
     //}
-    char buffer[255];
+    char buffer[128];
     byte httpState;
 	String val = "";
 	
@@ -249,7 +247,7 @@ private:
 	int _PWR_On           ;                            // Включение питания модуля SIM800
     int _SIM800_RESET_PIN ;                            // Сброс модуля SIM800
     int _LED13            ;                            // Индикация светодиодом
-	char bufcom[40];
+	char bufcom[32];
 	char bufcom1[20];
 	int ch = 0;
 	FONAStreamType *SIM_SERIAL;

@@ -49,8 +49,8 @@
 #define con Serial
 #define speed_Serial 19200
 static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
-static const char* url2 = "AT+CIPPING=\"www.yandex.ru\"";
-static const char* url3 = "www.yandex.ru";
+//static const char* url2 = "AT+CIPPING=\"www.yandex.ru\"";
+//static const char* url3 = "www.yandex.ru";
 
 
 #define PIN_TX           7                             // Подключить  к выводу 7 сигнал RX модуля GPRS
@@ -718,6 +718,8 @@ void loop()
 	/*
 	// read all SMS
 	int8_t smsnum = gprs.getNumSMS();
+
+	Serial.print("Num SMS -"); Serial.println(smsnum);
 	uint16_t smslen;
 	int8_t smsn = 1; // 1 indexed
 	if (smsnum > 0)
@@ -802,7 +804,7 @@ void loop()
 
 
 
-	/*
+	
 
  if (gprs.checkSMS()) 
   {
@@ -845,7 +847,7 @@ void loop()
 		
 		gprs.val = "";
   }
- */
+ 
  
 	unsigned long currentMillis = millis();
 	if(!time_set)                                                               // 
