@@ -181,8 +181,6 @@ void sendTemps()
 	gprs_send(toSend);
 }
 
-//gprs.ping("www.yandex.ru");
-
 String formHeader() 
 {
   String uptime = "17/01/01,10:10:10 00";
@@ -429,7 +427,7 @@ void setTime(String val, String f_phone)
 {
   if (val.indexOf(F("Timeset")) > -1)         // 
   {
-	 interval = 60;                                     // Установить интервал 60 секунд
+	 interval = 40;                                     // Установить интервал 40 секунд
 	 time_set = true;                                   // Установить фиксацию интервала заданного СМС
 	 Serial.println(interval);
   } 
