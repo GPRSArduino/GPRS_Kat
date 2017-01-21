@@ -65,5 +65,5 @@ typedef void *__builtin_va_list;
 #define F(string_literal) ((const PROGMEM char *)(string_literal))
 #undef PSTR
 #define PSTR(string_literal) ((const PROGMEM char *)(string_literal))
-#include "GPRS_SIM800C_F1.ino"
+#include "SIM800C1_5.ino"
 #endif

@@ -7,6 +7,14 @@
 
 #include <Arduino.h>
 #include <avr/pgmspace.h>
+//#include "includes/FONAConfig.h"
+//#include "includes/FONAExtIncludes.h"
+//#include "includes/platform/FONAPlatform.h"
+
+
+
+
+
 
 typedef	Stream 						FONAStreamType;
 

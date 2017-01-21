@@ -14,7 +14,7 @@
     <ProjectGuid>{C5F80730-F44F-4478-BDAE-6634EFC2CA88}</ProjectGuid>
     <RootNamespace>
     </RootNamespace>
-    <ProjectName>GPRS_SIM800C_F1</ProjectName>
+    <ProjectName>SIM800C1_5</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -48,8 +48,8 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)libraries\DallasTemperature;C:\arduino-1.8.1\hardware\arduino\avr\libraries\EEPROM\src;$(ProjectDir)libraries\OneWire;$(ProjectDir)libraries\SIM800C_FONA;C:\arduino-1.8.1\hardware\arduino\avr\libraries\SoftwareSerial\src;C:\arduino-1.8.1\libraries;C:\arduino-1.8.1\hardware\arduino\avr\libraries;$(ProjectDir)libraries;C:\arduino-1.8.1\hardware\arduino\avr\cores\arduino;C:\arduino-1.8.1\hardware\arduino\avr\variants\eightanaloginputs;$(ProjectDir)..\GPRS_SIM800C_F1;C:\arduino-1.8.1\hardware\tools\avr\avr\include\;C:\arduino-1.8.1\hardware\tools\avr\avr\include\avr\;C:\arduino-1.8.1\hardware\tools\avr\lib\gcc\avr\4.8.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>$(ProjectDir)__vm\.GPRS_SIM800C_F1.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <AdditionalIncludeDirectories>$(ProjectDir)libraries\SIM800;C:\arduino-1.8.1\hardware\arduino\avr\libraries\SoftwareSerial\src;$(ProjectDir)libraries\OneWire;$(ProjectDir)libraries\DallasTemperature;C:\arduino-1.8.1\hardware\arduino\avr\libraries\EEPROM\src;C:\arduino-1.8.1\libraries;C:\arduino-1.8.1\hardware\arduino\avr\libraries;$(ProjectDir)libraries;C:\arduino-1.8.1\hardware\arduino\avr\cores\arduino;C:\arduino-1.8.1\hardware\arduino\avr\variants\eightanaloginputs;$(ProjectDir)..\SIM800C1_5;C:\arduino-1.8.1\hardware\tools\avr\avr\include\;C:\arduino-1.8.1\hardware\tools\avr\avr\include\avr\;C:\arduino-1.8.1\hardware\tools\avr\lib\gcc\avr\4.8.1\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ForcedIncludeFiles>$(ProjectDir)__vm\.SIM800C1_5.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <IgnoreStandardIncludePath>false</IgnoreStandardIncludePath>
       <PreprocessorDefinitions>__AVR_ATmega328p__;__AVR_ATmega328P__;F_CPU=16000000L;ARDUINO=10801;ARDUINO_AVR_NANO;ARDUINO_ARCH_AVR;__cplusplus=201103L;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
@@ -75,12 +75,9 @@
     <ProjectCapability Include="VisualMicro" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="GPRS_SIM800C_F1.ino">
+    <None Include="SIM800C1_5.ino">
       <FileType>CppCode</FileType>
     </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="__vm\.GPRS_SIM800C_F1.vsarduino.h" />
   </ItemGroup>
   <PropertyGroup>
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>
@@ -88,9 +85,4 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-  <ProjectExtensions>
-    <VisualStudio>
-      <UserProperties arduino.build.auto_discover_includes="0" />
-    </VisualStudio>
-  </ProjectExtensions>
 </Project>

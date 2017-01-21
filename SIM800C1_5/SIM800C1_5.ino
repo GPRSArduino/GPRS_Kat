@@ -106,7 +106,7 @@ String imei = "861445030362268";                  // Тест IMEI
 unsigned long time;                                 // Переменная для суточного сброса
 unsigned long time_day = 86400;                     // Переменная секунд в сутках
 unsigned long previousMillis = 0;
-unsigned long interval = 40;                        // Интервал передачи данных 40 секунд
+unsigned long interval = 50;                        // Интервал передачи данных 50 секунд
 //unsigned long interval = 300;                     // Интервал передачи данных 5 минут
 bool time_set = false;                              // Фиксировать интервал заданный СМС
 
@@ -503,7 +503,7 @@ void check_blink()
 
 bool check_ping()
 {
-	con.print(F("Ping "));
+	con.print(F("Ping -> "));
 	con.print(url_ping);
 	if (gprs.ping(url_ping))
 	{
@@ -743,14 +743,14 @@ void setup()
 
 void loop()
 {
-	if(digitalRead(STATUS) == LOW)  resetFunc();   // Что то пошло не так, питание отключено
+ if(digitalRead(STATUS) == LOW)  resetFunc();   // Что то пошло не так, питание отключено
 
  if (gprs.checkSMS()) 
   {
 	con.print(F("SMS:"));                    
 	con.println(gprs.val);
 	
-	if (gprs.val.indexOf("REC UNREAD") > -1)  //если обнаружен СМС (для определения звонка вместо "+CMT" вписать "RING", трубку он не берет, но реагировать на факт звонка можно)
+	if (gprs.val.indexOf("REC UNREAD") > -1)  //если обнаружена новая  СМС 
 	{    
 	//------------- поиск кодового слова в СМС 
 	char buf[13] ;
@@ -784,12 +784,17 @@ void loop()
 	 }
 		gprs.val = "";
 
-	if (gprs.deleteSMS(1))
+	if (gprs.deleteSMS(0))
 		{
 		con.println(F("SMS delete"));                    //  con.print("SMS:");
 		}
-
-
+	//if (gprs.val.indexOf("REC READ") > -1)  //если обнаружена старая  СМС 
+	//{
+	//	if (gprs.deleteSMS(0))
+	//	{
+	//		con.println(F("SMS delete"));                    //  con.print("SMS:");
+	//	}
+	//}
   }
  
  
