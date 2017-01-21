@@ -8,16 +8,14 @@
 #include <Arduino.h>
 #include <avr/pgmspace.h>
 
-// change this to the pin connect with SIM800 reset pin
-#define PIN_TX           7                             // Подключить  к выводу 7 сигнал RX модуля GPRS
-#define PIN_RX           8                              // Подключить  к выводу 8 сигнал TX модуля GPRS
+typedef	Stream 						FONAStreamType;
 
 
 // define DEBUG to one serial UART to enable debug information output
-#define DEBUG Serial
+//#define DEBUG Serial
 
 
-const char  txt_AT[]                 PROGMEM  = "ATE0";
+const char  txt_ATE0[]               PROGMEM  = "ATE0";
 const char  txt_IPR[]                PROGMEM  = "AT+IPR=19200";
 const char  txt_CFUN[]               PROGMEM  = "AT+CFUN=1";
 const char  txt_CMGF1[]              PROGMEM  = "AT+CMGF=1";
@@ -65,58 +63,100 @@ const char  txt_HTTPREAD1[]          PROGMEM  = "AT+HTTPREAD";
 const char  txt_HTTPREAD2[]          PROGMEM  = "+HTTPREAD: ";
 const char  txt_Error1[]             PROGMEM  = "Error";
 const char  txt_r_n[]                PROGMEM  = "\r\n";
+const char  txt_CIPSHUT[]            PROGMEM  = "AT+CIPSHUT";
+const char  txt_CSQ1[]               PROGMEM  = "CSQ: ";    
+const char  txt_ERROR1[]             PROGMEM  = "ERROR" ;
+const char  txt_CSTT[]               PROGMEM  = "AT+CSTT=\"internet\"";
+const char  txt_CIICR[]              PROGMEM  = "AT+CIICR";
+const char  txt_CIFSR[]              PROGMEM  = "AT+CIFSR";
+const char  txt_CIPPING[]            PROGMEM  = "AT+CIPPING=\"";
+const char  txt_PCIPPING[]           PROGMEM  = "+CIPPING";
+const char  txt_CMGR[]               PROGMEM  = "AT+CMGR=1";
+const char  txt_CMGD[]               PROGMEM  = "AT+CMGD=1";
+const char  txt_CMGDA[]              PROGMEM  = "AT+CMGDA=\"DEL ALL\"";
+const char  txt_AT[]                 PROGMEM  = "AT";
+//const char  txt_[]                 PROGMEM = ;
+//const char  txt_[]                 PROGMEM = ;
+//const char  txt_[]                 PROGMEM = ;
+//const char  txt_[]                 PROGMEM = ;
+//const char  txt_[]                 PROGMEM = ;
+
+
+
+
+
+
+
 
 const char* const table_message[] PROGMEM =
 {
- txt_AT,                      // 0 "AT";
- txt_IPR,                     // 1 "AT+IPR=19200";
- txt_CFUN,                    // 2 "AT+CFUN=1"
- txt_CMGF1,                   // 3 "AT+CMGF=1"
- txt_CLIP,                    // 4 "AT+CLIP=1"
- txt_CSCS,                    // 5 "AT+CSCS=\"GSM\""
- txt_CNMI,                    // 6 "AT+CNMI=2,2"
- txt_CREG,                    // 7 "AT+CREG?"
- txt_CSQ,                     // 8 "AT+CSQ"
- txt_CGATT,                   // 9 "AT+CGATT?"
- txt_SAPBR0,                  // 10 "AT+SAPBR=3,1,\"Contype\",\"GPRS\""
- txt_internet_mts_ru,         // 11 "internet.mts.ru"
- txt_MTSB,                    // 12 "MTS";
- txt_mts,                     // 13 "mts
- txt_BeelineB,                // 14 "Beeline";
- txt_internet_beeline,        // 15 "internet.beeline.ru";
- txt_beeline,                 // 16 "beeline";
- txt_MegaFon,                 // 17 "MegaFon";
- txt_internet,                // 18 "internet"; 
- txt_MEGAFONB,                // 19 "MEGAFON";
- txt_TELE2,                   // 20 "TELE2";
- txt_internet_TELE2,          // 21 "internet.TELE2.ru";
- txt_SAPBR1,                  // 22 "AT+SAPBR=3,1,\"APN\",\"";
- txt_SAPBR2,                  // 23 "AT+SAPBR=3,1,\"USER\",\""; 
- txt_SAPBR3,                  // 24 "AT+SAPBR=3,1,\"PWD\",\"";
- txt_CGDCONT,                 // 25 "AT+CGDCONT=1,\"IP\",\"";
- txt_SAPBR4,                  // 26 "AT+SAPBR=1,1";
- txt_SAPBR5,                  // 27 "AT+SAPBR=2,1";
- txt_CMGF2,                   // 28 "AT+CMGF=1";
- txt_CPMS,                    // 29 "AT+CPMS=\"SM\",\"SM\",\"SM\"";
- txt_GSN,                     // 30 "AT+GSN";
- txt_COPS,                    // 31 "AT+COPS?";
- txt_OK,                      // 32 "OK\r";
- txt_ERROR,                   // 33 "ERROR\r"; 
- txt_CIPGSMLOC,               // 34 "AT+CIPGSMLOC=1,1";
- txt_HTTPTERM,                // 35 "AT+HTTPTERM";
- txt_HTTPINIT,                // 36 "AT+HTTPINIT";
- txt_HTTPPARA1,               // 37 "AT+HTTPPARA=\"CID\",1";
- txt_HTTPPARA2,               // 38 "AT+HTTPPARA=\"URL\",\"";
- txt_HTTPACTION1,             // 39 "AT+HTTPACTION=0";
- txt_HTTPPARA3,               // 40 "AT+HTTPPARA=\"URL\",\"";
- txt_HTTPACTION2,             // 41 "AT+HTTPACTION=0";
- txt_200,                     // 42 "0,200" ;
- txt_60,                      // 43"0,60";
- txt_HTTPREAD1,               // 44 "AT+HTTPREAD";
- txt_HTTPREAD2,               // 45 "+HTTPREAD: ";
- txt_Error1,                  // 46 "Error";
- txt_r_n                      // 47 "\r\n";  
+txt_ATE0,                    // 0 ЭATE0[]";
+txt_IPR,                     // 1 "AT+IPR=19200";
+txt_CFUN,                    // 2 "AT+CFUN=1"
+txt_CMGF1,                   // 3 "AT+CMGF=1"
+txt_CLIP,                    // 4 "AT+CLIP=1"
+txt_CSCS,                    // 5 "AT+CSCS=\"GSM\""
+txt_CNMI,                    // 6 "AT+CNMI=2,2"
+txt_CREG,                    // 7 "AT+CREG?"
+txt_CSQ,                     // 8 "AT+CSQ"
+txt_CGATT,                   // 9 "AT+CGATT?"
+txt_SAPBR0,                  // 10 "AT+SAPBR=3,1,\"Contype\",\"GPRS\""
+txt_internet_mts_ru,         // 11 "internet.mts.ru"
+txt_MTSB,                    // 12 "MTS";
+txt_mts,                     // 13 "mts
+txt_BeelineB,                // 14 "Bee Line GSM";
+txt_internet_beeline,        // 15 "internet.beeline.ru";
+txt_beeline,                 // 16 "beeline";
+txt_MegaFon,                 // 17 "MegaFon";
+txt_internet,                // 18 "internet"; 
+txt_MEGAFONB,                // 19 "MEGAFON";
+txt_TELE2,                   // 20 "TELE2";
+txt_internet_TELE2,          // 21 "internet.TELE2.ru";
+txt_SAPBR1,                  // 22 "AT+SAPBR=3,1,\"APN\",\"";
+txt_SAPBR2,                  // 23 "AT+SAPBR=3,1,\"USER\",\""; 
+txt_SAPBR3,                  // 24 "AT+SAPBR=3,1,\"PWD\",\"";
+txt_CGDCONT,                 // 25 "AT+CGDCONT=1,\"IP\",\"";
+txt_SAPBR4,                  // 26 "AT+SAPBR=1,1";
+txt_SAPBR5,                  // 27 "AT+SAPBR=2,1";
+txt_CMGF2,                   // 28 "AT+CMGF=1";
+txt_CPMS,                    // 29 "AT+CPMS=\"SM\",\"SM\",\"SM\"";
+txt_GSN,                     // 30 "AT+GSN";
+txt_COPS,                    // 31 "AT+COPS?";
+txt_OK,                      // 32 "OK\r";
+txt_ERROR,                   // 33 "ERROR\r"; 
+txt_CIPGSMLOC,               // 34 "AT+CIPGSMLOC=1,1";
+txt_HTTPTERM,                // 35 "AT+HTTPTERM";
+txt_HTTPINIT,                // 36 "AT+HTTPINIT";
+txt_HTTPPARA1,               // 37 "AT+HTTPPARA=\"CID\",1";
+txt_HTTPPARA2,               // 38 "AT+HTTPPARA=\"URL\",\"";
+txt_HTTPACTION1,             // 39 "AT+HTTPACTION=0";
+txt_HTTPPARA3,               // 40 "AT+HTTPPARA=\"URL\",\"";
+txt_HTTPACTION2,             // 41 "AT+HTTPACTION=0";
+txt_200,                     // 42 "0,200" ;
+txt_60,                      // 43 "0,60";
+txt_HTTPREAD1,               // 44 "AT+HTTPREAD";
+txt_HTTPREAD2,               // 45 "+HTTPREAD: ";
+txt_Error1,                  // 46 "Error";
+txt_r_n,                     // 47 "\r\n";  
+txt_CIPSHUT,                 // 48 "AT+CIPSHUT";
+txt_CSQ1,                    // 49 "CSQ: "; 
+txt_ERROR1,                  // 50 "ERROR"
+txt_CSTT,                    // 51 "AT+CSTT=\"internet\"";
+txt_CIICR,                   // 52 "AT+CIICR";
+txt_CIFSR,                   // 53 "AT+CIFSR";
+txt_CIPPING,                 // 54 "AT+CIPPING=\"";
+txt_PCIPPING,                // 55 "+CIPPING";
+txt_CMGR,                    // 56 "AT+CMGR=1";
+txt_CMGD,                    // 57 "AT+CMGD=1";
+txt_CMGDA,                   // 58 "AT+CMGDA=\"DEL ALL\"";
+txt_AT                       // 59 "AT";
 };
+
+enum DataType {
+	CMD = 0,
+	DATA = 1,
+};
+
 
 
 typedef enum {
@@ -142,12 +182,16 @@ class CGPRS_SIM800 {
 public:
     CGPRS_SIM800():httpState(HTTP_DISABLED) {}
     // initialize the module
-    bool init(int PWR_On,int SIM800_RESET_PIN,int LED13, long speed_serial);
-	bool begin(long speed_serial);
+   
+
+#define DEFAULT_TIMEOUT     		 5   //seconds
+#define DEFAULT_INTERCHAR_TIMEOUT 1500   //miliseconds
+
+
+
+	bool begin(Stream &port);
     // setup network
     byte setup();
-	// byte setup(const char* apn, const char* user, const char* pwd);
-
 	uint8_t getNetworkStatus();
 
     // get network operator name
@@ -155,8 +199,8 @@ public:
 	bool getIMEI();
 	bool ping(const char* url);
     // check for incoming SMS
-    bool checkSMS();
-	bool checkSMSU();
+	bool checkSMS();
+	bool deleteSMS(int n_sms);
     // get signal quality level (in dB)
     int getSignalQuality();
     // get GSM location and network time
@@ -181,19 +225,12 @@ public:
     byte sendCommand(const char* cmd, unsigned int timeout = 2000, const char* expected = 0);
     // send AT command and check for two possible responses
     byte sendCommand(const char* cmd, const char* expected1, const char* expected2, unsigned int timeout = 2000);
-    // toggle low-power mode
-    bool sleep(bool enabled)
-    {
-      return sendCommand(enabled ? "AT+CFUN=0" : "AT+CFUN=1");
-    }
+  
     // check if there is available serial data
     bool available();
 	void cleanStr(String & str);
 
-    //{
-    // // return SIM_SERIAL.available(); 
-    //}
-    char buffer[128];
+    char buffer[140];
     byte httpState;
 	String val = "";
 
@@ -206,11 +243,11 @@ private:
     String user = "";
     String pwd  = "";
     String cont = "";
-	int _PWR_On           ;                            // Включение питания модуля SIM800
-    int _SIM800_RESET_PIN ;                            // Сброс модуля SIM800
+
     int _LED13            ;                            // Индикация светодиодом
-	char bufcom[40];
+	char bufcom[35];
 	char bufcom1[20];
 	int ch = 0;
+	FONAStreamType *SIM_SERIAL;
 };
 
