@@ -80,7 +80,7 @@ byte CGPRS_SIM800::setup()
 	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));
 	  if (!sendCommand(bufcom)) return 2;   // if (!sendCommand("AT+CGATT?"))     // Регистрация в GPRS
 
-	  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[10])));
+	  strcpy_P(buffer, (char*)pgm_read_word(&(table_message[10])));
 	  if (!sendCommand(buffer)) return 3;   // if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))     return 3;// 
 	 
 	  getOperatorName();
@@ -275,11 +275,11 @@ bool CGPRS_SIM800::getOperatorName()
 
 bool CGPRS_SIM800::ping(const char* url)
 {
-	sendCommand("AT+CGATT?", 2000);                 // Проверить подключение к сервису GPRS
+	sendCommand("AT+CGATT?", 1000);                 // Проверить подключение к сервису GPRS
 	delay(1000);
-	sendCommand("AT+CSTT=\"internet\"", 2000);      // Настроить точку доступа ????
+	sendCommand("AT+CSTT=\"internet\"", 1000);      // Настроить точку доступа ????
 	delay(1000);
-	sendCommand("AT+CIICR", 2000);                  // Установить GPRS-соединение   ????   
+	sendCommand("AT+CIICR", 1000);                  // Установить GPRS-соединение   ????   
 	delay(1000);
 	sendCommand("AT+CIFSR", 3000);                  // Получить локальный IP-адрес
 	delay(1000);
