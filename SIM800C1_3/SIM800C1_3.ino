@@ -47,10 +47,10 @@
 #include <EEPROM.h>
 
 #define con Serial
-#define speed_Serial 19200
+#define speed_Serial 115200
+
 static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
-//static const char* url2 = "AT+CIPPING=\"www.yandex.ru\"";
-//static const char* url3 = "www.yandex.ru";
+static const char* url_ping = "www.yandex.ru";
 
 
 #define PIN_TX           7                             // Подключить  к выводу 7 сигнал RX модуля GPRS
@@ -70,25 +70,26 @@ SoftwareSerial *GPRSSerial = &SIM800CSS;
 #define port1           11                          // Порт управления внешними устройствами (незадействован)
 #define port2           12                          // Порт управления внешними устройствами (незадействован)
 
-													// Подключить  к выводу 8 сигнал TX модуля GPRS. Установить в библиотеке SIM800.h  
-													// Подключить  к выводу 7 сигнал RX модуля GPRS. Установить в библиотеке SIM800.h
+												
 //#define COMMON_ANODE
 #define LED_RED      10                             // Индикация светодиодом RED
 #define LED_BLUE     15                             // Индикация светодиодом BLUE
 #define LED_GREEN    14                             // Индикация светодиодом GREEN
 
 #define COLOR_NONE LOW, LOW, LOW
-#define COLOR_RED HIGH, LOW, LOW
 #define COLOR_GREEN LOW, HIGH, LOW
 #define COLOR_BLUE LOW, LOW, HIGH
 
 volatile int state = LOW;
 volatile int state_device = 0;                     // Состояние модуля при запуске 
+#define COLOR_RED HIGH, LOW, LOW
 												   // 1 - Не зарегистрирован в сети, поиск
 												   // 2 - Зарегистрировано в сети
 												   // 3 - GPRS связь установлена
 volatile int metering_NETLIGHT = 0;
 volatile unsigned long metering_temp = 0;
+volatile int count_blink1 = 0;                     // Счетчик попыток подключиться к базовой станции
+volatile int count_blink2 = 0;                     // Счетчик попыток подключиться к базовой станции
 
 bool start_error = false;                         // флаг компенсации первой ошибки при старте.
 
@@ -100,34 +101,18 @@ String CSQ = "";                                    // Уровень сигнала приема
 String SMS_center = "";
 String zero_tel   = "";
 String imei = "861445030362268";                  // Тест IMEI
-//#define DELIM "&"
 #define DELIM "@"
 
 unsigned long time;                                 // Переменная для суточного сброса
 unsigned long time_day = 86400;                     // Переменная секунд в сутках
 unsigned long previousMillis = 0;
-unsigned long interval = 30;                        // Интервал передачи данных 30 секунд
+unsigned long interval = 40;                        // Интервал передачи данных 40 секунд
 //unsigned long interval = 300;                     // Интервал передачи данных 5 минут
 bool time_set = false;                              // Фиксировать интервал заданный СМС
 
 
-													// длина сообщения
-#define MESSAGE_LENGTH 20
-
-													// номер сообщения в памяти сим-карты
-int messageIndex = 0;
-
-// текст сообщения
-char message[MESSAGE_LENGTH];
-// номер, с которого пришло сообщение
-//char phone[16];
-// дата отправки сообщения
-char datetime[24];
-char data_tel[16];                                  // Буфер для номера телефоа
-
-
-
-
+//char datetime[24];
+//char data_tel[16];                                  // Буфер для номера телефоа
 
 
 
@@ -141,7 +126,7 @@ int Address_port2      = 190;                         // Адрес в EEPROM порт дан
 int Address_interval   = 200;                         // Адрес в EEPROM величины интервала
 int Address_SMS_center = 220;                         // Адрес в EEPROM SMS центра
 
-//char data_tel[16];                                  // Буфер для номера телефоа
+char data_tel[16];                                    // Буфер для номера телефоа
 
 //int dataport1 = 0;                                  // порт данных (незадействован)
 //int dataport2 = 0;                                  // порт данных (незадействован)
@@ -172,8 +157,7 @@ void(* resetFunc) (void) = 0;                         // объявляем функцию reset
 	  digitalWrite(LED_GREEN, green);
 	  digitalWrite(LED_BLUE, blue);    
  }
-
-
+ 
 void sendTemps()
 {
 	//Serial.println("\nTemp");
@@ -198,9 +182,6 @@ void sendTemps()
 }
 
 //gprs.ping("www.yandex.ru");
-
-
-
 
 String formHeader() 
 {
@@ -261,8 +242,6 @@ String formEnd()
 
 }
 
-
-
 void gprs_send(String data) 
 {
   con.print(F("Requesting "));               //con.print("Requesting ");
@@ -280,7 +259,7 @@ void gprs_send(String data)
 	con.write('.');
 	for (byte n = 0; n < 25 && !gprs.available(); n++) 
 	{
-	  delay(10);
+	  delay(15);
 	}
   }
   if (gprs.httpState == HTTP_ERROR) 
@@ -448,11 +427,9 @@ int freeRam ()
 
 void setTime(String val, String f_phone)
 {
-//   strcpy_P(bufmessage, (char*)pgm_read_word(&(table_message2[9])));
-
-  if (val.indexOf(F("Timeset")) > -1)         // (val.indexOf("Timeset") > -1) 
+  if (val.indexOf(F("Timeset")) > -1)         // 
   {
-	 interval = 20;                                     // Установить интервал 20 секунд
+	 interval = 60;                                     // Установить интервал 60 секунд
 	 time_set = true;                                   // Установить фиксацию интервала заданного СМС
 	 Serial.println(interval);
   } 
@@ -470,12 +447,12 @@ void setTime(String val, String f_phone)
   } 
   else
   {
-	   Serial.println(F("Unknown command"));         // Serial.println("Unknown command");
+	  Serial.println(F("Unknown command"));         // Serial.println("Unknown command");
   }
 }
 
 
-void blink()
+void check_blink()
 {
 	unsigned long current_M = millis();
 
@@ -485,10 +462,15 @@ void blink()
 	if (metering_NETLIGHT > 3055 && metering_NETLIGHT < 3070)
 	{
 		state_device = 2;                 // 2 - Зарегистрировано в сети
+		count_blink2++;
+		if(count_blink2 > 20)    resetFunc(); // Что то пошло не так с регистрацией на станции
 	}
 	else if (metering_NETLIGHT > 855 && metering_NETLIGHT < 870)
 	{
 		state_device = 1;                // 1 Не зарегистрирован в сети, поиск
+
+		count_blink1++;
+		if (count_blink1 > 120)    resetFunc(); // Что то пошло не так с регистрацией на станции
 	}
 	else if (metering_NETLIGHT > 350 && metering_NETLIGHT < 370)
 	{
@@ -521,6 +503,36 @@ void blink()
 	}
 }
 
+bool check_ping()
+{
+	con.print(F("Ping "));
+	con.print(url_ping);
+	if (gprs.ping(url_ping))
+	{
+		con.println(F(".. Ok!"));
+		return true;
+	}
+	con.println(F(".. false!"));
+	return false;
+}
+void ping()
+{
+	int count_ping = 0;
+	while (1)
+	{
+		if (check_ping())
+		{
+			return;
+		}
+		else
+		{
+			count_ping++;
+			if (count_ping>5) resetFunc(); // 5 попыток. Что то пошло не так с интернетом
+		}
+		delay(1000);
+	}
+}
+
 void start_init()
 {
 	bool setup_ok = false;
@@ -539,14 +551,15 @@ void start_init()
 		digitalWrite(SIM800_RESET_PIN, HIGH);                     // Производим сброс модема после включения питания
 		delay(1000);
 		digitalWrite(SIM800_RESET_PIN, LOW);
-
+		int count_status = 0;
 		while (digitalRead(STATUS) == LOW)
 		{
-			// Уточнить программу перезапуска  если модуль не включился
+			count_status++;
+			if(count_status > 100) resetFunc(); // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
+			delay(100);
 		}
 		delay(2000);
 		con.println(F("Power SIM800 On"));
-
 
 		GPRSSerial->begin(19200);                               // Скорость обмена с модемом SIM800C
 
@@ -623,7 +636,7 @@ void start_init()
 						if (state_device == 3)
 						{
 							Serial.println(F("GPRS connect OK!-"));
-							setColor(COLOR_GREEN);                 // Включить зеленый светодиод
+							//setColor(COLOR_GREEN);                 // Включить зеленый светодиод
 							setup_ok = true;
 						}
 					}
@@ -667,11 +680,10 @@ void setup()
 	if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 	if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 
-	attachInterrupt(1, blink, RISING);            // Включить прерывания. Индикация состояния модема
+	attachInterrupt(1,check_blink, RISING);            // Включить прерывания. Индикация состояния модема
 
 	start_init();
 	
-
 	con.println(F("OK"));           // con.println("OK");
 	for (;;) 
 	{
@@ -715,43 +727,32 @@ void setup()
 	con.print(F("Interval sec:"));
 	con.println(interval);
 	con.println(SMS_center);
-//	setColor(COLOR_GREEN);
-	con.println(F("\nSIM800 setup end"));                        
+
+	if (gprs.deleteSMS(0))
+	{
+		con.println(F("SMS delete"));                    //  con.print("SMS:");
+	}
+	con.print(F("\nfree memory: "));
+	con.println(freeRam());
+
+	ping();
+	setColor(COLOR_GREEN);                 // Включить зеленый светодиод
+
+	con.println(F("\nSIM800 setup end"));
 	time = millis();                                              // Старт отсчета суток
-	
-//	gprs.sendCommand("AT+CIPPING=\"www.yandex.ru\"", 1000);
-	//delay(3000);
+
 }
 
 void loop()
 {
-	
-	if (gprs.readSMS(message, data_tel, datetime))
-	{
-		// выводим номер, с которого пришло смс
-		Serial.print(F("From number: "));
-		Serial.println(data_tel);
-
-		// выводим дату, когда пришло смс
-		Serial.print(F("Datetime: "));
-		Serial.println(datetime);
-
-		// выводим текст сообщения
-		Serial.print(F("Recieved Message: "));
-		Serial.println(message);
-	}
-
-
-
-/*
+	if(digitalRead(STATUS) == LOW)  resetFunc();   // Что то пошло не так, питание отключено
 
  if (gprs.checkSMS()) 
   {
-	con.print(F("SMS:"));                    //  con.print("SMS:");
+	con.print(F("SMS:"));                    
 	con.println(gprs.val);
-	con.println(gprs.buffer);
-
-	if (gprs.val.indexOf(F("+CMT")) > -1)  //если обнаружен СМС (для определения звонка вместо "+CMT" вписать "RING", трубку он не берет, но реагировать на факт звонка можно)
+	
+	if (gprs.val.indexOf("REC UNREAD") > -1)  //если обнаружен СМС (для определения звонка вместо "+CMT" вписать "RING", трубку он не берет, но реагировать на факт звонка можно)
 	{    
 	//------------- поиск кодового слова в СМС 
 	char buf[13] ;
@@ -783,10 +784,16 @@ void loop()
 		  con.println(F("phone ignored"));            
 	  }
 	 }
-		
 		gprs.val = "";
+
+	if (gprs.deleteSMS(1))
+		{
+		con.println(F("SMS delete"));                    //  con.print("SMS:");
+		}
+
+
   }
- */
+ 
  
 	unsigned long currentMillis = millis();
 	if(!time_set)                                                               // 
@@ -799,7 +806,7 @@ void loop()
 		con.println((currentMillis-previousMillis)/1000);
 		setColor(COLOR_BLUE);
 		previousMillis = currentMillis;
-		//gprs.sendCommand("AT+CIPPING=\"www.yandex.ru\"", 1000);
+		ping();
 		sendTemps();
 		setColor(COLOR_GREEN);
 		con.print(F("\nfree memory: "));                                 

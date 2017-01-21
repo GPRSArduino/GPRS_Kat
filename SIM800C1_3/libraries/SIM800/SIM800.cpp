@@ -69,7 +69,6 @@ bool CGPRS_SIM800::begin(Stream &port)
 	return false;
 }
 
-
 byte CGPRS_SIM800::setup()
 {
   for (byte n = 0; n < 30; n++)
@@ -276,257 +275,68 @@ bool CGPRS_SIM800::getOperatorName()
 
 bool CGPRS_SIM800::ping(const char* url)
 {
-	sendCommand("AT+CGATT?", 1000);                 // Проверить подключение к сервису GPRS
+	sendCommand("AT+CGATT?", 3000);                 // Проверить подключение к сервису GPRS
 	delay(1000);
-	sendCommand("AT+CSTT=\"internet\"", 1000);      // Настроить точку доступа ????
+	sendCommand("AT+CSTT=\"internet\"", 5000);      // Настроить точку доступа ????
 	delay(1000);
-	sendCommand("AT+CIICR", 1000);                  // Установить GPRS-соединение   ????   
+	sendCommand("AT+CIICR", 5000);                  // Установить GPRS-соединение   ????   
 	delay(1000);
-	sendCommand("AT+CIFSR", 1000);                  // Получить локальный IP-адрес
+	sendCommand("AT+CIFSR", 3000);                  // Получить локальный IP-адрес
 	delay(1000);
-
-	//if (sendCommand(url, "+CIPPING", "ERROR",3000) == 1)
-	//{
-	//	return true;
-	//}
-	//return false;
-	//sendCommand(url, 3000);
-
 	SIM_SERIAL->print("AT+CIPPING=\"");
 	SIM_SERIAL->print(url);
 	SIM_SERIAL->println('\"');
 
-}
-
-/*
-bool CGPRS_SIM800::ifSMSNow(void)
-{
-	return sim800_check_with_cmd("AT+CMGR=1", "+CMT: ", CMD);
-}
-
-boolean CGPRS_SIM800::sim800_check_with_cmd(const char* cmd, const char *resp, DataType type, unsigned int timeout, unsigned int chartimeout)
-{
-	sim800_send_cmd(cmd);
-	//sendCommand("AT+CMGR=1");
-	return sim800_wait_for_resp(resp, type, timeout, chartimeout);
-}
-
-void CGPRS_SIM800::sim800_send_cmd(const char* cmd)
-{
-	for (int i = 0; i<strlen(cmd); i++)
+	if (sendCommand(0, "+CIPPING", "ERROR",3000) == 1)
 	{
-		sim800_send_byte(cmd[i]);
-	}
-}
-
-void CGPRS_SIM800::sim800_send_byte(uint8_t data)
-{
-	SIM_SERIAL->write(data);
-}
-
-
-boolean CGPRS_SIM800::sim800_wait_for_resp(const char* resp, DataType type, unsigned int timeout, unsigned int chartimeout)
-{
-	int len = strlen(resp);
-	int sum = 0;
-	unsigned long timerStart, prevChar;    //prevChar is the time when the previous Char has been read.
-	timerStart = millis();
-	prevChar = 0;
-	while (1) {
-		if (SIM_SERIAL->available()) {
-			char c = SIM_SERIAL->read();
-			prevChar = millis();
-			sum = (c == resp[sum]) ? sum + 1 : 0;
-			if (sum == len)break;
-		}
-		if ((unsigned long)(millis() - timerStart) > timeout * 1000UL) {
-			return false;
-		}
-		//If interchar Timeout => return FALSE. So we can return sooner from this function.
-		if (((unsigned long)(millis() - prevChar) > chartimeout) && (prevChar != 0)) {
-			return false;
-		}
-
-	}
-	//If is a CMD, we will finish to read buffer.
-	if (type == CMD) purgeSerial();
-	return true;
-}
-*/
-
-
-
-
-bool CGPRS_SIM800::checkSMS()
-{
- if (sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1)   // отправляет команду "AT+CMGR=1", поиск ответного сообщения +CMGR:
-  {           // Сообщение найдено 
-	sendCommand(0, 100, "\r\n");               // Чтение сообщения только СМС, отсечен телефон - исправить
-	if (sendCommand(0)) {             		   // по умолчанию  - timeout = 2000, const char* expected = 0);
-	  sendCommand("AT+CMGD=1");                // remove the SMS
-	  return true;
-	}
-  }
-  return false; 
-}
-
-
-
-/*
-
-void CGPRS_SIM800::sim800_read_buffer(char *buffer1, int count, unsigned int timeout, unsigned int chartimeout)
-{
-	int i = 0;
-	unsigned long timerStart, prevChar;
-	timerStart = millis();
-	prevChar = 0;
-	while (1) 
-	{
-		while (SIM_SERIAL->available()) 
-		{
-			char c = SIM_SERIAL->read();
-			prevChar = millis();
-			buffer1[i++] = c;
-			if (i >= count)break;
-		}
-		if (i >= count)break;
-		if ((unsigned long)(millis() - timerStart) > timeout * 1000UL) {
-			break;
-		}
-		//If interchar Timeout => return FALSE. So we can return sooner from this function. Not DO it if we dont recieve at least one char (prevChar <> 0)
-		if (((unsigned long)(millis() - prevChar) > chartimeout) && (prevChar != 0)) {
-			break;
-		}
-	}
-}
-
-
-*/
-
-
-
-
-
-bool CGPRS_SIM800::readSMS(char *message, char *phone, char *datetime)
-{
-	// Response is like:
-	//+CMT: "+79772941911","","15/12/15,01:51:24+12"
-	//+CMGR: "REC READ","XXXXXXXXXXX","","14/10/09,17:30:17+08"
-	//SMS text here
-
-
-	//+CMTI: "SM",2
-	//62632701","","17/01/20,01:14:36+12"
-
-	if (sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1)   // отправляет команду "AT+CMGR=1", поиск ответного сообщения +CMGR:
-	{
-
-		int i = 0;
-		int j = 0;
-
-		//char gprsBuffer[160];
-
-		//purgeSerial();
-		//sim800_read_buffer(buffer, sizeof(buffer));
-		sendCommand(0);
-
-		int len = strlen(buffer);
-#if DEBUG
-		DEBUG.print("SMS:");
-		DEBUG.println(buffer);
-#endif
-
-
-
-		Serial.println(buffer);
-
-		j = 0;
-		while (i < len - 2)
-			message[j++] = buffer[i++];
-
-		message[j] = '\0';
-
-		if (buffer[i] == '\"')
-		{
-			i++;
-			j = 0;
-			while (buffer[i] != '\"')
-			{
-				phone[j++] = buffer[i++];
-			}
-			phone[j] = '\0';
-			i++;
-		}
-
-		if (buffer[i] == ',')
-			i++;
-
-		if (buffer[i] == '\"') {
-			i++;
-			while (buffer[i] != '\"') {
-				i++;
-			}
-			i++;
-		}
-
-		if (buffer[i] == ',')
-			i++;
-
-		if (buffer[i] == '\"') {
-			i++;
-			j = 0;
-			while (buffer[i] != '\"') {
-				datetime[j++] = buffer[i++];
-			}
-			datetime[j] = '\0';
-			i++;
-		}
-
-		if (buffer[i] == '\r')
-			i++;
-
-		if (buffer[i] == '\n')
-			i++;
-
-		j = 0;
-		while (i < len - 2)
-			message[j++] = buffer[i++];
-
-		message[j] = '\0';
 		return true;
 	}
 	return false;
 }
 
-
-
-
-
-
-
-/*
-
-bool CGPRS_SIM800::checkSMSU()
+bool CGPRS_SIM800::checkSMS()
 {
- if (SIM_SERIAL->available())             //есть данные от GSM модуля
- {          
-	delay(100);                          //выждем, чтобы строка успела попасть в порт целиком раньше чем будет считана
-	while (SIM_SERIAL->available())       //есть данные от GSM модуля
-	{    
-	  ch = SIM_SERIAL->read();
-	  val += char(ch);                   //сохраняем входную строку в переменную val
-	  delay(10);
-	}
-	Serial.println(val);
-	Serial.print("**SMS**  ");
-	Serial.println(buffer);
+	// SMS: "REC UNREAD", "+79162632701", "", "17/01/21,13:51:06+12"
+	//	 Timeset5
+	//	 "REC READ", "+79162632701", "", "17/01/21,13:51:06+12"
+	//	 Timeset5
+	//	 + CMGR:
 
-
-	return true;
+ if (sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1)   // отправляет команду "AT+CMGR=1", поиск ответного сообщения +CMGR:
+  { 
+	 while (SIM_SERIAL->available())       //есть данные от GSM модуля
+	 {
+		 ch = SIM_SERIAL->read();
+		 val += char(ch);                   //сохраняем входную строку в переменную val
+		 delay(10);
+	 }
+	 return true;
   }
   return false; 
 }
-*/
+
+bool CGPRS_SIM800::deleteSMS(int n_sms)
+{
+	if (sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1)   // отправляет команду "AT+CMGR=1", поиск ответного сообщения +CMGR:
+	{
+		if (sendCommand(0)) 
+		{   
+			// по умолчанию  - timeout = 2000, const char* expected = 0);
+
+			if (n_sms > 0)
+			{
+				sendCommand("AT+CMGD=1");                // remove the SMS
+			}
+			else
+			{
+				sendCommand("AT+CMGDA=\"DEL ALL\"");                // remove the SMS
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
 
 int CGPRS_SIM800::getSignalQuality()
 {
@@ -582,8 +392,8 @@ bool CGPRS_SIM800::httpInit()
 	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[37])));
 	if  (!sendCommand(bufcom, 10000) || !sendCommand(bufcom1, 5000))  //if  (!sendCommand("AT+HTTPINIT", 10000) || !sendCommand("AT+HTTPPARA=\"CID\",1", 5000)) 
 	{
-	httpState = HTTP_DISABLED;
-	return false;
+		httpState = HTTP_DISABLED;
+		return false;
 	}
 	httpState = HTTP_READY;
 	return true;

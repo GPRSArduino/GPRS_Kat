@@ -164,17 +164,7 @@ public:
 	bool ping(const char* url);
     // check for incoming SMS
 	bool checkSMS();
-	
-	//bool ifSMSNow(void);
-	//boolean  sim800_check_with_cmd(const char* cmd, const char *resp, DataType type, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
-
-	bool readSMS(char *message, char *phone, char *datetime);
-	
-	//void sim800_read_buffer(char* buffer, int count, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
-	//boolean  sim800_wait_for_resp(const char* resp, DataType type, unsigned int timeout = DEFAULT_TIMEOUT, unsigned int chartimeout = DEFAULT_INTERCHAR_TIMEOUT);
-	//void  sim800_send_cmd(const char* cmd);
-	//void  sim800_send_byte(uint8_t data);
-	//bool checkSMSU();
+	bool deleteSMS(int n_sms);
     // get signal quality level (in dB)
     int getSignalQuality();
     // get GSM location and network time
@@ -204,7 +194,7 @@ public:
     bool available();
 	void cleanStr(String & str);
 
-    char buffer[160+40];
+    char buffer[140];
     byte httpState;
 	String val = "";
 
@@ -219,7 +209,7 @@ private:
     String cont = "";
 
     int _LED13            ;                            // Индикация светодиодом
-	char bufcom[40];
+	char bufcom[35];
 	char bufcom1[20];
 	int ch = 0;
 	FONAStreamType *SIM_SERIAL;
