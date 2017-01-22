@@ -17,4 +17,9 @@
   <ItemGroup>
     <None Include="SIM800C1_5.ino" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="__vm\.SIM800C1_5.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>

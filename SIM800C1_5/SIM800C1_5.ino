@@ -45,12 +45,19 @@
 #include <DallasTemperature.h>
 #include <avr/pgmspace.h>
 #include <EEPROM.h>
+#include <avr/wdt.h>
 
 #define con Serial
 #define speed_Serial 115200
 
 static const char* url1 = "http://vps3908.vps.host.ru/recieveReadings.php";
 static const char* url_ping = "www.yandex.ru";
+
+//const char  txt_url1[]          PROGMEM = "http://vps3908.vps.host.ru/recieveReadings.php";
+//const char  txt_url_ping[]      PROGMEM = "www.yandex.ru";
+
+
+
 
 
 #define PIN_TX           7                             // Подключить  к выводу 7 сигнал RX модуля GPRS
@@ -92,6 +99,7 @@ volatile int count_blink1 = 0;                     // Счетчик попыток подключить
 volatile int count_blink2 = 0;                     // Счетчик попыток подключиться к базовой станции
 
 bool start_error = false;                         // флаг компенсации первой ошибки при старте.
+bool send_ok = false;                             // Признак успешной передачи данных
 
 CGPRS_SIM800 gprs;
 uint32_t count  = 0;
@@ -106,10 +114,11 @@ String imei = "861445030362268";                  // Тест IMEI
 unsigned long time;                                 // Переменная для суточного сброса
 unsigned long time_day = 86400;                     // Переменная секунд в сутках
 unsigned long previousMillis = 0;
-unsigned long interval = 50;                        // Интервал передачи данных 50 секунд
+unsigned long interval = 60;                        // Интервал передачи данных 200 секунд
 //unsigned long interval = 300;                     // Интервал передачи данных 5 минут
 bool time_set = false;                              // Фиксировать интервал заданный СМС
-
+unsigned long time_ping = 360;                      // Интервал проверки ping 6 минут.
+unsigned long previousPing = 0;                     // Временный Интервал проверки ping
 
 //char datetime[24];
 //char data_tel[16];                                  // Буфер для номера телефоа
@@ -178,7 +187,25 @@ void sendTemps()
 	//Serial.println(toSend);
 
 	Serial.println(toSend.length());
-	gprs_send(toSend);
+
+	//gprs_send(toSend);
+
+	int count_send = 0;
+	while (1)
+	{
+		if (gprs_send(toSend))
+		{
+			return;
+		}
+		else
+		{
+			count_send++;
+			Serial.print("Attempt to transfer data .."); Serial.println(count_send);
+			if (count_send>5) resetFunc(); // 5 попыток. Что то пошло не так с интернетом
+		}
+		delay(3000);
+	}
+
 }
 
 String formHeader() 
@@ -232,15 +259,15 @@ String formEnd()
 		Serial.println(dataport2);*/
 	 }
 	String mytel = "mytel=" + master_tel1;
-	String tel1 = "tel1=" + master_tel2;
-	String tel2 = "tel2=" + master_tel3;
+	String tel1  = "tel1=" + master_tel2;
+	String tel2  = "tel2=" + master_tel3;
 
 	//return DELIM + mytel + DELIM +tel1 + DELIM + tel2;
 	return DELIM + master_tel1 + DELIM + master_tel2 + DELIM + master_tel3 + DELIM + SMS_center;
 
 }
 
-void gprs_send(String data) 
+bool gprs_send(String data) 
 {
   con.print(F("Requesting "));               //con.print("Requesting ");
   con.print(url1);
@@ -248,6 +275,8 @@ void gprs_send(String data)
   con.println(data);
   gprs.httpConnectStr(url1, data);
   count++;
+  send_ok = false;
+
   if(count >1)
   {
 	  start_error = true;
@@ -303,7 +332,7 @@ void gprs_send(String data)
    String command = gprs.buffer;                          // Получить строку данных с сервера
    String commEXE = command.substring(0, 2);              // Выделить строку с командой
    int var = commEXE.toInt();                             // Получить номер команды. Преобразовать строку команды в число 
-
+   send_ok = true;                                        // Команда принята успешно
    if(var == 1)                                           // Выполнить команду 1
 	{
 		String commData = command.substring(2, 10);       // Выделить строку с данными
@@ -315,8 +344,8 @@ void gprs_send(String data)
 		  {
 			 if(!time_set)                                // Если нет команды фиксации интервала от СМС 
 			 {
-				interval = interval1;                     // Переключить интервал передачи на сервер
-				EEPROM.put(Address_interval, interval);   // Записать интервал EEPROM , полученный от сервера
+				//interval = interval1;                     // Переключить интервал передачи на сервер
+				//EEPROM.put(Address_interval, interval);   // Записать интервал EEPROM , полученный от сервера
 			 }
 		  }
 		}
@@ -406,6 +435,7 @@ void gprs_send(String data)
 	con.print(errors);
   }
   con.println();
+  return send_ok;
 }
 
 void errorAllmem()
@@ -442,6 +472,7 @@ void setTime(String val, String f_phone)
   else if (val.indexOf(F("Timeoff")) > -1) 
   {
 	 time_set = false;                              // Снять фиксацию интервала заданного СМС
+	 Serial.println(F("Timeoff"));
   } 
   else
   {
@@ -454,7 +485,9 @@ void check_blink()
 {
 	unsigned long current_M = millis();
 
-	metering_NETLIGHT = current_M - metering_temp;
+	wdt_reset();
+	
+	metering_NETLIGHT = current_M - metering_temp; // переделать для уменьшения
 	metering_temp = current_M;
 	//Serial.println(metering_NETLIGHT);
 	if (metering_NETLIGHT > 3055 && metering_NETLIGHT < 3070)
@@ -525,7 +558,7 @@ void ping()
 		else
 		{
 			count_ping++;
-			if (count_ping>5) resetFunc(); // 5 попыток. Что то пошло не так с интернетом
+			if (count_ping > 7) resetFunc(); // 7 попыток. Что то пошло не так с интернетом
 		}
 		delay(1000);
 	}
@@ -623,7 +656,7 @@ void start_init()
 							// Уточнить программу перезапуска  если модуль не зарегистрировался не зарегистрировался через 60 секунд
 						}
 						Serial.println(F("\nGPRS connect OK!+"));
-						setColor(COLOR_GREEN);                 // Включить зеленый светодиод
+						//setColor(COLOR_GREEN);                 // Включить зеленый светодиод
 						setup_ok = true;
 					}
 					else
@@ -679,6 +712,8 @@ void setup()
 	if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 
 	attachInterrupt(1,check_blink, RISING);            // Включить прерывания. Индикация состояния модема
+	delay(5000);
+	wdt_enable(WDTO_8S); // Для тестов не рекомендуется устанавливать значение менее 8 сек.
 
 	start_init();
 	
@@ -724,21 +759,24 @@ void setup()
 
 	con.print(F("Interval sec:"));
 	con.println(interval);
+	con.print(F("SMS_center .."));
 	con.println(SMS_center);
 
 	if (gprs.deleteSMS(0))
 	{
-		con.println(F("SMS delete"));                    //  con.print("SMS:");
+		con.println(F("All SMS delete"));                    //  con.print("SMS:");
 	}
 	con.print(F("\nfree memory: "));
 	con.println(freeRam());
 
 	ping();
+
 	setColor(COLOR_GREEN);                 // Включить зеленый светодиод
 
 	con.println(F("\nSIM800 setup end"));
+	sendTemps();
 	time = millis();                                              // Старт отсчета суток
-
+	
 }
 
 void loop()
@@ -748,7 +786,7 @@ void loop()
  if (gprs.checkSMS()) 
   {
 	con.print(F("SMS:"));                    
-	con.println(gprs.val);
+	con.println(gprs.val); 
 	
 	if (gprs.val.indexOf("REC UNREAD") > -1)  //если обнаружена новая  СМС 
 	{    
@@ -781,20 +819,20 @@ void loop()
 	  {
 		  con.println(F("phone ignored"));            
 	  }
-	 }
+	}
 		gprs.val = "";
 
 	if (gprs.deleteSMS(0))
 		{
 		con.println(F("SMS delete"));                    //  con.print("SMS:");
 		}
-	//if (gprs.val.indexOf("REC READ") > -1)  //если обнаружена старая  СМС 
-	//{
-	//	if (gprs.deleteSMS(0))
-	//	{
-	//		con.println(F("SMS delete"));                    //  con.print("SMS:");
-	//	}
-	//}
+	if (gprs.val.indexOf("REC READ") > -1)               //если обнаружена старая  СМС 
+	{
+		if (gprs.deleteSMS(0))
+		{
+			con.println(F("SMS delete"));                    //  con.print("SMS:");
+		}
+	}
   }
  
  
@@ -809,11 +847,24 @@ void loop()
 		con.println((currentMillis-previousMillis)/1000);
 		setColor(COLOR_BLUE);
 		previousMillis = currentMillis;
-		ping();
 		sendTemps();
 		setColor(COLOR_GREEN);
 		con.print(F("\nfree memory: "));                                 
 		con.println(freeRam());
+	}
+
+	currentMillis = millis();
+	/*con.println(currentMillis);
+	con.println((currentMillis - previousPing));*/
+
+	if ((unsigned long)(currentMillis - previousPing) >= time_ping * 1000)
+	{
+		con.print(F("Interval ping sec:"));
+		con.println((currentMillis - previousPing) / 1000);
+		setColor(COLOR_BLUE);
+		previousPing = currentMillis;
+		ping();
+		setColor(COLOR_GREEN);
 	}
 
 	if(millis() - time > time_day*1000) resetFunc();                       //вызываем reset интервалом в сутки

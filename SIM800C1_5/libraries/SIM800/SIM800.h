@@ -238,7 +238,7 @@ public:
     bool available();
 	void cleanStr(String & str);
 
-    char buffer[140];
+    char buffer[100];
     byte httpState;
 	String val = "";
 
@@ -253,7 +253,7 @@ private:
     String cont = "";
 
     int _LED13            ;                            // Индикация светодиодом
-	char bufcom[35];
+	char bufcom[30];
 	char bufcom1[20];
 	int ch = 0;
 	FONAStreamType *SIM_SERIAL;
