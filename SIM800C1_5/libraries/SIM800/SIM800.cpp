@@ -181,8 +181,6 @@ byte CGPRS_SIM800::setup()
 	return 5;                                                   // Неуспешная регистрация
 }
 
-
-
 void CGPRS_SIM800::cleanStr(String & str) 
 {
   str.replace("OK", "");
@@ -261,6 +259,31 @@ bool CGPRS_SIM800::getIMEI()
   }
   return false;
 }
+bool CGPRS_SIM800::getSIMCCID()
+{
+	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[20])));
+	sendCommand(bufcom);                                          //sendCommand("AT+CCID");
+	delay(1000);
+
+	if (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
+	{
+		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
+               								    //Если совпадений не обнаружено, возвращается NULL.
+		if (p)
+		{
+			p += 2;
+
+			// char *s = strstr(buffer, "OK");  // Ищем завершения операции
+			char *s = strchr(p, '\r');          // Функция strchr() возвращает указатель на первое вхождение символа ch в строку, 
+											    //на которую указывает str. Если символ ch не найден,
+											    //возвращается NULL. 
+			if (s) *s = 0;   strcpy(buffer, p);
+			return true;
+		}
+	}
+	return false;
+}
+
 
 bool CGPRS_SIM800::getOperatorName()
 {
@@ -355,7 +378,6 @@ bool CGPRS_SIM800::deleteSMS(int n_sms)
 	return false;
 }
 
-
 int CGPRS_SIM800::getSignalQuality()
 {
   strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[8])));
@@ -414,6 +436,7 @@ bool CGPRS_SIM800::httpInit()
 		return false;
 	}
 	httpState = HTTP_READY;
+
 	return true;
 }
 
@@ -526,6 +549,25 @@ int CGPRS_SIM800::httpIsRead()
 	}
 	return 0;
 }
+
+boolean CGPRS_SIM800::HTTP_ssl(boolean onoff) 
+{
+	if (onoff)
+	{
+		if(sendCommand("AT+HTTPSSL=1", "OK\r", "ERROR\r") == 1)
+
+		return true;
+
+	}
+	else
+	{
+		if (sendCommand("AT+HTTPSSL=0", "OK\r", "ERROR\r") == 1)
+
+		return true;
+	}
+	return false;
+}
+
 
 byte CGPRS_SIM800::sendCommand(const char* cmd, unsigned int timeout, const char* expected)
 {      // синтаксис - команда, 

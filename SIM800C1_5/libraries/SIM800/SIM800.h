@@ -43,7 +43,7 @@ const char  txt_beeline[]            PROGMEM  = "beeline";
 const char  txt_MegaFon[]            PROGMEM  = "MegaFon";
 const char  txt_internet[]           PROGMEM  = "internet"; 
 const char  txt_MEGAFONB[]           PROGMEM  = "MEGAFON";
-const char  txt_TELE2[]              PROGMEM  = "TELE2";
+const char  txt_CCID[]               PROGMEM  = "AT+CCID";
 const char  txt_internet_TELE2[]     PROGMEM  = "internet.TELE2.ru";
 const char  txt_SAPBR1[]             PROGMEM  = "AT+SAPBR=3,1,\"APN\",\"";
 const char  txt_SAPBR2[]             PROGMEM  = "AT+SAPBR=3,1,\"USER\",\""; 
@@ -118,7 +118,7 @@ txt_beeline,                 // 16 "beeline";
 txt_MegaFon,                 // 17 "MegaFon";
 txt_internet,                // 18 "internet"; 
 txt_MEGAFONB,                // 19 "MEGAFON";
-txt_TELE2,                   // 20 "TELE2";
+txt_CCID,                    // 20 ""AT+CCID"";
 txt_internet_TELE2,          // 21 "internet.TELE2.ru";
 txt_SAPBR1,                  // 22 "AT+SAPBR=3,1,\"APN\",\"";
 txt_SAPBR2,                  // 23 "AT+SAPBR=3,1,\"USER\",\""; 
@@ -160,11 +160,6 @@ txt_CMGDA,                   // 58 "AT+CMGDA=\"DEL ALL\"";
 txt_AT                       // 59 "AT";
 };
 
-enum DataType {
-	CMD = 0,
-	DATA = 1,
-};
-
 
 
 typedef enum {
@@ -190,12 +185,7 @@ class CGPRS_SIM800 {
 public:
     CGPRS_SIM800():httpState(HTTP_DISABLED) {}
     // initialize the module
-   
-
-#define DEFAULT_TIMEOUT     		 5   //seconds
-#define DEFAULT_INTERCHAR_TIMEOUT 1500   //miliseconds
-
-
+  
 
 	bool begin(Stream &port);
     // setup network
@@ -205,6 +195,7 @@ public:
     // get network operator name
     bool getOperatorName();
 	bool getIMEI();
+	bool getSIMCCID();
 	bool ping(const char* url);
     // check for incoming SMS
 	bool checkSMS();
@@ -220,7 +211,7 @@ public:
     // connect to HTTP server
     bool httpConnect(const char* url, const char* args = 0);
 	bool httpConnectStr(const char* url, String args = "");
-
+	boolean HTTP_ssl(boolean onoff);
     // check if HTTP connection is established
     // return 0 for in progress, 1 for success, 2 for error
     byte httpIsConnected();
@@ -238,7 +229,7 @@ public:
     bool available();
 	void cleanStr(String & str);
 
-    char buffer[100];
+    char buffer[80];
     byte httpState;
 	String val = "";
 
@@ -249,7 +240,7 @@ private:
     uint32_t m_checkTimer;
 	String apn  = "";
     String user = "";
-    String pwd  = "";
+    String pwd  = ""; 
     String cont = "";
 
     int _LED13            ;                            // Индикация светодиодом
