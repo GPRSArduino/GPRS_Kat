@@ -64,7 +64,8 @@ bool send_ok                         = false;      // Признак успешной передачи 
 CGPRS_SIM800 gprs;
 uint32_t count    = 0;
 uint32_t errors   = 0;
-String imei       = "";
+//String imei       = "";
+String imei = "861445030362268";                   // Тест IMEI
 String CSQ        = "";                               // Уровень сигнала приема
 String SMS_center = "";
 String zero_tel   = "";
@@ -536,8 +537,8 @@ void start_init()
 		if (gprs.getIMEI())                       // Получить IMEI
 		{
 			con.print(F("\nIMEI:"));
-			imei = gprs.buffer;                 // Отключить на время отладки
-			gprs.cleanStr(imei);                // Отключить на время отладки
+			//imei = gprs.buffer;                 // Отключить на время отладки
+			//gprs.cleanStr(imei);                // Отключить на время отладки
 			con.println(imei);
 		}
 		else
