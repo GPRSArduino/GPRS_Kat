@@ -1,39 +1,6 @@
 /*
 Программа передачи данных по каналу GPRS
-06.01.2017г.
-
-Замечания:
-1) Есть ощущение, что при старте устройство «не чувствует», подцепилась ли сеть ,или нет.
-Бывают ситуации, при которых светодиод белый около СИМ800 сначала моргает быстро (ищет сеть), а затем просто гаснет.
-Потом основной светодиод загорается синим, но при этом белый светодиод СИМ800 не горит, что означает, что передача через СИМ800 не идет.
-Наверняка у сим800 есть команды, чтобы спросить модуль, подключен ли он сейчас к сети, имеется ли выход в интернет.
-Может быть, стоит делать такую проверку перед передачей данных (нет смысла пытаться передать данные, если нет подключения к сети). Это возможно?
-
-2) А если светодиод белый вообще не горит? Что это означает? Неоднократно наблюдал такой режим после "моргает средне"
-
-3) Устройство работает сейчас не сильно стабильно, ежедневно "связь пропадает", и потом в течение часа восстанавливается.
-Т.е., получается что оно 3-4 часа находится вне зоны доступа. Сейчас там стоит 20 ошибок и интервал от сайта - 10 минут. 20*10 = 200 минут. Т.е., 3,3 часа. 
-Получается, что теряется связь, а потом происходит перезагрузка по счетчику ошибок.
-Почему так происходит - постараюсь сейчас проанализировать (по строкам) и пришлю информацию в следующем письме
-
-4) По программе, осталось у нас буквальное несколько доработок, чтобы устройства заработали как дистанционные термометры: 
-
-1.  Чтобы не коцать еепром при каждой загрузке, либо установить интервал в 1 минуту между первой и второй отсылкой данных на сервер;
-либо уже после 1й отсылки данных на сервер читать приходящий интервал (сейчас только со 2й отправки читает интервал ,
-соответственно если интервал стоит например сутки – назад он никогда уже не поменяется). 
-
-2.  Сделать индикацию неудачной отправки данных при первом обращении к серверу. Насколько я понимаю,
-сейчас 1я отправка сидит в сетапе, а 2я и далее – в лупе. Может, если есть ошибка, сделать так, 
-чтобы устройство не выходило из сетапа, а мигало красным скажем 3-5 раз, делая паузу в несколько секунд, и уходило назад,
-в место кода «до первой отправки данных». Иными словами, пока хотя бы один раз устройство не законнектится и не получит ответ от сервера, в LOOP не уходит. 
-
-3.   Перейти на новую строку
-
-4.  Научить устройство понимать сразу несколько параметров , приходящих с севера, и по очереди их анализировать.
-Те.. чтобы сервер отправлял назад строку вида 0150@05@06+79852517615@07TempRemote и так далее
-
-
-
+24.01.2017г.
 
 
 
@@ -51,7 +18,7 @@
 #define speed_Serial 115200
 
 static const char* url1   = "http://vps3908.vps.host.ru/recieveReadings.php";
-static const char* urlssl = "https://vps3908.vps.host.ru/recieveReadings.php";
+//static const char* urlssl = "https://vps3908.vps.host.ru/recieveReadings.php";
 static const char* url_ping = "www.yandex.ru";
 
 
@@ -97,23 +64,22 @@ bool send_ok                         = false;      // Признак успешной передачи 
 CGPRS_SIM800 gprs;
 uint32_t count    = 0;
 uint32_t errors   = 0;
-//String imei     = "";
+String imei       = "";
 String CSQ        = "";                               // Уровень сигнала приема
 String SMS_center = "";
 String zero_tel   = "";
-String imei       = "861445030362268";                // Тест IMEI
 String SIMCCID    = "";
 #define DELIM "@"
 
 unsigned long time;                                   // Переменная для суточного сброса
-unsigned long time_day       = 86400;                 // Переменная секунд в сутках
-unsigned long previousMillis = 0;
-unsigned long interval       = 60;                    // Интервал передачи данных 200 секунд
-//unsigned long interval     = 300;                   // Интервал передачи данных 5 минут
-bool time_set                = false;                 // Фиксировать интервал заданный СМС
-bool ssl_set                 = false;                 // Признак шифрования
-unsigned long time_ping      = 360;                   // Интервал проверки ping 6 минут.
-unsigned long previousPing   = 0;                     // Временный Интервал проверки ping
+unsigned long time_day         = 86400;                 // Переменная секунд в сутках
+unsigned long previousMillis   = 0;
+//unsigned long interval       = 60;                    // Интервал передачи данных 200 секунд
+unsigned long interval         = 300;                   // Интервал передачи данных 5 минут
+bool time_set                  = false;                 // Фиксировать интервал заданный СМС
+bool ssl_set                   = false;                 // Признак шифрования
+unsigned long time_ping        = 360;                   // Интервал проверки ping 6 минут.
+unsigned long previousPing     = 0;                     // Временный Интервал проверки ping
 
 
 int Address_tel1       = 100;                         // Адрес в EEPROM телефона 1
@@ -209,7 +175,7 @@ String formEnd()
 
 	EEPROM.get(Address_SMS_center, SMS_center);   //Получить из EEPROM СМС центр
 
-	return DELIM + master_tel1 + DELIM + SIMCCID + DELIM + SMS_center;
+	return DELIM + master_tel1 + DELIM + SIMCCID;
 
 }
 
@@ -219,11 +185,11 @@ bool gprs_send(String data)
  
   if (ssl_set == true)
   {
-	  con.print(urlssl);
+	/*  con.print(urlssl);
 	  con.print('?');
 	  con.println(data);
 
-	  gprs.httpConnectStr(urlssl, data);
+	  gprs.httpConnectStr(urlssl, data);*/
   }
   else
   {
@@ -570,8 +536,8 @@ void start_init()
 		if (gprs.getIMEI())                       // Получить IMEI
 		{
 			con.print(F("\nIMEI:"));
-			//imei = gprs.buffer;                 // Отключить на время отладки
-			//gprs.cleanStr(imei);                // Отключить на время отладки
+			imei = gprs.buffer;                 // Отключить на время отладки
+			gprs.cleanStr(imei);                // Отключить на время отладки
 			con.println(imei);
 		}
 		else
@@ -593,7 +559,7 @@ void start_init()
 
 		if (gprs.getGMR())                       // Получить номер прошивки
 		{
-			con.print(F("\nRevision of software release:"));
+			con.print(F("\nSoftware release:"));
 			String GMR  = gprs.buffer;                 // 
 			gprs.cleanStr(GMR);                // 
 			con.println(GMR);
@@ -721,18 +687,17 @@ void setup()
 		delay(1000);
 	}
 
-	if(EEPROM.read(0)!=32)
+	if(EEPROM.read(0)!=34)
 	{
 		con.println (F("Start clear EEPROM"));               //  
 		for(int i = 0; i<1023;i++)
 		{
 			EEPROM.write(i,0);
 		}
-		EEPROM.write(0,32);
+		EEPROM.write(0,34);
 		EEPROM.put(Address_interval, interval);                  // строка начальной установки интервалов
-		EEPROM.put(Address_tel1, "+79162632701");
-		//EEPROM.put(Address_tel1, "+79162632701");
-		EEPROM.put(Address_SMS_center, "4556w6072556w6");
+		EEPROM.put(Address_tel1, "+79852517615");             
+			//EEPROM.put(Address_SMS_center, "4556w6072556w6");
 		EEPROM.write(Address_ssl, false);
 		con.println (F("Clear EEPROM End"));                              
 	}
@@ -741,7 +706,7 @@ void setup()
 	//EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
 	EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
 	EEPROM.get(Address_interval, interval);                      // Получить из EEPROM интервал
-	EEPROM.get(Address_SMS_center, SMS_center);                  // Получить из EEPROM СМС центр
+	//EEPROM.get(Address_SMS_center, SMS_center);                // Получить из EEPROM СМС центр
 	ssl_set = EEPROM.read(Address_ssl);							 // Устанивить признак шифрования
 	con.print(F("Interval sec:"));
 	con.println(interval);
@@ -810,7 +775,7 @@ void loop()
 	EEPROM.get(Address_tel1, buf);                                         // Восстановить телефон хозяина 1
 	String master_tel1(buf);
 
-	EEPROM.get(Address_SMS_center, buf);                                   // Восстановить телефон СМС центра
+	//EEPROM.get(Address_SMS_center, buf);                                   // Восстановить телефон СМС центра
 	//String master_SMS_center(buf);
 	String master_SMS_center = "4556w6072556w6";
 	//con.println(master_SMS_center);

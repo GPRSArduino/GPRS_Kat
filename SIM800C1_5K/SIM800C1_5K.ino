@@ -2,6 +2,8 @@
 Программа передачи данных по каналу GPRS
 24.01.2017г.
 
+
+
 */
 
 #include "SIM800.h"
@@ -16,7 +18,7 @@
 #define speed_Serial 115200
 
 static const char* url1   = "http://vps3908.vps.host.ru/recieveReadings.php";
-static const char* urlssl = "https://vps3908.vps.host.ru/recieveReadings.php";
+//static const char* urlssl = "https://vps3908.vps.host.ru/recieveReadings.php";
 static const char* url_ping = "www.yandex.ru";
 
 
@@ -62,7 +64,7 @@ bool send_ok                         = false;      // Признак успеш�
 CGPRS_SIM800 gprs;
 uint32_t count    = 0;
 uint32_t errors   = 0;
-String imei     = "";
+String imei       = "";
 String CSQ        = "";                               // Уровень сигнала приема
 String SMS_center = "";
 String zero_tel   = "";
@@ -70,14 +72,14 @@ String SIMCCID    = "";
 #define DELIM "@"
 
 unsigned long time;                                   // Переменная для суточного сброса
-unsigned long time_day       = 86400;                 // Переменная секунд в сутках
-unsigned long previousMillis = 0;
-unsigned long interval       = 60;                    // Интервал передачи данных 200 секунд
-//unsigned long interval     = 300;                   // Интервал передачи данных 5 минут
-bool time_set                = false;                 // Фиксировать интервал заданный СМС
-bool ssl_set                 = false;                 // Признак шифрования
-unsigned long time_ping      = 360;                   // Интервал проверки ping 6 минут.
-unsigned long previousPing   = 0;                     // Временный Интервал проверки ping
+unsigned long time_day         = 86400;                 // Переменная секунд в сутках
+unsigned long previousMillis   = 0;
+//unsigned long interval       = 60;                    // Интервал передачи данных 200 секунд
+unsigned long interval         = 300;                   // Интервал передачи данных 5 минут
+bool time_set                  = false;                 // Фиксировать интервал заданный СМС
+bool ssl_set                   = false;                 // Признак шифрования
+unsigned long time_ping        = 360;                   // Интервал проверки ping 6 минут.
+unsigned long previousPing     = 0;                     // Временный Интервал проверки ping
 
 
 int Address_tel1       = 100;                         // Адрес в EEPROM телефона 1
@@ -173,7 +175,7 @@ String formEnd()
 
 	EEPROM.get(Address_SMS_center, SMS_center);   //Получить из EEPROM СМС центр
 
-	return DELIM + master_tel1 + DELIM + SIMCCID + DELIM + SMS_center;
+	return DELIM + master_tel1 + DELIM + SIMCCID;
 
 }
 
@@ -183,11 +185,11 @@ bool gprs_send(String data)
  
   if (ssl_set == true)
   {
-	  con.print(urlssl);
+	/*  con.print(urlssl);
 	  con.print('?');
 	  con.println(data);
 
-	  gprs.httpConnectStr(urlssl, data);
+	  gprs.httpConnectStr(urlssl, data);*/
   }
   else
   {
@@ -260,10 +262,10 @@ bool gprs_send(String data)
 		{
 		  if(interval1!=interval)                         // Если информиция не изменилась - не писать в EEPROM
 		  {
-			 if(!time_set)                                  // Если нет команды фиксации интервала от СМС 
+			 if(!time_set)                                // Если нет команды фиксации интервала от СМС 
 			 {
-				interval = interval1;                         // Переключить интервал передачи на сервер
-				EEPROM.put(Address_interval, interval);       // Записать интервал EEPROM , полученный от сервера
+				//interval = interval1;                     // Переключить интервал передачи на сервер
+				//EEPROM.put(Address_interval, interval);   // Записать интервал EEPROM , полученный от сервера
 			 }
 		  }
 		}
@@ -272,7 +274,7 @@ bool gprs_send(String data)
 	
 	else if(var == 2)                                  // Выполнить команду 2
 	{
-		command.remove(0, 2);                            // Получить данные номера телефона от сервера
+		command.remove(0, 2);                          // Получить данные номера телефона от сервера
 		EEPROM.get(Address_tel1, data_tel);            // Получить номер телефона из EEPROM
 		String num_tel(data_tel);
 		if (command != num_tel)                        // Если информиция не изменилась - не писать в EEPROM
@@ -528,14 +530,14 @@ void start_init()
 			Serial.println(F("Couldn't find module GPRS"));
 			while (1);
 		}
-		con.println(F("OK"));                                  // 
+		con.println(F("OK"));                  // 
 
 
 		if (gprs.getIMEI())                       // Получить IMEI
 		{
 			con.print(F("\nIMEI:"));
-			imei = gprs.buffer;                     // Отключить на время отладки
-			gprs.cleanStr(imei);                    // Отключить на время отладки
+			imei = gprs.buffer;                 // Отключить на время отладки
+			gprs.cleanStr(imei);                // Отключить на время отладки
 			con.println(imei);
 		}
 		else
@@ -557,7 +559,7 @@ void start_init()
 
 		if (gprs.getGMR())                       // Получить номер прошивки
 		{
-			con.print(F("\nRevision of software release:"));
+			con.print(F("\nSoftware release:"));
 			String GMR  = gprs.buffer;                 // 
 			gprs.cleanStr(GMR);                // 
 			con.println(GMR);
@@ -685,26 +687,26 @@ void setup()
 		delay(1000);
 	}
 
-	if(EEPROM.read(0)!=36)
+	if(EEPROM.read(0)!=34)
 	{
 		con.println (F("Start clear EEPROM"));               //  
 		for(int i = 0; i<1023;i++)
 		{
 			EEPROM.write(i,0);
 		}
-		EEPROM.write(0,36);
+		EEPROM.write(0,34);
 		EEPROM.put(Address_interval, interval);                  // строка начальной установки интервалов
-		EEPROM.put(Address_tel1, "+79852517615");
-		//EEPROM.put(Address_SMS_center, "4556w6072556w6");
+		EEPROM.put(Address_tel1, "+79852517615");             
+			//EEPROM.put(Address_SMS_center, "4556w6072556w6");
 		EEPROM.write(Address_ssl, false);
 		con.println (F("Clear EEPROM End"));                              
 	}
 
-	//SMS_center = "4556w6072556w6";                               // SMS_center = "SMS.RU";
+	SMS_center = "4556w6072556w6";                               // SMS_center = "SMS.RU";
 	//EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
-//	EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
+	EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
 	EEPROM.get(Address_interval, interval);                      // Получить из EEPROM интервал
-//	EEPROM.get(Address_SMS_center, SMS_center);                  // Получить из EEPROM СМС центр
+	//EEPROM.get(Address_SMS_center, SMS_center);                // Получить из EEPROM СМС центр
 	ssl_set = EEPROM.read(Address_ssl);							 // Устанивить признак шифрования
 	con.print(F("Interval sec:"));
 	con.println(interval);
@@ -773,7 +775,7 @@ void loop()
 	EEPROM.get(Address_tel1, buf);                                         // Восстановить телефон хозяина 1
 	String master_tel1(buf);
 
-	EEPROM.get(Address_SMS_center, buf);                                   // Восстановить телефон СМС центра
+	//EEPROM.get(Address_SMS_center, buf);                                   // Восстановить телефон СМС центра
 	//String master_SMS_center(buf);
 	String master_SMS_center = "4556w6072556w6";
 	//con.println(master_SMS_center);
