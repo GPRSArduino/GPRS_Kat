@@ -20,7 +20,7 @@ typedef	Stream 						FONAStreamType;
 
 
 // define DEBUG to one serial UART to enable debug information output
-//#define DEBUG Serial
+// #define DEBUG Serial
 
 
 const char  txt_ATE0[]               PROGMEM  = "ATE0";
@@ -44,7 +44,7 @@ const char  txt_MegaFon[]            PROGMEM  = "MegaFon";
 const char  txt_internet[]           PROGMEM  = "internet"; 
 const char  txt_MEGAFONB[]           PROGMEM  = "MEGAFON";
 const char  txt_CCID[]               PROGMEM  = "AT+CCID";
-const char  txt_internet_TELE2[]     PROGMEM  = "internet.TELE2.ru";
+const char  txt_GMR[]                PROGMEM  = "AT+GMR";
 const char  txt_SAPBR1[]             PROGMEM  = "AT+SAPBR=3,1,\"APN\",\"";
 const char  txt_SAPBR2[]             PROGMEM  = "AT+SAPBR=3,1,\"USER\",\""; 
 const char  txt_SAPBR3[]             PROGMEM  = "AT+SAPBR=3,1,\"PWD\",\"";
@@ -119,7 +119,7 @@ txt_MegaFon,                 // 17 "MegaFon";
 txt_internet,                // 18 "internet"; 
 txt_MEGAFONB,                // 19 "MEGAFON";
 txt_CCID,                    // 20 ""AT+CCID"";
-txt_internet_TELE2,          // 21 "internet.TELE2.ru";
+txt_GMR,                     // 21 "AT+GMR";
 txt_SAPBR1,                  // 22 "AT+SAPBR=3,1,\"APN\",\"";
 txt_SAPBR2,                  // 23 "AT+SAPBR=3,1,\"USER\",\""; 
 txt_SAPBR3,                  // 24 "AT+SAPBR=3,1,\"PWD\",\"";
@@ -196,6 +196,7 @@ public:
     bool getOperatorName();
 	bool getIMEI();
 	bool getSIMCCID();
+	bool getGMR();
 	bool ping(const char* url);
     // check for incoming SMS
 	bool checkSMS();

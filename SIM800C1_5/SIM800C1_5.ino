@@ -579,7 +579,7 @@ void start_init()
 			return;  // IMEI не определился
 		}
 
-		if (gprs.getSIMCCID())                       // Получить IMEI
+		if (gprs.getSIMCCID())                       // Получить Номер СИМ карты
 		{
 			con.print(F("\nSIM CCID:"));
 			SIMCCID = gprs.buffer;                 // Отключить на время отладки
@@ -588,12 +588,18 @@ void start_init()
 		}
 		else
 		{
-			return;  // IMEI не определился
+			//return;  // SIMCCID не определился
 		}
 
+		if (gprs.getGMR())                       // Получить номер прошивки
+		{
+			con.print(F("\nRevision of software release:"));
+			String GMR  = gprs.buffer;                 // 
+			gprs.cleanStr(GMR);                // 
+			con.println(GMR);
+		}
 
-
-		//getSIMCCID()
+		
 
 		while (state_device != 2)  // Ожидание регистрации в сети
 		{
@@ -659,6 +665,7 @@ void start_init()
 
 void setup()
 {
+	wdt_disable(); // бесполезна¤ строка до которой не доходит выполнение при bootloop Не уверен!!
 	con.begin(speed_Serial);
 	con.println(F("\n SIM800 setup start"));     
 

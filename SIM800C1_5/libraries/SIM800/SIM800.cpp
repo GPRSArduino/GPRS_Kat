@@ -64,10 +64,10 @@ bool CGPRS_SIM800::begin(Stream &port)
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[6])));
 		//sendCommand(bufcom);                                            // отображение смс в терминале сразу после приема (без этого 
 		delay(100);															//sendCommand("AT+CNMI=2,2");                                   // отображение смс в терминале сразу после приема (без этого сообщения молча падают в память)tln("AT+CSCS=\"GSM\""); 
-		sendCommand("AT+CMGDA=\"DEL ALL\"");                             // AT+CMGDA=«DEL ALL» команда удалит все сообщения
-		delay(100);
-		//sendCommand("AT+CMGDA=\"DEL ALL\"");                            // AT+CMGDA=«DEL ALL» команда удалит все сообщения
+		//sendCommand("AT+CMGDA=\"DEL ALL\"");                             // AT+CMGDA=«DEL ALL» команда удалит все сообщения
 		//delay(100);
+		sendCommand("AT+GMR");                                             // Номер прошивки
+		delay(100);
 		return true;
 	}
 	return false;
@@ -237,10 +237,11 @@ uint8_t CGPRS_SIM800::getNetworkStatus()
 bool CGPRS_SIM800::getIMEI()
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[30])));
+	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
 	sendCommand(bufcom);                                          //sendCommand("AT+GSN");
 	delay(1000);
 
-  if (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
+  if (sendCommand(bufcom, "OK\r", bufcom1) == 1)               // (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
   {
 	char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
 											 //на которую указывает str1, строки, указанной str2 (исключая завершающий нулевой символ).
@@ -262,11 +263,12 @@ bool CGPRS_SIM800::getIMEI()
 bool CGPRS_SIM800::getSIMCCID()
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[20])));
-	sendCommand(bufcom);                                          //sendCommand("AT+CCID");
+	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
+	//sendCommand(bufcom);                                          //sendCommand("AT+CCID");
 	delay(1000);
 
-	if (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
-	{
+	if (sendCommand(bufcom, "OK\r", bufcom1) == 1)             // (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
+	{      
 		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
                								    //Если совпадений не обнаружено, возвращается NULL.
 		if (p)
@@ -277,6 +279,31 @@ bool CGPRS_SIM800::getSIMCCID()
 			char *s = strchr(p, '\r');          // Функция strchr() возвращает указатель на первое вхождение символа ch в строку, 
 											    //на которую указывает str. Если символ ch не найден,
 											    //возвращается NULL. 
+			if (s) *s = 0;   strcpy(buffer, p);
+			return true;
+		}
+	}
+	return false;
+}
+bool CGPRS_SIM800::getGMR()
+{
+	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[21])));
+	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
+	//sendCommand(bufcom);                                          //sendCommand("AT+GMR");Номер прошивки
+	delay(1000);
+
+	if (sendCommand(bufcom, "OK\r", bufcom) == 1)             // (sendCommand(bufcom, "OK\r", "ERROR\r") == 1)
+	{
+		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
+												 //Если совпадений не обнаружено, возвращается NULL.
+		if (p)
+		{
+			p += 2;
+
+			// char *s = strstr(buffer, "OK");  // Ищем завершения операции
+			char *s = strchr(p, '\r');          // Функция strchr() возвращает указатель на первое вхождение символа ch в строку, 
+												//на которую указывает str. Если символ ch не найден,
+												//возвращается NULL. 
 			if (s) *s = 0;   strcpy(buffer, p);
 			return true;
 		}
