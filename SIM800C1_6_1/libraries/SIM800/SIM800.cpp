@@ -18,7 +18,7 @@ bool CGPRS_SIM800::begin(Stream &port)
 	while (timeout > 0)
 	{
 		while (SIM_SERIAL->available()) SIM_SERIAL->read();
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[59])));
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[59])));
 		if (sendCommand("AT"))
 		{
 			break;
@@ -29,41 +29,41 @@ bool CGPRS_SIM800::begin(Stream &port)
 
 	if (timeout <= 0)
 	{
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[59])));
-		sendCommand(bufcom);                // sendCommand("AT");
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[59])));
+		sendCommand(buffer);                // sendCommand("AT");
 		delay(100);
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[59])));
-		sendCommand(bufcom);                // sendCommand("AT");
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[59])));
+		sendCommand(buffer);                // sendCommand("AT");
 		delay(100);
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[59])));
-		sendCommand(bufcom);                // sendCommand("AT");
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[59])));
+		sendCommand(buffer);                // sendCommand("AT");
 		delay(100);
 	}
 
-	   strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[59])));
-	if (sendCommand(bufcom))                // sendCommand("AT"))
+	   strcpy_P(buffer, (char*)pgm_read_word(&(table_message[59])));
+	if (sendCommand(buffer))                // sendCommand("AT"))
 	{
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[1])));
-		sendCommand(bufcom);         	                                //	sendCommand("AT+IPR=19200");   // Установить скорость обмена
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[1])));
+		sendCommand(buffer);         	                                //	sendCommand("AT+IPR=19200");   // Установить скорость обмена
 		delay(100);
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[0])));
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[0])));
 		//sendCommand("ATE0");                                          // Отключить эхо 
-		sendCommand(bufcom);
+		sendCommand(buffer);
 		delay(100);
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[2])));
-		sendCommand(bufcom);                                            // 1 – нормальный режим (по умолчанию). Второй параметр 1
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[2])));
+		sendCommand(buffer);                                            // 1 – нормальный режим (по умолчанию). Второй параметр 1
 		delay(100);																//sendCommand("AT+CFUN=1");                                     // 1 – нормальный режим (по умолчанию). Второй параметр 1 – перезагрузить (доступно только в нормальном режиме, т.е. параметры = 1,1)
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[3])));
-		sendCommand(bufcom);                                            // режим кодировки СМС - обычный (для англ.)
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[3])));
+		sendCommand(buffer);                                            // режим кодировки СМС - обычный (для англ.)
 		delay(100);														//sendCommand("AT+CMGF=1");                                     // режим кодировки СМС - обычный (для англ.)
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[4])));
-		sendCommand(bufcom);                                            // включаем АОН
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[4])));
+		sendCommand(buffer);                                            // включаем АОН
 		delay(100);														//sendCommand("AT+CLIP=1");                                     // включаем АОН
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[5])));
-		sendCommand(bufcom);                                            // режим кодировки текста
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[5])));
+		sendCommand(buffer);                                            // режим кодировки текста
 		delay(100);																//sendCommand("AT+CSCS=\"GSM\"");                               // режим кодировки текста
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[6])));
-		//sendCommand(bufcom);                                            // отображение смс в терминале сразу после приема (без этого 
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[6])));
+		//sendCommand(buffer);                                            // отображение смс в терминале сразу после приема (без этого 
 		delay(100);															//sendCommand("AT+CNMI=2,2");                                   // отображение смс в терминале сразу после приема (без этого сообщения молча падают в память)tln("AT+CSCS=\"GSM\""); 
 		//sendCommand("AT+CMGDA=\"DEL ALL\"");                             // AT+CMGDA=«DEL ALL» команда удалит все сообщения
 		//delay(100);
@@ -78,16 +78,16 @@ byte CGPRS_SIM800::setup()
 {
 	for (byte n = 0; n < 30; n++)
 	{
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[48])));
-		sendCommand(bufcom, 20000);                  // sendCommand("AT+CIPSHUT", 20000);
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[48])));
+		sendCommand(buffer, 20000);                  // sendCommand("AT+CIPSHUT", 20000);
 
 		//if (!sendCommand("AT+CGATT=1")) return 2;    // Регистрация в GPRS
 
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));
-		if (!sendCommand(bufcom)) return 2;   // if (!sendCommand("AT+CGATT?"))     // Регистрация в GPRS
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[9])));
+		if (!sendCommand(buffer)) return 2;   // if (!sendCommand("AT+CGATT?"))     // Регистрация в GPRS
 
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[10])));
-		if (!sendCommand(bufcom)) return 3;   // if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))     return 3;// 
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[10])));
+		if (!sendCommand(buffer)) return 3;   // if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))     return 3;// 
 
 		getOperatorName();
 		String OperatorName = buffer;
@@ -95,44 +95,44 @@ byte CGPRS_SIM800::setup()
 		cleanStr(OperatorName);
 		Serial.println(buffer);
 
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[12]))); //"MTS"
-		if (OperatorName.indexOf(bufcom) > -1)
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[12]))); //"MTS"
+		if (OperatorName.indexOf(buffer) > -1)
 		{
-			strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[11])));
-			apn = bufcom;
+			strcpy_P(buffer, (char*)pgm_read_word(&(table_message[11])));
+			apn = buffer;
 			//apn  = "internet.mts.ru";
-			strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[13])));
-			user = bufcom;
-			pwd = bufcom;
+			strcpy_P(buffer, (char*)pgm_read_word(&(table_message[13])));
+			user = buffer;
+			pwd = buffer;
 			/*	user = "mts";
 			pwd  = "mts";*/
-			strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[11])));
-			cont = bufcom;
+			strcpy_P(buffer, (char*)pgm_read_word(&(table_message[11])));
+			cont = buffer;
 			//cont = "internet.mts.ru";
-			strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[12]))); //"MTS"
-			//Serial.println(bufcom);
+			strcpy_P(buffer, (char*)pgm_read_word(&(table_message[12]))); //"MTS"
+			//Serial.println(buffer);
 		}
 		else if (OperatorName.indexOf("Bee") > -1)
 		{
 			//Serial.println(buffer);                                        //Serial.println("Beeline");
-			strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[15])));
-			apn = bufcom1;                                                 //apn = "internet.beeline.ru";
-			strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[16])));
-			user = bufcom;                                                 //user = "beeline";
-			pwd = bufcom;                                                  //pwd = "beeline";
-			cont = bufcom1;                                                //cont = "internet.beeline.ru";
-			strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[14])));
-			//Serial.println(bufcom);                                        //Serial.println("Beeline");
+			strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[15])));
+			apn = combuf1;                                                 //apn = "internet.beeline.ru";
+			strcpy_P(buffer, (char*)pgm_read_word(&(table_message[16])));
+			user = buffer;                                                 //user = "beeline";
+			pwd = buffer;                                                  //pwd = "beeline";
+			cont = combuf1;                                                //cont = "internet.beeline.ru";
+			strcpy_P(buffer, (char*)pgm_read_word(&(table_message[14])));
+			//Serial.println(buffer);                                        //Serial.println("Beeline");
 		}
 		else if (OperatorName.indexOf("Mega") > -1)
 		{
-			strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[17])));
-			strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[18])));
-			apn = bufcom1;	                                                   //apn = "internet";
+			strcpy_P(buffer, (char*)pgm_read_word(&(table_message[17])));
+			strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[18])));
+			apn = combuf1;	                                                   //apn = "internet";
 			user = "";
 			pwd = "";
-			cont = bufcom1;	                                                   //cont = "internet";
-			//Serial.println(bufcom);                                            //Serial.println("MEGAFON");
+			cont = combuf1;	                                                   //cont = "internet";
+			//Serial.println(buffer);                                            //Serial.println("MEGAFON");
 		}
 
 		//  Настройки для операторов:
@@ -153,48 +153,48 @@ byte CGPRS_SIM800::setup()
 
 		
 
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[22])));
-		SIM_SERIAL->print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"APN\",\"");
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[22])));
+		SIM_SERIAL->print(buffer);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"APN\",\"");
 		SIM_SERIAL->print(apn);
 		SIM_SERIAL->println('\"');
 		if (!sendCommand(0))   return 4;
 
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[23])));
-		SIM_SERIAL->print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"USER\",\"");
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[23])));
+		SIM_SERIAL->print(buffer);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"USER\",\"");
 		SIM_SERIAL->print(user);
 		SIM_SERIAL->println('\"');
 		if (!sendCommand(0))   return 4;
 
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[24])));
-		SIM_SERIAL->print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"PWD\",\"");
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[24])));
+		SIM_SERIAL->print(buffer);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"PWD\",\"");
 		SIM_SERIAL->print(pwd);
 		SIM_SERIAL->println('\"');
 		if (!sendCommand(0))   return 4;
 
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[25])));
-		SIM_SERIAL->print(bufcom);                                      //SIM_SERIAL.print("AT+CGDCONT=1,\"IP\",\"");
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[25])));
+		SIM_SERIAL->print(buffer);                                      //SIM_SERIAL.print("AT+CGDCONT=1,\"IP\",\"");
 		SIM_SERIAL->print(cont);
 		SIM_SERIAL->println('\"');
 		if (!sendCommand(0))   return 4;
 
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[26])));
-		sendCommand(bufcom, 10000);                                    //sendCommand("AT+SAPBR=1,1", 10000);                     // установка GPRS связи
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[27])));
-		sendCommand(bufcom, 10000);                                    //sendCommand("AT+SAPBR=2,1", 10000);                     // полученный IP адрес
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[26])));
+		sendCommand(buffer, 10000);                                    //sendCommand("AT+SAPBR=1,1", 10000);                     // установка GPRS связи
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[27])));
+		sendCommand(buffer, 10000);                                    //sendCommand("AT+SAPBR=2,1", 10000);                     // полученный IP адрес
 		
 
 		//sendCommand("AT + CSTT = \"internet.mts.ru\"", 500);             //  
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
-		sendCommand(bufcom, 5000);                                    // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[52])));
+		sendCommand(buffer, 5000);                                    // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
 		delay(2000);
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
-		sendCommand(bufcom, 6000);                                     //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[53])));
+		sendCommand(buffer, 6000);                                     //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
 
 
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[28])));
-		sendCommand(bufcom);                                           //sendCommand("AT+CMGF=1");                               // sets the SMS mode to text
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[29])));
-		sendCommand(bufcom);                                           //sendCommand("AT+CPMS=\"SM\",\"SM\",\"SM\"");            // selects the memory
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[28])));
+		sendCommand(buffer);                                           //sendCommand("AT+CMGF=1");                               // sets the SMS mode to text
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[29])));
+		sendCommand(buffer);                                           //sendCommand("AT+CPMS=\"SM\",\"SM\",\"SM\"");            // selects the memory
 		
 		
 				
@@ -216,8 +216,8 @@ uint8_t CGPRS_SIM800::getNetworkStatus()
 {
 	for (byte n = 0; n < 30; n++)
 	{
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[7])));
-		if (sendCommand(bufcom, 2000))       // if (sendCommand("AT+CREG?", 2000))  // Тип регистрации сети
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[7])));
+		if (sendCommand(buffer, 2000))       // if (sendCommand("AT+CREG?", 2000))  // Тип регистрации сети
 		{
 			// Первый параметр:
 			// 0 – нет кода регистрации сети
@@ -242,9 +242,9 @@ uint8_t CGPRS_SIM800::getNetworkStatus()
 								
 				if (mode == '1' || mode == '5')
 				{
-					strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[8])));
-					sendCommand(bufcom, 1000); 	//sendCommand("AT+CSQ",1000); 
-					strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[49])));
+					strcpy_P(buffer, (char*)pgm_read_word(&(table_message[8])));
+					sendCommand(buffer, 1000); 	//sendCommand("AT+CSQ",1000); 
+					strcpy_P(buffer, (char*)pgm_read_word(&(table_message[49])));
 					char *p = strstr(buffer, "CSQ: ");                           // char *p = strstr(buffer, "CSQ: ");
 					return mode;
 				}
@@ -257,12 +257,12 @@ uint8_t CGPRS_SIM800::getNetworkStatus()
 
 bool CGPRS_SIM800::getIMEI()
 {
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[30])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
-	sendCommand(bufcom);                                          //sendCommand("AT+GSN");
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[30])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[33])));
+	sendCommand(buffer);                                          //sendCommand("AT+GSN");
 	delay(1000);
 
-  if (sendCommand(bufcom, "OK\r", bufcom1) == 1)               // (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
+  if (sendCommand(buffer, "OK\r", combuf1) == 1)               // (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
   {
 	char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
 											 //на которую указывает str1, строки, указанной str2 (исключая завершающий нулевой символ).
@@ -283,9 +283,9 @@ bool CGPRS_SIM800::getIMEI()
 }
 bool CGPRS_SIM800::getSIMCCID()
 {
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[20])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
-	if (sendCommand(bufcom, "OK\r", bufcom1) == 1)             // (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[20])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[33])));
+	if (sendCommand(buffer, "OK\r", combuf1) == 1)             // (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
 	{      
 		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
                								     //Если совпадений не обнаружено, возвращается NULL.
@@ -305,22 +305,23 @@ bool CGPRS_SIM800::getSIMCCID()
 }
 bool CGPRS_SIM800::getGMR()
 {
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[21])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[21])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[33])));
+	//sendCommand(buffer);                                          //sendCommand("AT+GMR");Номер прошивки
 	delay(1000);
 
-	if (sendCommand(bufcom, "OK\r", bufcom1) == 1)                    //sendCommand("AT+GMR");Номер прошивки
+	if (sendCommand(buffer, "OK\r", combuf1) == 1)             // (sendCommand(buffer, "OK\r", "ERROR\r") == 1)
 	{
-		char *p = strstr(buffer, "\r");                               //Функция strstr() возвращает указатель на первое вхождение в строку, 
-												                      //Если совпадений не обнаружено, возвращается NULL.
+		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
+												 //Если совпадений не обнаружено, возвращается NULL.
 		if (p)
 		{
 			p += 2;
 
-			// char *s = strstr(buffer, "OK");                         // Ищем завершения операции
-			char *s = strchr(p, '\r');                                 // Функция strchr() возвращает указатель на первое вхождение символа ch в строку, 
-												                       //на которую указывает str. Если символ ch не найден,
-												                       //возвращается NULL. 
+			// char *s = strstr(buffer, "OK");  // Ищем завершения операции
+			char *s = strchr(p, '\r');          // Функция strchr() возвращает указатель на первое вхождение символа ch в строку, 
+												//на которую указывает str. Если символ ch не найден,
+												//возвращается NULL. 
 			if (s) *s = 0;   strcpy(buffer, p);
 			return true;
 		}
@@ -332,10 +333,10 @@ bool CGPRS_SIM800::getGMR()
 bool CGPRS_SIM800::getOperatorName()
 {
   // display operator name
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[31])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[31])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[33])));
 
-  if (sendCommand(bufcom, "OK\r", bufcom1) == 1)   // if (sendCommand("AT+COPS?", "OK\r", "ERROR\r") == 1) 
+  if (sendCommand(buffer, "OK\r", combuf1) == 1)   // if (sendCommand("AT+COPS?", "OK\r", "ERROR\r") == 1) 
   {
 	  char *p = strstr(buffer, ",\"");
 	  if (p) 
@@ -352,26 +353,26 @@ bool CGPRS_SIM800::getOperatorName()
 
 bool CGPRS_SIM800::ping(const char* url)
 {
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));
-	sendCommand(bufcom, 1000);                 //sendCommand("AT+CGATT?", 1000);  Проверить подключение к сервису GPRS
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[9])));
+	sendCommand(buffer, 1000);                 //sendCommand("AT+CGATT?", 1000);  Проверить подключение к сервису GPRS
 	//delay(100);
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[51])));
-	sendCommand(bufcom, 1000);      // sendCommand("AT+CSTT=\"internet\"", 1000);Настроить точку доступа ????
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[51])));
+	sendCommand(buffer, 1000);      // sendCommand("AT+CSTT=\"internet\"", 1000);Настроить точку доступа ????
 	delay(1000);
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
-	sendCommand(bufcom, 1000);                  // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[52])));
+	sendCommand(buffer, 1000);                  // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
 	delay(1000);
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
-	sendCommand(bufcom, 3000);                  //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[53])));
+	sendCommand(buffer, 3000);                  //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
 	delay(1000);
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[54])));
-	SIM_SERIAL->print(bufcom);              // SIM_SERIAL->print("AT+CIPPING=\"");
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[54])));
+	SIM_SERIAL->print(buffer);              // SIM_SERIAL->print("AT+CIPPING=\"");
 	SIM_SERIAL->print(url);
 	SIM_SERIAL->println('\"');
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[55])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[50])));
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[55])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[50])));
 	// Ожидаем ответ сайта на ping 
-	if (sendCommand(0, bufcom, bufcom1,6000) == 1) // (sendCommand(0, "+CIPPING", "ERROR",3000) == 1)
+	if (sendCommand(0, buffer, combuf1,6000) == 1) // (sendCommand(0, "+CIPPING", "ERROR",3000) == 1)
 	{
 		return true;
 	}
@@ -385,9 +386,9 @@ bool CGPRS_SIM800::checkSMS()
 	//	 "REC READ", "+79162632701", "", "17/01/21,13:51:06+12"
 	//	 Timeset5
 	//	 + CMGR:
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[56])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[50])));
- if (sendCommand(bufcom, "+CMGR:", bufcom1) == 1)   //(sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1)  отправляет команду "AT+CMGR=1", поиск ответного сообщения +CMGR:
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[56])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[50])));
+ if (sendCommand(buffer, "+CMGR:", combuf1) == 1)   //(sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1)  отправляет команду "AT+CMGR=1", поиск ответного сообщения +CMGR:
   { 
 	 while (SIM_SERIAL->available())       //есть данные от GSM модуля
 	 {
@@ -405,13 +406,13 @@ bool CGPRS_SIM800::deleteSMS(int n_sms)
 
 	if (n_sms > 0)
 	{
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[57])));
-		if(sendCommand("AT+CMGD=1", "OK\r", "ERROR\r") == 1)           //sendCommand(bufcom);                // sendCommand("AT+CMGD=1");  remove the SMS
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[57])));
+		if(sendCommand("AT+CMGD=1", "OK\r", "ERROR\r") == 1)           //sendCommand(buffer);                // sendCommand("AT+CMGD=1");  remove the SMS
 		return true;
 	}
 	else
 	{
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[58])));	     //sendCommand("AT+CMGDA=\"DEL ALL\""); remove the SMS
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[58])));	     //sendCommand("AT+CMGDA=\"DEL ALL\""); remove the SMS
 		if(sendCommand("AT+CMGDA=\"DEL ALL\"", "OK\r", "ERROR\r") == 1)
 		return true;
 
@@ -421,8 +422,8 @@ bool CGPRS_SIM800::deleteSMS(int n_sms)
 
 int CGPRS_SIM800::getSignalQuality()
 {
-  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[8])));
-  sendCommand(bufcom);                             // sendCommand("AT+CSQ");
+  strcpy_P(buffer, (char*)pgm_read_word(&(table_message[8])));
+  sendCommand(buffer);                             // sendCommand("AT+CSQ");
   char *p = strstr(buffer, "CSQ:");
   if (p) {
 	int n = atoi(p+5);
@@ -435,8 +436,8 @@ int CGPRS_SIM800::getSignalQuality()
 
 bool CGPRS_SIM800::getLocation(GSM_LOCATION* loc)
 {
-  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[34])));
-  if (sendCommand(bufcom, 10000)) do         // if (sendCommand("AT+CIPGSMLOC=1,1", 10000)) do 
+  strcpy_P(buffer, (char*)pgm_read_word(&(table_message[34])));
+  if (sendCommand(buffer, 10000)) do         // if (sendCommand("AT+CIPGSMLOC=1,1", 10000)) do 
   {
 	char *p;
 	if (!(p = strchr(buffer, ':'))) break;
@@ -463,15 +464,15 @@ bool CGPRS_SIM800::getLocation(GSM_LOCATION* loc)
 
 void CGPRS_SIM800::httpUninit()
 {
-  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[35])));
-  sendCommand(bufcom);          // sendCommand("AT+HTTPTERM");
+  strcpy_P(buffer, (char*)pgm_read_word(&(table_message[35])));
+  sendCommand(buffer);          // sendCommand("AT+HTTPTERM");
 }
 
 bool CGPRS_SIM800::httpInit()
 {
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[36])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[37])));
-	if  (!sendCommand(bufcom, 10000) || !sendCommand(bufcom1, 5000))  //if  (!sendCommand("AT+HTTPINIT", 10000) || !sendCommand("AT+HTTPPARA=\"CID\",1", 5000)) 
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[36])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[37])));
+	if  (!sendCommand(buffer, 10000) || !sendCommand(combuf1, 5000))  //if  (!sendCommand("AT+HTTPINIT", 10000) || !sendCommand("AT+HTTPPARA=\"CID\",1", 5000)) 
 	{
 		httpState = HTTP_DISABLED;
 		return false;
@@ -483,8 +484,8 @@ bool CGPRS_SIM800::httpInit()
 
 bool CGPRS_SIM800::httpConnect(const char* url, const char* args)
 {
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[38])));
-	SIM_SERIAL->print(bufcom);                    //SIM_SERIAL->print("AT+HTTPPARA=\"URL\",\"");
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[38])));
+	SIM_SERIAL->print(buffer);                    //SIM_SERIAL->print("AT+HTTPPARA=\"URL\",\"");
 	SIM_SERIAL->print(url);
 	if (args) 
 	{
@@ -496,8 +497,8 @@ bool CGPRS_SIM800::httpConnect(const char* url, const char* args)
 	if (sendCommand(0))
 	{
 		// Starts GET action
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[39])));
-		SIM_SERIAL->println(bufcom);                         //SIM_SERIAL->println("AT+HTTPACTION=0");
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[39])));
+		SIM_SERIAL->println(buffer);                         //SIM_SERIAL->println("AT+HTTPACTION=0");
 		httpState = HTTP_CONNECTING;
 		m_bytesRecv = 0;
 		m_checkTimer = millis();
@@ -511,8 +512,8 @@ bool CGPRS_SIM800::httpConnect(const char* url, const char* args)
 
 bool CGPRS_SIM800::httpConnectStr(const char* url, String args)
 {
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[40])));
-	SIM_SERIAL->print(bufcom);    //SIM_SERIAL->print("AT+HTTPPARA=\"URL\",\"");
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[40])));
+	SIM_SERIAL->print(buffer);    //SIM_SERIAL->print("AT+HTTPPARA=\"URL\",\"");
 	SIM_SERIAL->print(url);
 	if (args) 
 	{
@@ -524,8 +525,8 @@ bool CGPRS_SIM800::httpConnectStr(const char* url, String args)
 	delay(500);
 	if (sendCommand(0))
 	{
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[41])));
-		SIM_SERIAL->println(bufcom);              //SIM_SERIAL->println("AT+HTTPACTION=0");
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[41])));
+		SIM_SERIAL->println(buffer);              //SIM_SERIAL->println("AT+HTTPACTION=0");
 		httpState = HTTP_CONNECTING;
 		m_bytesRecv = 0;
 		m_checkTimer = millis();
@@ -544,9 +545,9 @@ bool CGPRS_SIM800::httpConnectStr(const char* url, String args)
 
 byte CGPRS_SIM800::httpIsConnected()
 {
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[42])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[43])));
-	byte ret = checkbuffer(bufcom,bufcom1, 10000);           // byte ret = checkbuffer("0,200", "0,60", 10000);
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[42])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[43])));
+	byte ret = checkbuffer(buffer, combuf1, 10000);           // byte ret = checkbuffer("0,200", "0,60", 10000);
 	if (ret >= 2) 
 	{
 		httpState = HTTP_ERROR;
@@ -557,8 +558,8 @@ byte CGPRS_SIM800::httpIsConnected()
 
 void CGPRS_SIM800::httpRead()
 {
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[44])));
-	SIM_SERIAL->println(bufcom);     //SIM_SERIAL->println("AT+HTTPREAD");
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[44])));
+	SIM_SERIAL->println(buffer);     //SIM_SERIAL->println("AT+HTTPREAD");
 	httpState = HTTP_READING;
 	m_bytesRecv = 0;
 	m_checkTimer = millis();
@@ -570,9 +571,9 @@ void CGPRS_SIM800::httpRead()
 
 int CGPRS_SIM800::httpIsRead()
 {
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[45])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[46])));
-	byte ret = checkbuffer(bufcom, bufcom1, 10000) == 1;//byte ret = checkbuffer("+HTTPREAD: ", "Error", 10000) == 1;
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[45])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[46])));
+	byte ret = checkbuffer(buffer, combuf1, 10000) == 1;//byte ret = checkbuffer("+HTTPREAD: ", "Error", 10000) == 1;
 	if (ret == 1) 
 	{
 		m_bytesRecv = 0;

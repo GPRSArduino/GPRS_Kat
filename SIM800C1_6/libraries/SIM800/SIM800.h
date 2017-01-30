@@ -212,7 +212,7 @@ public:
     bool available();
 	void cleanStr(String & str);
 
-    char buffer[60];
+    char buffer[70];
     byte httpState;
 	String val = "";
 

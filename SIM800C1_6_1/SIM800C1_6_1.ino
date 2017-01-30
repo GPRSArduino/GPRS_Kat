@@ -238,7 +238,31 @@ bool gprs_send(String data)
 	  gprs.httpUninit();                                  // Не получилось, попробовать снова 
 	  delay(1000);
   }
- 
+
+  if (ssl_set == true)
+  {
+	  if (gprs.HTTP_ssl(true))
+	  {
+		  con.println(F("\nHTTP_ssl: set ON successfully!"));
+	  }
+	  else
+	  {
+		  con.println(F("\nHTTP_ssl: set ON false!"));
+	  }
+  }
+  else
+  {
+	  if (gprs.HTTP_ssl(false))
+	  {
+		  con.println(F("\nHTTP_ssl: set OFF successfully!"));
+	  }
+	  else
+	  {
+		  con.println(F("\nHTTP_ssl: set OFF false!"));
+	  }
+
+  }
+  
   if (ssl_set == true)
   {
 	  con.print(urlssl);
@@ -760,29 +784,29 @@ void setup()
 	con.print(F("\nfree memory: "));
 	con.println(freeRam());
 
-	if (ssl_set==true)
-	{
-		if (gprs.HTTP_ssl(true))
-		{
-			con.println(F("\nHTTP_ssl: set ON successfully!"));
-		}
-		else
-		{
-			con.println(F("\nHTTP_ssl: set ON false!"));
-		}
-	}
-	else
-	{
-		if (gprs.HTTP_ssl(false))
-		{
-			con.println(F("\nHTTP_ssl: set OFF successfully!"));
-		}
-		else
-		{
-			con.println(F("\nHTTP_ssl: set OFF false!"));
-		}
+	//if (ssl_set==true)
+	//{
+	//	if (gprs.HTTP_ssl(true))
+	//	{
+	//		con.println(F("\nHTTP_ssl: set ON successfully!"));
+	//	}
+	//	else
+	//	{
+	//		con.println(F("\nHTTP_ssl: set ON false!"));
+	//	}
+	//}
+	//else
+	//{
+	//	if (gprs.HTTP_ssl(false))
+	//	{
+	//		con.println(F("\nHTTP_ssl: set OFF successfully!"));
+	//	}
+	//	else
+	//	{
+	//		con.println(F("\nHTTP_ssl: set OFF false!"));
+	//	}
 
-	}
+	//}
 	if (gprs.val.indexOf("REC READ") > -1)               //если обнаружена старая  СМС 
 	{
 		if (gprs.deleteSMS(0))

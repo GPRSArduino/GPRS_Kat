@@ -19,7 +19,7 @@
 #define speed_Serial 115200
 
 static const char* url1   = "http://vps3908.vps.host.ru/recieveReadings.php";
-static const char* urlssl = "https://vps3908.vps.host.ru/recieveReadings.php";
+//static const char* urlssl = "https://vps3908.vps.host.ru/recieveReadings.php";
 static const char* url_ping = "www.yandex.ru";
 
 #define PIN_TX           7                              // Подключить  к выводу 7 сигнал RX модуля GPRS
@@ -221,7 +221,7 @@ String formEnd()
 
 bool gprs_send(String data) 
 {
-  con.print(F("Requesting "));      
+  con.print(F("Requesting .. Wait"));      
 
   for (;;)
   {
@@ -238,14 +238,38 @@ bool gprs_send(String data)
 	  gprs.httpUninit();                                  // Не получилось, попробовать снова 
 	  delay(1000);
   }
+
+  if (ssl_set == true)
+  {
+	  if (gprs.HTTP_ssl(true))
+	  {
+		  con.println(F("\nHTTP_ssl: set ON successfully!"));
+	  }
+	  else
+	  {
+		  con.println(F("\nHTTP_ssl: set ON false!"));
+	  }
+  }
+  else
+  {
+	  if (gprs.HTTP_ssl(false))
+	  {
+		  con.println(F("\nHTTP_ssl: set OFF successfully!"));
+	  }
+	  else
+	  {
+		  con.println(F("\nHTTP_ssl: set OFF false!"));
+	  }
+
+  }
  
   if (ssl_set == true)
   {
-	  con.print(urlssl);
+	/*  con.print(urlssl);
 	  con.print('?');
 	  con.println(data);
 
-	  gprs.httpConnectStr(urlssl, data);
+	  gprs.httpConnectStr(urlssl, data);*/
   }
   else
   {
@@ -615,13 +639,13 @@ void start_init()
 			//return;  // SIMCCID не определился
 		}
 
-		if (gprs.getGMR())                       // Получить номер прошивки
-		{
-			con.print(F("\nSoftware release:"));
-			String GMR  = gprs.buffer;                 // 
-			gprs.cleanStr(GMR);                // 
-			con.println(GMR);
-		}
+		//if (gprs.getGMR())                       // Получить номер прошивки
+		//{
+		//	con.print(F("\nSoftware release:"));
+		//	String GMR  = gprs.buffer;                 // 
+		//	gprs.cleanStr(GMR);                // 
+		//	con.println(GMR);
+		//}
 
 		
 
@@ -657,7 +681,7 @@ void start_init()
 					delay(1000);
 					Serial.println(F("GPRS connect .."));
 					byte ret = gprs.setup();                                              // Подключение к GPRS
-					//Serial.print("ret - "); Serial.print(ret);
+					Serial.print(F("ret - ")); Serial.print(ret);
 					if (ret == 0)
 					{
 						while (state_device != 3)  // Ожидание регистрации в сети
@@ -760,29 +784,6 @@ void setup()
 	con.print(F("\nfree memory: "));
 	con.println(freeRam());
 
-	if (ssl_set==true)
-	{
-		if (gprs.HTTP_ssl(true))
-		{
-			con.println(F("\nHTTP_ssl: set ON successfully!"));
-		}
-		else
-		{
-			con.println(F("\nHTTP_ssl: set ON false!"));
-		}
-	}
-	else
-	{
-		if (gprs.HTTP_ssl(false))
-		{
-			con.println(F("\nHTTP_ssl: set OFF successfully!"));
-		}
-		else
-		{
-			con.println(F("\nHTTP_ssl: set OFF false!"));
-		}
-
-	}
 	if (gprs.val.indexOf("REC READ") > -1)               //если обнаружена старая  СМС 
 	{
 		if (gprs.deleteSMS(0))
