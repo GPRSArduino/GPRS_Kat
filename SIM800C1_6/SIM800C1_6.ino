@@ -19,38 +19,32 @@
 #define speed_Serial 115200
 
 static const char* url1   = "http://vps3908.vps.host.ru/recieveReadings.php";
-//static const char* urlssl = "https://vps3908.vps.host.ru/recieveReadings.php";
+static const char* urlssl = "https://vps3908.vps.host.ru/recieveReadings.php";
 static const char* url_ping = "www.yandex.ru";
 
-
-#define PIN_TX           7                             // Подключить  к выводу 7 сигнал RX модуля GPRS
+#define PIN_TX           7                              // Подключить  к выводу 7 сигнал RX модуля GPRS
 #define PIN_RX           8                              // Подключить  к выводу 8 сигнал TX модуля GPRS
 
 SoftwareSerial SIM800CSS = SoftwareSerial(PIN_RX, PIN_TX);
 SoftwareSerial *GPRSSerial = &SIM800CSS;
 
 
-
-#define PWR_On           5                             // Включение питания модуля SIM800
-#define SIM800_RESET_PIN 6                             // Сброс модуля SIM800
-#define LED13           13                             // Индикация светодиодом
-#define NETLIGHT         3                             // Индикация NETLIGHT
-#define STATUS           9                             // Индикация STATUS
-
-#define port1           11                             // Порт управления внешними устройствами (незадействован)
-#define port2           12                             // Порт управления внешними устройствами (незадействован)
-
+#define PWR_On           5                              // Включение питания модуля SIM800
+#define SIM800_RESET_PIN 6                              // Сброс модуля SIM800
+#define LED13           13                              // Индикация светодиодом
+#define NETLIGHT         3                              // Индикация NETLIGHT
+#define STATUS           9                              // Индикация STATUS
 												
-//#define COMMON_ANODE
-#define LED_RED      10                                // Индикация светодиодом RED
-#define LED_BLUE     15                                // Индикация светодиодом BLUE
-#define LED_GREEN    14                                // Индикация светодиодом GREEN
+//#define COMMON_ANODE                                  // Если светодиод с общим катодом - раскомментировать
+#define LED_RED      10                                 // Индикация светодиодом RED
+#define LED_BLUE     15                                 // Индикация светодиодом BLUE
+#define LED_GREEN    14                                 // Индикация светодиодом GREEN
 
-#define COLOR_NONE LOW, LOW, LOW
-#define COLOR_GREEN LOW, HIGH, LOW
-#define COLOR_BLUE LOW, LOW, HIGH
-#define COLOR_RED HIGH, LOW, LOW
-volatile int stateLed = LOW;
+#define COLOR_NONE LOW, LOW, LOW                        // Отключить все светодиоды
+#define COLOR_GREEN LOW, HIGH, LOW                      // Включить зеленый светодиод
+#define COLOR_BLUE LOW, LOW, HIGH                       // Включить синий светодиод
+#define COLOR_RED HIGH, LOW, LOW                        // Включить красный светодиод
+volatile int stateLed = LOW;                            // Состояние светодиода при прерывистой индикации на старте
 volatile int state_device = 0;                          // Состояние модуля при запуске 
 
 												        // 1 - Не зарегистрирован в сети, поиск
@@ -61,6 +55,7 @@ volatile unsigned long metering_temp = 0;
 volatile int count_blink1            = 0;               // Счетчик попыток подключиться к базовой станции
 volatile int count_blink2            = 0;               // Счетчик попыток подключиться к базовой станции
 bool send_ok                         = false;           // Признак успешной передачи данных
+bool count_All_reset                 = false;           // Признак выполнения команды сброса счетчика ошибок.
 
 CGPRS_SIM800 gprs;
 uint32_t count    = 0;
@@ -75,7 +70,7 @@ String SIMCCID    = "";
 
 unsigned long time             = 0;                     // Переменная для суточного сброса
 unsigned long time_day         = 86400;                 // Переменная секунд в сутках
-unsigned long previousMillis   = 0;
+unsigned long previousMillis   = 0;                     //  
 unsigned long interval         = 60;                    // Интервал передачи данных 60 секунд
 //unsigned long interval         = 300;                   // Интервал передачи данных 5 минут
 bool time_set                  = false;                 // Фиксировать интервал заданный СМС
@@ -102,9 +97,9 @@ DallasTemperature sensor1(&ds18x20_1);
 DallasTemperature sensor2(&ds18x20_2);
 DallasTemperature sensor3(&ds18x20_3);
 
-void(* resetFunc) (void) = 0;                          // объявляем функцию reset
+void(* resetFunc) (void) = 0;                           // объявляем функцию reset
 
-void flash_time()                                              // Программа обработчик прерывания 
+void flash_time()                                      // Программа обработчик прерывистого свечения светодиодов при старте
 {
 	if (state_device == 0)
 	{
@@ -152,11 +147,11 @@ void flash_time()                                              // Програм
 
  void setColor(bool red, bool green, bool blue)        // Включение цвета свечения трехцветного светодиода.
  {
-	  #ifdef COMMON_ANODE
+	  #ifdef COMMON_ANODE                              // Если светодиод с общим катодом
 		red = !red;
 		green = !green;
 		blue = !blue;
-	  #endif
+	  #endif 
 	  digitalWrite(LED_RED, red);
 	  digitalWrite(LED_GREEN, green);
 	  digitalWrite(LED_BLUE, blue);    
@@ -217,7 +212,6 @@ String formEnd()
 
 	EEPROM.get(Address_tel1, buf);
 	String master_tel1(buf);
-	//con.println(master_tel1);
 
 	EEPROM.get(Address_SMS_center, SMS_center);   //Получить из EEPROM СМС центр
 
@@ -227,15 +221,31 @@ String formEnd()
 
 bool gprs_send(String data) 
 {
-  con.print(F("Requesting "));               
+  con.print(F("Requesting "));      
+
+  for (;;)
+  {
+	  if (gprs.httpInit()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
+	  con.print(">");
+	  con.println(gprs.buffer);                          // Не получилось, ("ERROR") 
+	  String stringError = gprs.buffer;
+	  if (stringError.indexOf(F("ERROR")) > -1)
+	  {
+		  con.print(F("\nNo internet connection"));
+		  delay(1000);
+		  resetFunc();                                //вызываем reset при отсутствии доступа к серверу
+	  }
+	  gprs.httpUninit();                                  // Не получилось, попробовать снова 
+	  delay(1000);
+  }
  
   if (ssl_set == true)
   {
-	  //con.print(urlssl);
-	  //con.print('?');
-	  //con.println(data);
+	  con.print(urlssl);
+	  con.print('?');
+	  con.println(data);
 
-	  //gprs.httpConnectStr(urlssl, data);
+	  gprs.httpConnectStr(urlssl, data);
   }
   else
   {
@@ -263,7 +273,7 @@ bool gprs_send(String data)
 	
 	if (errors > 20)
 	  {
-			con.println(F("Number of transmission errors exceeded"));
+			con.println(F("Errors exceeded"));
 			delay(3000);
 			resetFunc();          // вызываем reset после 20 ошибок
 	  }
@@ -293,20 +303,20 @@ bool gprs_send(String data)
   } 
 
   // Теперь мы получили сообщение от сайта.
-   con.print(F("[Payload] "));                            //con.print("[Payload] ");
+   con.print(F("[Payload] "));                        
    con.println(gprs.buffer);
-   String command = gprs.buffer;                          // Получить строку данных с сервера
+  // String val = gprs.buffer;                            // Получить строку данных с сервера
    int p0[5];
-   String val = "&01010025678&020279162632701&030379162632701&0406123456789#";
+   String val = "&010145&0202+79162632701&0303+79162632701&0400123456789#";  // Пример строки, принятой с сервера
    send_ok = true;     // Команда принята успешно
 
-   if (val.indexOf("&") > -1)
+   if (val.indexOf("&") > -1)              // Определить адреса (позиции) команд в строке 
    {
-	   p0[0] = val.indexOf("&01");
-	   p0[1] = val.indexOf("&02");
-	   p0[2] = val.indexOf("&03");
-	   p0[3] = val.indexOf("&04");
-	   p0[4] = val.indexOf('#');
+	   p0[0] = val.indexOf("&01");         // Адрес 1 команды
+	   p0[1] = val.indexOf("&02");         // Адрес 2 команды
+	   p0[2] = val.indexOf("&03");         // Адрес 3 команды
+	   p0[3] = val.indexOf("&04");         // Адрес 4 команды
+	   p0[4] = val.indexOf('#');           // Адрес конца команд
    }
 
    for (int i=0;i<4;i++)
@@ -319,122 +329,41 @@ bool gprs_send(String data)
 	  comm[len_str] = '\0';
 	  Serial.println(comm);
 
-	  run_command(comm1, comm);
+	  run_command(comm1, comm);                               // Последовательно выполнить все команды
 
    }
 
-   
-
-   //String commEXE = command.substring(0, 2);              // Выделить строку с командой
-   //int var = commEXE.toInt();                             // Получить номер команды. Преобразовать строку команды в число 
-  // send_ok = true;                                        // Команда принята успешно
-  /*
-  if(var == 1)                                           // Выполнить команду 1
-	{
-		String commData = command.substring(2, 10);       // Выделить строку с данными
-		unsigned long interval1 = commData.toInt();       // Преобразовать строку данных в число 
-		con.println(interval1);
-		if(interval1 > 29 && interval1 < 86401)           // Ограничить интервалы от 29  секунд до 24 часов.
-		{
-		  if(interval1!=interval)                         // Если информиция не изменилась - не писать в EEPROM
-		  {
-			 if(!time_set)                                // Если нет команды фиксации интервала от СМС 
-			 {
-			  	//interval = interval1;                     // Переключить интервал передачи на сервер
-				//EEPROM.put(Address_interval, interval1);   // Записать интервал EEPROM , полученный от сервера
-			 }
-		  }
-		}
-		con.println(interval);
-	}
-	
-	else if(var == 2)                                  // Выполнить команду 2
-	{
-		command.remove(0, 2);                          // Получить данные номера телефона от сервера
-		EEPROM.get(Address_tel1, data_tel);            // Получить номер телефона из EEPROM
-		String num_tel(data_tel);
-		if (command != num_tel)                        // Если информиция не изменилась - не писать в EEPROM
-		{
-			 con.println(F("no compare"));               //Serial.println("no compare");
-			for(int i=0;i<13;i++)
-			{
-				EEPROM.write(i+Address_tel1,command[i]);
-			}
-		}
-	}
-	
-	else if(var == 3)                                  // Выполнить команду 3
-	{
-	
-
-
-	}
-	else if(var == 4)                                  // Выполнить команду 4
-	{
-	
-
-
-	}
-	else if(var == 5)                                  // Выполнить команду 5
-	{
-		  EEPROM.put(Address_errorAll, 0);             // Сбросить счетчик ошибок
-	}
-	else if(var == 6)                                  // Выполнить команду 6
-	{
-		command.remove(0, 2);                          // Получить данные номера телефона от сервера
-		EEPROM.get(Address_SMS_center, data_tel);      // Получить из EEPROM СМС центр
-		String num_tel(data_tel);
-		if (command != num_tel)                        // Если информиция не изменилась - не писать в EEPROM
-		{
-			Serial.println(F("no compare"));
-			for(int i=0;i<13;i++)
-			{
-				EEPROM.write(i+Address_SMS_center,command[i]);
-			}
-		}
-	}
-	else if(var == 7)                                  // Выполнить команду 7
-	{
-		time_set = false;                              // Снять фиксацию интервала заданного СМС
-	}
-	else if(var == 8)                                  // Выполнить команду 8
-	{
-		//  Здесь и далее можно добавить до 90 команд  
-	}
-	else
-	{
-		// здесь можно что то выполнить если команда не пришла
-	}
-	*/
   // Показать статистику
-  con.print(F("Total:"));                        //con.print("Total:");
+  con.print(F("Total: "));                                   
   con.print(count);
-  if (errors)                                    // Если есть ошибки - сообщить
+  if (errors)                                           // Если есть ошибки - сообщить
   {
-	con.print(F(" Errors:"));                    //con.print(" Errors:");
+	con.print(F(" Errors: "));                                
 	con.print(errors);
   }
   con.println();
+  Serial.print("Inteval: ");
+  Serial.println(interval);
+  gprs.httpUninit();                                    // Разорвать соединение
+
   return send_ok;
 }
 
-
 void run_command(int command, String data)
 {
-	String num_tel(data_tel);
 	unsigned long interval1 = 0;
 	switch (command) 
 	{
 		case 1:
-			interval1 = data.toInt();       // Преобразовать строку данных в число 
+			interval1 = data.toInt();                              // Преобразовать строку данных в число 
 			con.println(interval1);
-			if (interval1 > 29 && interval1 < 86401)           // Ограничить интервалы от 29  секунд до 24 часов.
+			if (interval1 > 29 && interval1 < 86401)               // Ограничить интервалы от 29  секунд до 24 часов.
 			{
 				if (interval1 != interval)                         // Если информиция не изменилась - не писать в EEPROM
 				{
-					if (!time_set)                                // Если нет команды фиксации интервала от СМС 
+					if (!time_set)                                 // Если нет команды фиксации интервала от СМС 
 					{
-						interval = interval1;                     // Переключить интервал передачи на сервер
+						interval = interval1;                      // Переключить интервал передачи на сервер
 						EEPROM.put(Address_interval, interval1);   // Записать интервал EEPROM , полученный от сервера
 					}
 				}
@@ -442,9 +371,9 @@ void run_command(int command, String data)
 			con.println(interval);
 			break;
 		case 2:
-			EEPROM.get(Address_tel1, data_tel);            // Получить номер телефона из EEPROM
+			EEPROM.get(Address_tel1, data_tel);             // Получить номер телефона из EEPROM
 			Serial.println(data_tel);
-			if (data != data_tel)                        // Если информиция не изменилась - не писать в EEPROM
+			if (data != data_tel)                           // Если информиция не изменилась - не писать в EEPROM
 			{
 				con.println(F("no compare"));               //Serial.println("no compare");
 				char buf[16];
@@ -461,97 +390,41 @@ void run_command(int command, String data)
 			}
 			break;
 		case 3:
-			//выполняется, когда var равно 3
+			EEPROM.get(Address_SMS_center, data_tel);      // Получить из EEPROM СМС центр
+			if (data != data_tel)                        // Если информиция не изменилась - не писать в EEPROM
+			{
+				Serial.println(F("no compare"));
+				for (int i = 0; i<13; i++)
+				{
+					EEPROM.write(i + Address_SMS_center, data[i]);
+				}
+			}
+
 			break;
 		case 4:
-			//выполняется когда  var равно 4
+			if (count_All_reset = false)                   // Признак выполнения команды сброса счетчика ошибок
+			{
+				count_All_reset == true;                   // Команда сброса выполнена. Повторный сброс возможен после перезагрузки
+				EEPROM.put(Address_errorAll, 0);             // Сбросить счетчик ошибок Предусмотреть блокировку повторной записи???
+			}
 			break;
 		case 5:
-			//выполняется, когда var равно 5
+			time_set = false;                              // Снять фиксацию интервала заданного СМС
 			break;
-		case 6:
-			//выполняется когда  var равно 6
-			break;
-		case 7:
-			//выполняется, когда var равно 7
-			break;
-		case 8:
-			//выполняется когда  var равно 8
-			break;
+		//case 6:
+		//	//выполняется когда  var равно 6
+		//	break;
+		//case 7:
+		//	//выполняется, когда var равно 7
+		//	break;
+		//case 8:
+		//	//выполняется когда  var равно 8
+		//	break;
 		default:
 			break;
 			// выполняется, если не выбрана ни одна альтернатива
 			// default необязателен
 	}
-
-
-
-
-
-/*
-
-
-	else if (var == 2)                                  // Выполнить команду 2
-	{
-		command.remove(0, 2);                          // Получить данные номера телефона от сервера
-		EEPROM.get(Address_tel1, data_tel);            // Получить номер телефона из EEPROM
-		String num_tel(data_tel);
-		if (command != num_tel)                        // Если информиция не изменилась - не писать в EEPROM
-		{
-			con.println(F("no compare"));               //Serial.println("no compare");
-			for (int i = 0; i<13; i++)
-			{
-				EEPROM.write(i + Address_tel1, command[i]);
-			}
-		}
-	}
-
-	else if (var == 3)                                  // Выполнить команду 3
-	{
-
-
-
-	}
-	else if (var == 4)                                  // Выполнить команду 4
-	{
-
-
-
-	}
-	else if (var == 5)                                  // Выполнить команду 5
-	{
-		EEPROM.put(Address_errorAll, 0);             // Сбросить счетчик ошибок
-	}
-	else if (var == 6)                                  // Выполнить команду 6
-	{
-		command.remove(0, 2);                          // Получить данные номера телефона от сервера
-		EEPROM.get(Address_SMS_center, data_tel);      // Получить из EEPROM СМС центр
-		String num_tel(data_tel);
-		if (command != num_tel)                        // Если информиция не изменилась - не писать в EEPROM
-		{
-			Serial.println(F("no compare"));
-			for (int i = 0; i<13; i++)
-			{
-				EEPROM.write(i + Address_SMS_center, command[i]);
-			}
-		}
-	}
-	else if (var == 7)                                  // Выполнить команду 7
-	{
-		time_set = false;                              // Снять фиксацию интервала заданного СМС
-	}
-	else if (var == 8)                                  // Выполнить команду 8
-	{
-		//  Здесь и далее можно добавить до 90 команд  
-	}
-	else
-	{
-		// здесь можно что то выполнить если команда не пришла
-	}
-
-
-	*/
-
 }
 
 void errorAllmem()                                // Запись всех ошибок в память EEPROM
@@ -571,7 +444,7 @@ int freeRam()                                   // Определить своб
 
 void setTime(String val, String f_phone)
 {
-  if (val.indexOf(F("Timeset")) > -1)         // 
+  if (val.indexOf(F("Timeset")) > -1)                   // 
   {
 	 interval = 40;                                     // Установить интервал 40 секунд
 	 time_set = true;                                   // Установить фиксацию интервала заданного СМС
@@ -582,7 +455,6 @@ void setTime(String val, String f_phone)
 	  Serial.print(f_phone);
 	  Serial.print("..");
 	  Serial.println(F("Restart"));
-	  SMS_delete();
 	  delay(2000);
 	  resetFunc();                                     //вызываем reset
   } 
@@ -590,13 +462,11 @@ void setTime(String val, String f_phone)
   {
 	 time_set = false;                              // Снять фиксацию интервала заданного СМС
 	 Serial.println(F("Timeoff"));
-	 SMS_delete();
   } 
   else if (val.indexOf(F("Sslon")) > -1)
   {
 	  EEPROM.write(Address_ssl, true);                // Включить шифрование
 	  Serial.println(F("HTTP SSL ON"));
-	  SMS_delete();
 	  delay(2000);
 	  resetFunc();
   }
@@ -604,24 +474,13 @@ void setTime(String val, String f_phone)
   {
 	  EEPROM.write(Address_ssl, false);                  // Отключить шифрование
 	  Serial.println(F("HTTP SSL OFF"));
-	  SMS_delete();
 	  delay(2000);
 	  resetFunc();
   }
   else
   {
 	  Serial.println(F("Unknown command"));         // Serial.println("Unknown command");
-	  if (gprs.deleteSMS(1))
-	  SMS_delete();
   }
-}
-
-void SMS_delete()
-{
-	if (gprs.deleteSMS(1))
-	{
-		con.println(F("SMS delete"));                    //  con.print("SMS:");
-	}
 }
 
 void check_blink()
@@ -828,49 +687,6 @@ void start_init()
 	} while (count_init > 20 || setup_ok == false);    // 20 попыток зарегистрироваться в сети
 }
 
-
-void test_str()
-{
-
-
-	char tst_string[] = "&050025678&0130&0279162632701";
-	int Ncom;
-	double dataCom;
-
-	char *p = strstr(tst_string, "CSQ:");
-
-
-
-
-	//do         // if (sendCommand("AT+CIPGSMLOC=1,1", 10000)) do 
-	//{
-	//	char *p;
-	//	if (!(p = strchr(tst_string, '&'))) break;
-	//	//if (!(p = strchr(p, ','))) break;
-	//	loc->data_com1 = atol(++p);
-
-	//	Serial.println(dataCom);
-	//	/*if (!(p = strchr(p, ','))) break;
-	//	loc->lat = atof(++p);
-	//	if (!(p = strchr(p, ','))) break;
-	//	loc->year = atoi(++p) - 2000;
-	//	if (!(p = strchr(p, '/'))) break;
-	//	loc->month = atoi(++p);
-	//	if (!(p = strchr(p, '/'))) break;
-	//	loc->day = atoi(++p);
-	//	if (!(p = strchr(p, ','))) break;
-	//	loc->hour = atoi(++p);
-	//	if (!(p = strchr(p, ':'))) break;
-	//	loc->minute = atoi(++p);
-	//	if (!(p = strchr(p, ':'))) break;
-	//	loc->second = atoi(++p);*/
-	//	//return true;
-	//} while (0);
-
-
-
-}
-
 void setup()
 {
 	wdt_disable(); // бесполезна¤ строка до которой не доходит выполнение при bootloop Не уверен!!
@@ -907,36 +723,21 @@ void setup()
 	if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 
 	attachInterrupt(1,check_blink, RISING);            // Включить прерывания. Индикация состояния модема
-	delay(3000);
+	delay(1000);
 	wdt_enable(WDTO_8S);                               // Для тестов не рекомендуется устанавливать значение менее 8 сек.
 	MsTimer2::set(300, flash_time);                    // 30ms период таймера прерывани
 	start_init();
 	
 	con.println(F("OK"));            
-	for (;;) 
-	{
-		if (gprs.httpInit()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
-		con.print(">");
-		con.println(gprs.buffer);                          // Не получилось, ("ERROR") 
-		String stringError = gprs.buffer;             
-		if (stringError.indexOf(F("ERROR")) > -1)          
-			{
-				con.print(F("\nNo internet connection"));     
-				delay(1000);
-				resetFunc();                                //вызываем reset при отсутствии доступа к серверу
-			}
-		gprs.httpUninit();                                  // Не получилось, попробовать снова 
-		delay(1000);
-	}
 
-	if(EEPROM.read(0)!=31)
+	if(EEPROM.read(0)!=32)
 	{
 		con.println (F("Start clear EEPROM"));               //  
 		for(int i = 0; i<1023;i++)
 		{
 			EEPROM.write(i,0);
 		}
-		EEPROM.write(0,31);
+		EEPROM.write(0,32);
 		EEPROM.put(Address_interval, interval);                  // строка начальной установки интервалов
 		EEPROM.put(Address_tel1, "+79162632701");      
 		//EEPROM.put(Address_tel1, "+79852517615");
@@ -945,7 +746,7 @@ void setup()
 		con.println (F("Clear EEPROM End"));                              
 	}
 
-	SMS_center = "4556w6072556w6";                               // SMS_center = "SMS.RU";
+	//SMS_center = "4556w6072556w6";                               // SMS_center = "SMS.RU";
 	//EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
 	EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
 	EEPROM.get(Address_interval, interval);                      // Получить из EEPROM интервал
@@ -1002,7 +803,7 @@ void setup()
 
 void loop()
 {
- if(digitalRead(STATUS) == LOW)  resetFunc();   // Что то пошло не так, питание отключено
+ if(digitalRead(STATUS) == LOW)  resetFunc();                                 // Что то пошло не так, питание отключено
 
  if (gprs.checkSMS()) 
   {
@@ -1011,31 +812,35 @@ void loop()
 	
 	if (gprs.val.indexOf("REC UNREAD") > -1)  //если обнаружена новая  СМС 
 	{    
-	//------------- поиск кодового слова в СМС 
-	char buf[16] ;
+		//------------- поиск кодового слова в СМС 
+		char buf[16] ;
 
-	EEPROM.get(Address_tel1, buf);                                         // Восстановить телефон хозяина 1
-	String master_tel1(buf);
+		EEPROM.get(Address_tel1, buf);                                         // Восстановить телефон хозяина 1
+		String master_tel1(buf);
 
-	//EEPROM.get(Address_SMS_center, buf);                                   // Восстановить телефон СМС центра
-	//String master_SMS_center(buf);
-	String master_SMS_center = "4556w6072556w6";
-	//con.println(master_SMS_center);
+		//EEPROM.get(Address_SMS_center, buf);                                   // Восстановить телефон СМС центра
+		//String master_SMS_center(buf);
+		String master_SMS_center = "4556w6072556w6";
+		//con.println(master_SMS_center);
+		if (gprs.deleteSMS(1))
+		{
+			con.println(F("SMS delete"));                    //  con.print("SMS:");
+		}
 
-	  if (gprs.val.indexOf(master_tel1) > -1)                              //если СМС от хозяина 1
-	  {   
+		if (gprs.val.indexOf(master_tel1) > -1)                              //если СМС от хозяина 1
+		{   
 		con.println(F("Commanda tel1"));
 		setTime(gprs.val, master_tel1);
-	  }
-	  else if(gprs.val.indexOf(master_SMS_center) > -1)                    //если СМС от хозяина 2
-	  {
+		}
+		else if(gprs.val.indexOf(master_SMS_center) > -1)                    //если СМС от хозяина 2
+		{
 		con.println(F("SMS centr"));
 		setTime(gprs.val, master_SMS_center);
-	  }
-	  else
-	  {
-		  con.println(F("phone ignored"));            
-	  }
+		}
+		else
+		{
+			con.println(F("phone ignored"));            
+		}
 	}
 	
 	if (gprs.val.indexOf("REC READ") > -1)               //если обнаружена старая  СМС 
@@ -1045,12 +850,9 @@ void loop()
 			con.println(F("SMS delete"));                    //  con.print("SMS:");
 		}
 	}
-
 	gprs.val = "";
-		
   }
- 
- 
+  
 	unsigned long currentMillis = millis();
 	if(!time_set)                                                               // 
 	{
@@ -1080,6 +882,6 @@ void loop()
 		setColor(COLOR_GREEN);
 	}
 
-	if(millis() - time > time_day*1000) resetFunc();                       //вызываем reset интервалом в сутки
+	if(millis() - time > time_day*1000) resetFunc();                         //вызываем reset интервалом в сутки
 	delay(500);
 }

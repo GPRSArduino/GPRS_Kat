@@ -143,7 +143,6 @@ txt_AT                       // 59 "AT";
 };
 
 
-
 typedef enum {
     HTTP_DISABLED = 0,
     HTTP_READY,
@@ -162,16 +161,6 @@ typedef struct {
   uint8_t minute;
   uint8_t second;
 } GSM_LOCATION;
-
-typedef struct {
-	uint8_t n_com1;
-	uint8_t n_com2;
-	uint8_t n_com3;
-	double data_com1;
-	double data_com2;
-	double data_com3;
-} GET_COMMAND;
-
 
 
 class CGPRS_SIM800 {
@@ -223,7 +212,7 @@ public:
     bool available();
 	void cleanStr(String & str);
 
-    char buffer[80];
+    char buffer[60];
     byte httpState;
 	String val = "";
 
@@ -237,7 +226,6 @@ private:
     String pwd  = ""; 
     String cont = "";
 
-    int _LED13            ;                            // Индикация светодиодом
 	char bufcom[30];
 	char bufcom1[20];
 	int ch = 0;

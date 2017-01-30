@@ -74,8 +74,6 @@ bool CGPRS_SIM800::begin(Stream &port)
 	return false;
 }
 
-
-
 byte CGPRS_SIM800::setup()
 {
 	for (byte n = 0; n < 30; n++)
@@ -287,9 +285,6 @@ bool CGPRS_SIM800::getSIMCCID()
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[20])));
 	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
-	//sendCommand(bufcom);                                          //sendCommand("AT+CCID");
-	delay(1000);
-
 	if (sendCommand(bufcom, "OK\r", bufcom1) == 1)             // (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
 	{      
 		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
@@ -412,16 +407,12 @@ bool CGPRS_SIM800::deleteSMS(int n_sms)
 	if (n_sms > 0)
 	{
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[57])));
-
-		if(sendCommand("AT+CMGD=1", "OK\r", "ERROR\r") == 1)
-		//sendCommand(bufcom);                // sendCommand("AT+CMGD=1");  remove the SMS
-			return true;
+		if(sendCommand("AT+CMGD=1", "OK\r", "ERROR\r") == 1)           //sendCommand(bufcom);                // sendCommand("AT+CMGD=1");  remove the SMS
+		return true;
 	}
 	else
 	{
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[58])));
-		//sendCommand(bufcom);                //sendCommand("AT+CMGDA=\"DEL ALL\""); remove the SMS
-
+		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[58])));	     //sendCommand("AT+CMGDA=\"DEL ALL\""); remove the SMS
 		if(sendCommand("AT+CMGDA=\"DEL ALL\"", "OK\r", "ERROR\r") == 1)
 		return true;
 
@@ -470,9 +461,6 @@ bool CGPRS_SIM800::getLocation(GSM_LOCATION* loc)
   } while(0);
   return false;
 }
-
-
-
 
 void CGPRS_SIM800::httpUninit()
 {
