@@ -227,7 +227,7 @@ private:
     String cont = "";
 
 	char bufcom[30];
-	char bufcom1[20];
+	char combuf1[20];
 	int ch = 0;
 	FONAStreamType *SIM_SERIAL;
 };

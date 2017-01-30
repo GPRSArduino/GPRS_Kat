@@ -115,23 +115,23 @@ byte CGPRS_SIM800::setup()
 		else if (OperatorName.indexOf("Bee") > -1)
 		{
 			//Serial.println(buffer);                                        //Serial.println("Beeline");
-			strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[15])));
-			apn = bufcom1;                                                 //apn = "internet.beeline.ru";
+			strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[15])));
+			apn = combuf1;                                                 //apn = "internet.beeline.ru";
 			strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[16])));
 			user = bufcom;                                                 //user = "beeline";
 			pwd = bufcom;                                                  //pwd = "beeline";
-			cont = bufcom1;                                                //cont = "internet.beeline.ru";
+			cont = combuf1;                                                //cont = "internet.beeline.ru";
 			strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[14])));
 			//Serial.println(bufcom);                                        //Serial.println("Beeline");
 		}
 		else if (OperatorName.indexOf("Mega") > -1)
 		{
 			strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[17])));
-			strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[18])));
-			apn = bufcom1;	                                                   //apn = "internet";
+			strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[18])));
+			apn = combuf1;	                                                   //apn = "internet";
 			user = "";
 			pwd = "";
-			cont = bufcom1;	                                                   //cont = "internet";
+			cont = combuf1;	                                                   //cont = "internet";
 			//Serial.println(bufcom);                                            //Serial.println("MEGAFON");
 		}
 
@@ -258,11 +258,11 @@ uint8_t CGPRS_SIM800::getNetworkStatus()
 bool CGPRS_SIM800::getIMEI()
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[30])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[33])));
 	sendCommand(bufcom);                                          //sendCommand("AT+GSN");
 	delay(1000);
 
-  if (sendCommand(bufcom, "OK\r", bufcom1) == 1)               // (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
+  if (sendCommand(bufcom, "OK\r", combuf1) == 1)               // (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
   {
 	char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
 											 //на которую указывает str1, строки, указанной str2 (исключая завершающий нулевой символ).
@@ -284,8 +284,8 @@ bool CGPRS_SIM800::getIMEI()
 bool CGPRS_SIM800::getSIMCCID()
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[20])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
-	if (sendCommand(bufcom, "OK\r", bufcom1) == 1)             // (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[33])));
+	if (sendCommand(bufcom, "OK\r", combuf1) == 1)             // (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
 	{      
 		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
                								     //Если совпадений не обнаружено, возвращается NULL.
@@ -306,10 +306,10 @@ bool CGPRS_SIM800::getSIMCCID()
 bool CGPRS_SIM800::getGMR()
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[21])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[33])));
 	delay(1000);
 
-	if (sendCommand(bufcom, "OK\r", bufcom1) == 1)                    //sendCommand("AT+GMR");Номер прошивки
+	if (sendCommand(bufcom, "OK\r", combuf1) == 1)                    //sendCommand("AT+GMR");Номер прошивки
 	{
 		char *p = strstr(buffer, "\r");                               //Функция strstr() возвращает указатель на первое вхождение в строку, 
 												                      //Если совпадений не обнаружено, возвращается NULL.
@@ -333,9 +333,9 @@ bool CGPRS_SIM800::getOperatorName()
 {
   // display operator name
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[31])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[33])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[33])));
 
-  if (sendCommand(bufcom, "OK\r", bufcom1) == 1)   // if (sendCommand("AT+COPS?", "OK\r", "ERROR\r") == 1) 
+  if (sendCommand(bufcom, "OK\r", combuf1) == 1)   // if (sendCommand("AT+COPS?", "OK\r", "ERROR\r") == 1) 
   {
 	  char *p = strstr(buffer, ",\"");
 	  if (p) 
@@ -369,9 +369,9 @@ bool CGPRS_SIM800::ping(const char* url)
 	SIM_SERIAL->print(url);
 	SIM_SERIAL->println('\"');
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[55])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[50])));
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[50])));
 	// Ожидаем ответ сайта на ping 
-	if (sendCommand(0, bufcom, bufcom1,6000) == 1) // (sendCommand(0, "+CIPPING", "ERROR",3000) == 1)
+	if (sendCommand(0, bufcom, combuf1,6000) == 1) // (sendCommand(0, "+CIPPING", "ERROR",3000) == 1)
 	{
 		return true;
 	}
@@ -386,8 +386,8 @@ bool CGPRS_SIM800::checkSMS()
 	//	 Timeset5
 	//	 + CMGR:
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[56])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[50])));
- if (sendCommand(bufcom, "+CMGR:", bufcom1) == 1)   //(sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1)  отправляет команду "AT+CMGR=1", поиск ответного сообщения +CMGR:
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[50])));
+ if (sendCommand(bufcom, "+CMGR:", combuf1) == 1)   //(sendCommand("AT+CMGR=1", "+CMGR:", "ERROR") == 1)  отправляет команду "AT+CMGR=1", поиск ответного сообщения +CMGR:
   { 
 	 while (SIM_SERIAL->available())       //есть данные от GSM модуля
 	 {
@@ -470,8 +470,8 @@ void CGPRS_SIM800::httpUninit()
 bool CGPRS_SIM800::httpInit()
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[36])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[37])));
-	if  (!sendCommand(bufcom, 10000) || !sendCommand(bufcom1, 5000))  //if  (!sendCommand("AT+HTTPINIT", 10000) || !sendCommand("AT+HTTPPARA=\"CID\",1", 5000)) 
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[37])));
+	if  (!sendCommand(bufcom, 10000) || !sendCommand(combuf1, 5000))  //if  (!sendCommand("AT+HTTPINIT", 10000) || !sendCommand("AT+HTTPPARA=\"CID\",1", 5000)) 
 	{
 		httpState = HTTP_DISABLED;
 		return false;
@@ -545,8 +545,8 @@ bool CGPRS_SIM800::httpConnectStr(const char* url, String args)
 byte CGPRS_SIM800::httpIsConnected()
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[42])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[43])));
-	byte ret = checkbuffer(bufcom,bufcom1, 10000);           // byte ret = checkbuffer("0,200", "0,60", 10000);
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[43])));
+	byte ret = checkbuffer(bufcom,combuf1, 10000);           // byte ret = checkbuffer("0,200", "0,60", 10000);
 	if (ret >= 2) 
 	{
 		httpState = HTTP_ERROR;
@@ -571,8 +571,8 @@ void CGPRS_SIM800::httpRead()
 int CGPRS_SIM800::httpIsRead()
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[45])));
-	strcpy_P(bufcom1, (char*)pgm_read_word(&(table_message[46])));
-	byte ret = checkbuffer(bufcom, bufcom1, 10000) == 1;//byte ret = checkbuffer("+HTTPREAD: ", "Error", 10000) == 1;
+	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[46])));
+	byte ret = checkbuffer(bufcom, combuf1, 10000) == 1;//byte ret = checkbuffer("+HTTPREAD: ", "Error", 10000) == 1;
 	if (ret == 1) 
 	{
 		m_bytesRecv = 0;

@@ -715,7 +715,7 @@ void setup()
 {
 	wdt_disable(); // бесполезна¤ строка до которой не доходит выполнение при bootloop Не уверен!!
 	con.begin(speed_Serial);
-	con.println(F("\n SIM800 setup start"));     
+	con.println(F("\nSIM800 setup start"));     
 
 	pinMode(SIM800_RESET_PIN, OUTPUT);
 	pinMode(LED13, OUTPUT);
