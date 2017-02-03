@@ -17,9 +17,9 @@
 
 #define con Serial
 #define speed_Serial 115200
-
-static const char* url1   = "http://vps3908.vps.host.ru/recieveReadings.php";
-//static const char* urlssl = "https://vps3908.vps.host.ru/recieveReadings.php";
+static const char* url1 = "http://trm7.xyz/r.php?";
+//static const char* url1   = "http://vps3908.vps.host.ru/recieveReadings.php";
+static const char* urlssl = "https://trm7.xyz/r.php?";
 static const char* url_ping = "www.yandex.ru";
 
 #define PIN_TX           7                              // Подключить  к выводу 7 сигнал RX модуля GPRS
@@ -171,7 +171,7 @@ void sendTemps()
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
 
-	String toSend = formHeader() + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
+	String toSend = "t1=" + imei + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
 
 	//Serial.println(toSend);
 
@@ -196,16 +196,7 @@ void sendTemps()
 
 }
 
-String formHeader() 
-{
-  String uptime = "17/01/01,10:10:10 00";
-  GSM_LOCATION loc;                               // Получить время из интернета
-  if (gprs.getLocation(&loc)) 
-  {
-   uptime  = String(loc.year)+'/'+ String(loc.month)+'/'+ String(loc.day)+','+String(loc.hour)+':'+ String(loc.minute)+':'+String(loc.second)+" 00";
-  }
-   return "t1=" + imei + DELIM + uptime;
-}
+
 String formEnd() 
 {
 	char buf[13] ;
@@ -265,11 +256,11 @@ bool gprs_send(String data)
  
   if (ssl_set == true)
   {
-	/*  con.print(urlssl);
+	  con.print(urlssl);
 	  con.print('?');
 	  con.println(data);
 
-	  gprs.httpConnectStr(urlssl, data);*/
+	  gprs.httpConnectStr(urlssl, data);
   }
   else
   {
@@ -329,10 +320,10 @@ bool gprs_send(String data)
   // Теперь мы получили сообщение от сайта.
    con.print(F("[Payload] "));                        
    con.println(gprs.buffer);
-  // String val = gprs.buffer;                            // Получить строку данных с сервера
+   String val = gprs.buffer;                            // Получить строку данных с сервера
    int p0[5];
-   String val = "&010145&0202+79162632701&0303+79162632701&0400123456789#";  // Пример строки, принятой с сервера
-   send_ok = true;     // Команда принята успешно
+  // String val = "&010145&0202+79162632701&0303+79162632701&0400123456789#";  // Пример строки, принятой с сервера
+   send_ok = true;                                                             // Команда принята успешно
 
    if (val.indexOf("&") > -1)              // Определить адреса (позиции) команд в строке 
    {

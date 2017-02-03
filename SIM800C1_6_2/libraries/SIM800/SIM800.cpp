@@ -439,34 +439,6 @@ int CGPRS_SIM800::getSignalQuality()
   }
 }
 
-bool CGPRS_SIM800::getLocation(GSM_LOCATION* loc)
-{
-  strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[34])));
-  if (sendCommand(bufcom, 10000)) do         // if (sendCommand("AT+CIPGSMLOC=1,1", 10000)) do 
-  {
-	char *p;
-	if (!(p = strchr(buffer, ':'))) break;
-	if (!(p = strchr(p, ','))) break;
-	loc->lon = atof(++p);
-	if (!(p = strchr(p, ','))) break;
-	loc->lat = atof(++p);
-	if (!(p = strchr(p, ','))) break;
-	loc->year = atoi(++p) - 2000;
-	if (!(p = strchr(p, '/'))) break;
-	loc->month = atoi(++p);
-	if (!(p = strchr(p, '/'))) break;
-	loc->day = atoi(++p);
-	if (!(p = strchr(p, ','))) break;
-	loc->hour = atoi(++p);
-	if (!(p = strchr(p, ':'))) break;
-	loc->minute = atoi(++p);
-	if (!(p = strchr(p, ':'))) break;
-	loc->second = atoi(++p);
-	return true;
-  } while(0);
-  return false;
-}
-
 void CGPRS_SIM800::httpUninit()
 {
   strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[35])));
