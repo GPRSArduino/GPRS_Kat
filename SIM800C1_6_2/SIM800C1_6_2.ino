@@ -17,9 +17,9 @@
 
 #define con Serial
 #define speed_Serial 115200
-static const char* url1 = "http://trm7.xyz/r.php?";
+static const char* url1 = "http://trm7.xyz/r.php";
 //static const char* url1   = "http://vps3908.vps.host.ru/recieveReadings.php";
-static const char* urlssl = "https://trm7.xyz/r.php?";
+static const char* urlssl = "https://trm7.xyz/r.php";
 static const char* url_ping = "www.yandex.ru";
 
 #define PIN_TX           7                              // Подключить  к выводу 7 сигнал RX модуля GPRS
@@ -58,14 +58,16 @@ bool send_ok                         = false;           // Признак усп
 bool count_All_reset                 = false;           // Признак выполнения команды сброса счетчика ошибок.
 
 CGPRS_SIM800 gprs;
-uint32_t count    = 0;
-uint32_t errors   = 0;
+uint32_t count      = 0;
+uint32_t errors     = 0;
 //String imei       = "";
-String imei = "861445030362268";                        // Тест IMEI
-String CSQ        = "";                                 // Уровень сигнала приема
-String SMS_center = "";
-String zero_tel   = "";
-String SIMCCID    = "";
+String imei         = "861445030362268";                        // Тест IMEI
+//String imei       = "999999999999999";
+String CSQ          = "";                                 // Уровень сигнала приема
+String SMS_center   = "";
+String zero_tel     = "";
+String SIMCCID      = "";
+String CMTE         = "";                               // Внутренний датчик температуры
 #define DELIM "@"
 
 unsigned long time             = 0;                     // Переменная для суточного сброса
@@ -171,7 +173,7 @@ void sendTemps()
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
 
-	String toSend = "t1=" + imei + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
+	String toSend = "t1=" + imei + DELIM + "17/2/1,21:2:28%2000" DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
 
 	//Serial.println(toSend);
 
@@ -189,7 +191,7 @@ void sendTemps()
 			count_send++;
 			Serial.print("Attempt to transfer data .."); Serial.println(count_send);
 			if (count_send>5) resetFunc();                                // 5 попыток. Что то пошло не так с интернетом
-			ping();
+			//ping();
 		}
 		delay(6000);
 	}
@@ -321,6 +323,8 @@ bool gprs_send(String data)
    con.print(F("[Payload] "));                        
    con.println(gprs.buffer);
    String val = gprs.buffer;                            // Получить строку данных с сервера
+  // gprs.httpUninit();                                    // Разорвать соединение
+
    int p0[5];
   // String val = "&010145&0202+79162632701&0303+79162632701&0400123456789#";  // Пример строки, принятой с сервера
    send_ok = true;                                                             // Команда принята успешно
@@ -359,7 +363,7 @@ bool gprs_send(String data)
   con.println();
   Serial.print("Inteval: ");
   Serial.println(interval);
-  gprs.httpUninit();                                    // Разорвать соединение
+  //gprs.httpUninit();                                    // Разорвать соединение
 
   return send_ok;
 }
@@ -511,7 +515,7 @@ void check_blink()
 	{
 		state_device = 2;                                                     // 2 - Зарегистрировано в сети
 		count_blink2++;
-		if (count_blink2 > 40)
+		if (count_blink2 > 50)
 		{
 			state_device = 0;
 			MsTimer2::stop();                                                 // Включить таймер прерывания
@@ -590,7 +594,7 @@ void start_init()
 		while (digitalRead(STATUS) == LOW)
 		{
 			count_status++;
-			if(count_status > 100) resetFunc(); // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
+			if(count_status > 150) resetFunc(); // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
 			delay(100);
 		}
 		delay(2000);
@@ -621,8 +625,8 @@ void start_init()
 		if (gprs.getSIMCCID())                       // Получить Номер СИМ карты
 		{
 			con.print(F("\nSIM CCID:"));
-			SIMCCID = gprs.buffer;                 // Отключить на время отладки
-			gprs.cleanStr(SIMCCID);                // Отключить на время отладки
+			SIMCCID = gprs.buffer;                 //  
+			gprs.cleanStr(SIMCCID);                //  
 			con.println(SIMCCID);
 		}
 		else
@@ -630,20 +634,10 @@ void start_init()
 			//return;  // SIMCCID не определился
 		}
 
-		//if (gprs.getGMR())                       // Получить номер прошивки
-		//{
-		//	con.print(F("\nSoftware release:"));
-		//	String GMR  = gprs.buffer;                 // 
-		//	gprs.cleanStr(GMR);                // 
-		//	con.println(GMR);
-		//}
-
-		
-
 		while (state_device != 2)  // Ожидание регистрации в сети
 		{
 			delay(1000);
-			// Уточнить программу перезапуска  если модуль не зарегистрировался через 60 секунд
+			// Уточнить программу перезапуска  если модуль не зарегистрировался через 70 секунд
 		}
 		delay(1000);
 		Serial.print(F("\nSetting up network..."));
@@ -672,7 +666,7 @@ void start_init()
 					delay(1000);
 					Serial.println(F("GPRS connect .."));
 					byte ret = gprs.setup();                                              // Подключение к GPRS
-					Serial.print(F("ret - ")); Serial.print(ret);
+					//Serial.print(F("ret - ")); Serial.print(ret);
 					if (ret == 0)
 					{
 						while (state_device != 3)  // Ожидание регистрации в сети
@@ -699,7 +693,7 @@ void start_init()
 				} while (!setup_ok);
 			}
 		}
-	} while (count_init > 20 || setup_ok == false);    // 20 попыток зарегистрироваться в сети
+	} while (count_init > 30 || setup_ok == false);    // 30 попыток зарегистрироваться в сети
 }
 
 void setup()
@@ -743,7 +737,29 @@ void setup()
 	MsTimer2::set(300, flash_time);                    // 30ms период таймера прерывани
 	start_init();
 	
-	con.println(F("OK"));            
+	con.println(F("OK"));   
+
+
+	//for (;;)
+	//{
+	//	if (gprs.httpInit()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
+	//	con.print(">");
+	//	con.println(gprs.buffer);                          // Не получилось, ("ERROR") 
+	//	String stringError = gprs.buffer;
+	//	if (stringError.indexOf(F("ERROR")) > -1)
+	//	{
+	//		con.print(F("\nNo internet connection"));
+	//		delay(1000);
+	//		resetFunc();                                //вызываем reset при отсутствии доступа к серверу
+	//	}
+	//	gprs.httpUninit();                                  // Не получилось, попробовать снова 
+	//	delay(1000);
+	//}
+
+
+
+
+
 
 	if(EEPROM.read(0)!=32)
 	{
@@ -786,7 +802,7 @@ void setup()
 	delay(2000);
 	MsTimer2::stop();
 	setColor(COLOR_GREEN);                                      // Включить зеленый светодиод
-	ping();
+	//ping();
 	con.println(F("\nSIM800 setup end"));
 	sendTemps();
 	time = millis();                                              // Старт отсчета суток
@@ -870,7 +886,7 @@ void loop()
 		con.println((currentMillis - previousPing) / 1000);
 		setColor(COLOR_BLUE);
 		previousPing = currentMillis;
-		ping();
+		//ping();
 		setColor(COLOR_GREEN);
 	}
 

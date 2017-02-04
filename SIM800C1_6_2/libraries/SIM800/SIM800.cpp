@@ -146,12 +146,7 @@ byte CGPRS_SIM800::setup()
 		//  для Мегафона AT+CGDCONT=1,"IP","internet"
 		//  для МТС AT+CGDCONT=1,"IP","internet.mts.ru"
 
-
-
-
-
-
-		
+				
 
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[22])));
 		SIM_SERIAL->print(bufcom);                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"APN\",\"");
@@ -180,15 +175,15 @@ byte CGPRS_SIM800::setup()
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[26])));
 		sendCommand(bufcom, 10000);                                    //sendCommand("AT+SAPBR=1,1", 10000);                     // установка GPRS связи
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[27])));
-		sendCommand(bufcom, 10000);                                    //sendCommand("AT+SAPBR=2,1", 10000);                     // полученный IP адрес
+		sendCommand(bufcom, 20000);                                    //sendCommand("AT+SAPBR=2,1", 10000);                     // полученный IP адрес
 		
 
 		//sendCommand("AT + CSTT = \"internet.mts.ru\"", 500);             //  
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
-		sendCommand(bufcom, 5000);                                    // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
-		delay(2000);
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
-		sendCommand(bufcom, 6000);                                     //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
+		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
+		//sendCommand(bufcom, 5000);                                    // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
+		//delay(2000);
+		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
+		//sendCommand(bufcom, 6000);                                     //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
 
 
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[28])));
@@ -335,6 +330,7 @@ bool CGPRS_SIM800::getGMR()
 }
 
 
+
 bool CGPRS_SIM800::getOperatorName()
 {
   // display operator name
@@ -360,22 +356,24 @@ bool CGPRS_SIM800::ping(const char* url)
 {
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));
 	sendCommand(bufcom, 1000);                 //sendCommand("AT+CGATT?", 1000);  Проверить подключение к сервису GPRS
-	//delay(100);
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[51])));
-	sendCommand(bufcom, 1000);      // sendCommand("AT+CSTT=\"internet\"", 1000);Настроить точку доступа ????
-	delay(1000);
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
-	sendCommand(bufcom, 1000);                  // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
-	delay(1000);
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
-	sendCommand(bufcom, 3000);                  //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
-	delay(1000);
+	delay(100);
+	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[51])));
+	//sendCommand(bufcom, 1000);      // sendCommand("AT+CSTT=\"internet\"", 1000);Настроить точку доступа ????
+	//delay(1000);
+	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
+	//sendCommand(bufcom, 1000);                  // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
+	//delay(1000);
+	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
+	//sendCommand(bufcom, 3000);                  //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
+	//delay(1000);
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[54])));
 	SIM_SERIAL->print(bufcom);              // SIM_SERIAL->print("AT+CIPPING=\"");
 	SIM_SERIAL->print(url);
 	SIM_SERIAL->println('\"');
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[55])));
 	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[50])));
+	delay(10000);
+
 	// Ожидаем ответ сайта на ping 
 	if (sendCommand(0, bufcom, combuf1,6000) == 1) // (sendCommand(0, "+CIPPING", "ERROR",3000) == 1)
 	{
