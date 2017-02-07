@@ -352,14 +352,14 @@ bool CGPRS_SIM800::ping(const char* url)
 	delay(100);
 	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[51])));
 	//sendCommand(bufcom, 1000);      //
-	sendCommand("AT+CSTT=\"internet.mts.ru\"", 1000);//Настроить точку доступа ????
+	//sendCommand("AT+CSTT=\"internet.mts.ru\"", 1000);//Настроить точку доступа ????
 	/*SIM_SERIAL->print("AT+CSTT=\"");
 	SIM_SERIAL->print(apn);
 	SIM_SERIAL->print('\"');*/
 	//delay(1000);
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
-	sendCommand(bufcom, 1000);                  // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
-	delay(1000);
+	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
+	//sendCommand(bufcom, 1000);                  // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
+	//delay(1000);
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
 	sendCommand(bufcom, 3000);                  //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
 	delay(1000);

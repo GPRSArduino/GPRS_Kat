@@ -76,7 +76,7 @@ unsigned long interval         = 60;                    // Интервал пе
 //unsigned long interval         = 300;                   // Интервал передачи данных 5 минут
 bool time_set                  = false;                 // Фиксировать интервал заданный СМС
 bool ssl_set                   = false;                 // Признак шифрования
-unsigned long time_ping        = 360;                   // Интервал проверки ping 6 минут.
+unsigned long time_ping        = 60;                   // Интервал проверки ping 6 минут.
 unsigned long previousPing     = 0;                     // Временный Интервал проверки ping
 
 int Address_tel1       = 100;                           // Адрес в EEPROM телефона 1
@@ -887,7 +887,7 @@ void loop()
 		con.println((currentMillis - previousPing) / 1000);
 		setColor(COLOR_BLUE);
 		previousPing = currentMillis;
-		//ping();
+		ping();
 		setColor(COLOR_GREEN);
 	}
 
