@@ -210,14 +210,14 @@ public:
     bool available();
 	void cleanStr(String & str);
 
-    char buffer[70];
+    char buffer[100];
     byte httpState;
 	String val = "";
 
 private:
-    byte checkbuffer(const char* expected1, const char* expected2 = 0, unsigned int timeout = 2000);
+    byte checkbuffer(const char* expected1, const char* expected2 = 0, unsigned int timeout = 2000);  // По умолчанию ожидание 2 секунды
     void purgeSerial();
-    byte m_bytesRecv;
+    byte m_bytesRecv;                         // 
     uint32_t m_checkTimer;
 	String apn  = "";
     String user = "";

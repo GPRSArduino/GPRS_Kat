@@ -61,9 +61,8 @@ CGPRS_SIM800 gprs;
 uint32_t count      = 0;
 uint32_t errors     = 0;
 //String imei       = "";
-String imei         = "861445030362268";                        // Тест IMEI
-//String imei       = "999999999999999";
-String CSQ          = "";                                 // Уровень сигнала приема
+String imei         = "861445030362268";                // Тест IMEI
+String CSQ          = "";                               // Уровень сигнала приема
 String SMS_center   = "";
 String zero_tel     = "";
 String SIMCCID      = "";
@@ -215,21 +214,22 @@ String formEnd()
 bool gprs_send(String data) 
 {
   con.print(F("Requesting .. Wait"));      
-
-  for (;;)
+  int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
+  for (;;)                                               // Бесконечный цикл пока не наступит, какое то состояние для выхода
   {
 	  if (gprs.httpInit()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
 	  con.print(">");
 	  con.println(gprs.buffer);                          // Не получилось, ("ERROR") 
 	  String stringError = gprs.buffer;
-	  if (stringError.indexOf(F("ERROR")) > -1)
+	  if (stringError.indexOf(F("ERROR")) > -1)          
 	  {
-		  con.print(F("\nNo internet connection"));
+		  con.println(F("\nNo internet connection"));
 		  delay(1000);
-		  resetFunc();                                //вызываем reset при отсутствии доступа к серверу
 	  }
-	  gprs.httpUninit();                                  // Не получилось, попробовать снова 
-	  delay(1000);
+	  gprs.httpUninit();                                 // Не получилось, разединить и  попробовать снова 
+	  delay(1000);                                       // Подождать секунду.
+	  count_init++;
+	  if(count_init > 60)  resetFunc();                 //вызываем reset при отсутствии доступа к серверу в течении 60 секунд
   }
 
   if (ssl_set == true)
@@ -301,11 +301,12 @@ bool gprs_send(String data)
   con.println();
   gprs.httpRead();
   int ret;
-  while ((ret = gprs.httpIsRead()) == 0) 
+  while ((ret = gprs.httpIsRead()) == 0)  //  Ожидаем сообщение HTTP
   {
 	// может сделать что-то здесь, во время ожидания
   }
-  if (gprs.httpState == HTTP_ERROR) 
+
+  if (gprs.httpState == HTTP_ERROR)        // Ответ не пришел
   {
 	errors++;
 	errorAllmem();
@@ -363,7 +364,7 @@ bool gprs_send(String data)
   con.println();
   Serial.print("Inteval: ");
   Serial.println(interval);
-  //gprs.httpUninit();                                    // Разорвать соединение
+  gprs.httpUninit();                                    // Разорвать соединение
 
   return send_ok;
 }
@@ -656,7 +657,7 @@ void start_init()
 
 		if (n == '1' || n == '5')                                                 // Если домашняя сеть или роуминг
 		{
-			if (state_device == 2)                 // Проверить аппаратно подключения модема к оператору
+			if (state_device == 2)                                                // Проверить аппаратно подключения модема к оператору
 			{
 				delay(2000);
 				do
@@ -666,7 +667,7 @@ void start_init()
 					delay(1000);
 					Serial.println(F("GPRS connect .."));
 					byte ret = gprs.setup();                                              // Подключение к GPRS
-					//Serial.print(F("ret - ")); Serial.print(ret);
+					Serial.print(F("ret - ")); Serial.print(ret);
 					if (ret == 0)
 					{
 						while (state_device != 3)  // Ожидание регистрации в сети
@@ -678,19 +679,19 @@ void start_init()
 						//setColor(COLOR_GREEN);                 // Включить зеленый светодиод
 						setup_ok = true;
 					}
-					else
+					else           // Модуль не подключиля к интернету
 					{
-						count_init++;
+						count_init++;             // Увеличить счетчик количества попыток 
 						Serial.println(F("Failed init GPRS"));
 						delay(5000);
-						if (state_device == 3)
+						if (state_device == 3)      // Модуль одумался и все таки подключиля к интернету
 						{
 							Serial.println(F("GPRS connect OK!-"));
 							//setColor(COLOR_GREEN);                 // Включить зеленый светодиод
 							setup_ok = true;
 						}
 					}
-				} while (!setup_ok);
+				} while (!setup_ok);             // 
 			}
 		}
 	} while (count_init > 30 || setup_ok == false);    // 30 попыток зарегистрироваться в сети
@@ -737,26 +738,26 @@ void setup()
 	MsTimer2::set(300, flash_time);                    // 30ms период таймера прерывани
 	start_init();
 	
+	int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
+	for (;;)                                               // Бесконечный цикл пока не наступит, какое то состояние для выхода
+	{
+		if (gprs.httpInit()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
+		con.print(">");
+		con.println(gprs.buffer);                          // Не получилось, ("ERROR") 
+		String stringError = gprs.buffer;
+		if (stringError.indexOf(F("ERROR")) > -1)
+		{
+			con.println(F("\nNo internet connection"));
+			delay(1000);
+		}
+		gprs.httpUninit();                                 // Не получилось, разединить и  попробовать снова 
+		delay(1000);                                       // Подождать секунду.
+		count_init++;
+		if (count_init > 60)  resetFunc();                 //вызываем reset при отсутствии доступа к серверу в течении 60 секунд
+	}
+
+
 	con.println(F("OK"));   
-
-
-	//for (;;)
-	//{
-	//	if (gprs.httpInit()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
-	//	con.print(">");
-	//	con.println(gprs.buffer);                          // Не получилось, ("ERROR") 
-	//	String stringError = gprs.buffer;
-	//	if (stringError.indexOf(F("ERROR")) > -1)
-	//	{
-	//		con.print(F("\nNo internet connection"));
-	//		delay(1000);
-	//		resetFunc();                                //вызываем reset при отсутствии доступа к серверу
-	//	}
-	//	gprs.httpUninit();                                  // Не получилось, попробовать снова 
-	//	delay(1000);
-	//}
-
-
 
 
 
@@ -802,7 +803,7 @@ void setup()
 	delay(2000);
 	MsTimer2::stop();
 	setColor(COLOR_GREEN);                                      // Включить зеленый светодиод
-	//ping();
+	ping();
 	con.println(F("\nSIM800 setup end"));
 	sendTemps();
 	time = millis();                                              // Старт отсчета суток

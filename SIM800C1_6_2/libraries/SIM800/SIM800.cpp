@@ -67,8 +67,13 @@ bool CGPRS_SIM800::begin(Stream &port)
 		delay(100);															//sendCommand("AT+CNMI=2,2");                                   // отображение смс в терминале сразу после приема (без этого сообщения молча падают в память)tln("AT+CSCS=\"GSM\""); 
 		//sendCommand("AT+CMGDA=\"DEL ALL\"");                             // AT+CMGDA=«DEL ALL» команда удалит все сообщения
 		//delay(100);
-		sendCommand("AT+GMR");                                             // Номер прошивки
-		delay(100);
+		//sendCommand("AT+GMR");                                             // Номер прошивки
+		//delay(100);
+
+		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[28])));
+		sendCommand(bufcom);                                           //sendCommand("AT+CMGF=1");                               // sets the SMS mode to text
+	/*	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[29])));
+		sendCommand(bufcom);     */                                      //sendCommand("AT+CPMS=\"SM\",\"SM\",\"SM\"");            // selects the memory
 		return true;
 	}
 	return false;
@@ -78,8 +83,10 @@ byte CGPRS_SIM800::setup()
 {
 	for (byte n = 0; n < 30; n++)
 	{
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[48])));
-		sendCommand(bufcom, 20000);                  // sendCommand("AT+CIPSHUT", 20000);
+		Serial.print(F("Init GPRS.. ")); Serial.println(n);
+
+		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[48])));
+		//sendCommand(bufcom, 20000);                  // sendCommand("AT+CIPSHUT", 20000);
 
 		//if (!sendCommand("AT+CGATT=1")) return 2;    // Регистрация в GPRS
 
@@ -175,25 +182,11 @@ byte CGPRS_SIM800::setup()
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[26])));
 		sendCommand(bufcom, 10000);                                    //sendCommand("AT+SAPBR=1,1", 10000);                     // установка GPRS связи
 		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[27])));
-		sendCommand(bufcom, 20000);                                    //sendCommand("AT+SAPBR=2,1", 10000);                     // полученный IP адрес
-		
-
-		//sendCommand("AT + CSTT = \"internet.mts.ru\"", 500);             //  
-		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
-		//sendCommand(bufcom, 5000);                                    // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
-		//delay(2000);
-		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
-		//sendCommand(bufcom, 6000);                                     //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
-
-
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[28])));
-		sendCommand(bufcom);                                           //sendCommand("AT+CMGF=1");                               // sets the SMS mode to text
-		strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[29])));
-		sendCommand(bufcom);                                           //sendCommand("AT+CPMS=\"SM\",\"SM\",\"SM\"");            // selects the memory
-		
-		
+		if(sendCommand(bufcom, 20000)) return 0;       // Переделать -фигня                             //sendCommand("AT+SAPBR=2,1", 10000);                     // полученный IP адрес
 				
-		return 0;                                                      // Успешная регистрация
+		////return 0;                                                      // !!! переделать возврат Успешная регистрация
+		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[48])));
+		//sendCommand(bufcom, 20000);                  // sendCommand("AT+CIPSHUT", 20000);
 	}
 	return 5;                                                          // Неуспешная регистрация
 }
@@ -354,18 +347,22 @@ bool CGPRS_SIM800::getOperatorName()
 
 bool CGPRS_SIM800::ping(const char* url)
 {
-	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));
-	sendCommand(bufcom, 1000);                 //sendCommand("AT+CGATT?", 1000);  Проверить подключение к сервису GPRS
+	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));     //sendCommand("AT+CGATT?", 1000);  Проверить подключение к сервису GPRS
+	sendCommand(bufcom, 1000);                                       // Переделать, добавить проверку подключения к интернету
 	delay(100);
 	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[51])));
-	//sendCommand(bufcom, 1000);      // sendCommand("AT+CSTT=\"internet\"", 1000);Настроить точку доступа ????
+	//sendCommand(bufcom, 1000);      //
+	sendCommand("AT+CSTT=\"internet.mts.ru\"", 1000);//Настроить точку доступа ????
+	/*SIM_SERIAL->print("AT+CSTT=\"");
+	SIM_SERIAL->print(apn);
+	SIM_SERIAL->print('\"');*/
 	//delay(1000);
-	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
-	//sendCommand(bufcom, 1000);                  // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
-	//delay(1000);
-	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
-	//sendCommand(bufcom, 3000);                  //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
-	//delay(1000);
+	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
+	sendCommand(bufcom, 1000);                  // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
+	delay(1000);
+	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
+	sendCommand(bufcom, 3000);                  //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
+	delay(1000);
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[54])));
 	SIM_SERIAL->print(bufcom);              // SIM_SERIAL->print("AT+CIPPING=\"");
 	SIM_SERIAL->print(url);
@@ -549,7 +546,7 @@ int CGPRS_SIM800::httpIsRead()
 	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[45])));
 	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[46])));
 	byte ret = checkbuffer(bufcom, combuf1, 10000) == 1;//byte ret = checkbuffer("+HTTPREAD: ", "Error", 10000) == 1;
-	if (ret == 1) 
+	if (ret == 1)       // Ответ +HTTPREAD:
 	{
 		m_bytesRecv = 0;
 		// read the rest data
@@ -559,30 +556,25 @@ int CGPRS_SIM800::httpIsRead()
 		bytes = min(bytes, sizeof(buffer) - 1);
 		buffer[bytes] = 0;
 		return bytes;
-	} else if (ret >= 2) 
+	} else if (ret >= 2)   // Ответ "Error"
 	{
 		httpState = HTTP_ERROR;
 		return -1;
 	}
-	return 0;
+	return 0;  
 }
 
 boolean CGPRS_SIM800::HTTP_ssl(boolean onoff) 
 {
 	if (onoff)
 	{
-		if(sendCommand("AT+HTTPSSL=1", "OK\r", "ERROR\r") == 1)
-
-		return true;
-
+		if(sendCommand("AT+HTTPSSL=1", "OK\r", "ERROR\r") == 1) return true;
 	}
 	else
 	{
-		if (sendCommand("AT+HTTPSSL=0", "OK\r", "ERROR\r") == 1)
-
-		return true;
+		if (sendCommand("AT+HTTPSSL=0", "OK\r", "ERROR\r") == 1) return true;
 	}
-	return false;
+	return false;           
 }
 
 
@@ -632,23 +624,23 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, unsigned int timeout, const char
 
 
 byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1, const char* expected2, unsigned int timeout)
-{        // Поиск в буфере по строкам expected1 или expected2 в течении timeout
+{        // Отправить команду и ожидать ответ при совпадении слов в буфере по строкам expected1 или expected2 в течении timeout
   if (cmd) 
   {
-	purgeSerial();   // Очистить приемный буффер
+	purgeSerial();                     // Очистить приемный буффер
 	#ifdef DEBUG
 		DEBUG.print('>');
 		DEBUG.println(cmd);
 	#endif
-	SIM_SERIAL->println(cmd);
+	SIM_SERIAL->println(cmd);           // Отправить команду
   }
-  uint32_t t = millis();
-  byte n = 0;
+  uint32_t t = millis();                // Записать время старта
+  byte n = 0;                           // Сбросить счетчик символов 
 	do {
-		if (SIM_SERIAL->available()) 
+		if (SIM_SERIAL->available())    // Если буфер не пустой - читать сообщения от модуля
 		{
-		  char c = SIM_SERIAL->read();
-		  if (n >= sizeof(buffer) - 1) 
+		  char c = SIM_SERIAL->read();  // Читать сообщения от модуля
+		  if (n >= sizeof(buffer) - 1)  // При переполнении буфера - урезать в 2 раза
 		  {
 			// buffer full, discard first half
 			n = sizeof(buffer) / 2 - 1;
@@ -683,27 +675,29 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1, const cha
 
 byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, unsigned int timeout)
 {
-	while (SIM_SERIAL->available()) 
+	// Поиск в тексте, пришедшем из модуля текстов, указанных в expected1 и expected2, ожидание не дольше чем в timeout
+	while (SIM_SERIAL->available())                  // Ждем появления данных с модуля, читаем если поступают символы 
 	{
 		char c = SIM_SERIAL->read();
-		if (m_bytesRecv >= sizeof(buffer) - 1)        // m_bytesRecv сбрасывается при применении http
+		if (m_bytesRecv >= sizeof(buffer) - 1)        // При вызове подпрограммы m_bytesRecv сбрасывается в"0" (при применении http)
 		{
-			// buffer full, discard first half буфер заполнен, выбросьте первую половину
-			m_bytesRecv = sizeof(buffer) / 2 - 1;
-			memcpy(buffer, buffer + sizeof(buffer) / 2, m_bytesRecv);
+			                                          // Если количество символов больше размера буфера - половина текста удаляется.
+			m_bytesRecv = sizeof(buffer) / 2 - 1;    // buffer full, discard first half буфер заполнен, выбросьте первую половину
+			memcpy(buffer, buffer + sizeof(buffer) / 2, m_bytesRecv);  // Скопировать оставшуюся половину в buffer
 		}
-		buffer[m_bytesRecv++] = c;
-		buffer[m_bytesRecv] = 0;
-		if (strstr(buffer, expected1)) 
+		buffer[m_bytesRecv++] = c;                   // Записать символ в буфер на место, указанное в m_bytesRecv
+		buffer[m_bytesRecv] = 0;                     // Последним в буфере записать "0"
+		if (strstr(buffer, expected1))               // Найдено первое слово  return 1;
 		{
 			return 1;
 		}
-		if (expected2 && strstr(buffer, expected2)) 
+		if (expected2 && strstr(buffer, expected2))  // Если текст в буфере равен expected2 return 2;
 		{
 			return 2;
 		}
 	}
-	return (millis() - m_checkTimer < timeout) ? 0 : 3;   // m_checkTimer используется при применении http
+	return (millis() - m_checkTimer < timeout) ? 0 : 3;   // Время ожидания задано в m_checkTimer используется при применении http
+	                                                      // Два варианта окончания подпрограммы 0 - уложились вовремя или 3 время вышло при неуспешном
 }
 
 void CGPRS_SIM800::purgeSerial()    // Очистить приемный буффер
