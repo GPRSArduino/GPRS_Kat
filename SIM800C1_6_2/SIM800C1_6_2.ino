@@ -27,7 +27,7 @@ static const char* url_ping = "www.yandex.ru";
 
 SoftwareSerial SIM800CSS = SoftwareSerial(PIN_RX, PIN_TX);
 SoftwareSerial *GPRSSerial = &SIM800CSS;
-
+ 
 
 #define PWR_On           5                              // Включение питания модуля SIM800
 #define SIM800_RESET_PIN 6                              // Сброс модуля SIM800
