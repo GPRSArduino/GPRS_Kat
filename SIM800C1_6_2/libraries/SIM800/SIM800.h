@@ -172,6 +172,8 @@ public:
 	bool begin(Stream &port);
     // setup network
     byte setup();
+	void close_GPRS();
+
 	uint8_t getNetworkStatus();
 
     // get network operator name
