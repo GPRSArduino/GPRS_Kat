@@ -110,7 +110,7 @@ String apn = "";
 String user = "";
 String pwd = "";
 String cont = "";
-char buffer[140];
+char buffer[125];
 byte httpState;
 String val = "";
 
@@ -255,7 +255,7 @@ void sendTemps()
 
 	String toSend = "t1=" + imei + DELIM + "17/2/1,21:2:28%2000" DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
 
-	Serial.println(toSend);
+//	Serial.println(toSend);
 
 	Serial.println(toSend.length());
 
@@ -284,14 +284,10 @@ void sendTemps()
 String formEnd() 
 {
 	char buf[13] ;
-
 	EEPROM.get(Address_tel1, buf);
 	String master_tel1(buf);
-
 	EEPROM.get(Address_SMS_center, SMS_center);   //Получить из EEPROM СМС центр
-
 	return DELIM + master_tel1 + DELIM + SIMCCID;
-
 }
 
 bool gprs_send(String data) 
@@ -384,8 +380,7 @@ bool gprs_send(String data)
 	  con.println(data);
 	  httpConnectStr(url1, data);
   }
-
-  
+    
   count++;
   send_ok = false;
     
@@ -485,7 +480,7 @@ bool gprs_send(String data)
 	con.print(errors);
   }
   con.println();
-  Serial.print("Inteval: ");
+  Serial.print(F("Inteval: "));
   Serial.println(interval);
   httpUninit();                                    // Разорвать соединение
 
@@ -914,14 +909,14 @@ void setup()
 
 
 
-	if(EEPROM.read(0)!=32)
+	if(EEPROM.read(0)!=33)
 	{
 		con.println (F("Start clear EEPROM"));               //  
 		for(int i = 0; i<1023;i++)
 		{
 			EEPROM.write(i,0);
 		}
-		EEPROM.write(0,32);
+		EEPROM.write(0,33);
 		EEPROM.put(Address_interval, interval);                  // строка начальной установки интервалов
 		EEPROM.put(Address_tel1, "+79162632701");      
 		//EEPROM.put(Address_tel1, "+79852517615");
@@ -1010,21 +1005,21 @@ void loop()
  // }
   
 	unsigned long currentMillis = millis();
-	//if(!time_set)                                                               // 
-	//{
-	//	 EEPROM.get( Address_interval, interval);                               // Получить интервал из EEPROM Address_interval
-	//}
-	//if ((unsigned long)(currentMillis - previousMillis) >= interval*1000) 
-	//{
-	//	con.print(F("Interval sec:"));                                       
-	//	con.println((currentMillis-previousMillis)/1000);
-	//	setColor(COLOR_BLUE);
-	//	previousMillis = currentMillis;
-	//	sendTemps();
-	//	setColor(COLOR_GREEN);
-	//	con.print(F("\nfree memory: "));                                 
-	//	con.println(freeRam());
-	//}
+	if(!time_set)                                                               // 
+	{
+		 EEPROM.get( Address_interval, interval);                               // Получить интервал из EEPROM Address_interval
+	}
+	if ((unsigned long)(currentMillis - previousMillis) >= interval*1000) 
+	{
+		con.print(F("Interval sec:"));                                       
+		con.println((currentMillis-previousMillis)/1000);
+		setColor(COLOR_BLUE);
+		previousMillis = currentMillis;
+		sendTemps();
+		setColor(COLOR_GREEN);
+		con.print(F("\nfree memory: "));                                 
+		con.println(freeRam());
+	}
 
 	currentMillis = millis();
 
@@ -1360,19 +1355,19 @@ bool ping(const char* url)
 
 		sendCommand("AT+CIFSR", 6000);                                  //Получить локальный IP-адрес
 		delay(1000);
-		SIM_SERIAL.print("AT+CIPPING=\"");                              // Отправить команду ping
+		SIM_SERIAL.print(F("AT+CIPPING=\""));                              // Отправить команду ping
 		SIM_SERIAL.print(url);
-		SIM_SERIAL.println('\"');
+		SIM_SERIAL.println(F('\"'));
 	//	delay(10000);
 
 		//++++++++++++++++++++++++++ Ожидаем ответ сайта на ping  ++++++++++++++++++++++++++++++++++++++++                
 		if (sendCommand(0, "+CIPPING", "ERROR", 10000) == 1)            // Ответ на ping получен 
 		{
-			SIM_SERIAL.print("AT+CIPSHUT");                             // Закрыть соединение
+			SIM_SERIAL.print(F("AT+CIPSHUT"));                             // Закрыть соединение
 			return true;
 		}
   
-	SIM_SERIAL.print("AT+CIPSHUT");                                     // Ошибка, что то не так пошло. На всякий случай закрываем соединение
+	SIM_SERIAL.print(F("AT+CIPSHUT"));                                     // Ошибка, что то не так пошло. На всякий случай закрываем соединение
 	return false;
 }
 
@@ -1414,7 +1409,7 @@ bool httpConnect(const char* url, const char* args)
 	if (sendCommand(0))
 	{
 		// Starts GET action
-		SIM_SERIAL.println("AT+HTTPACTION=0");
+		SIM_SERIAL.println(F("AT+HTTPACTION=0"));
 		httpState = HTTP_CONNECTING;
 		m_bytesRecv = 0;
 		m_checkTimer = millis();
@@ -1428,7 +1423,7 @@ bool httpConnect(const char* url, const char* args)
 
 bool httpConnectStr(const char* url, String args)
 {
-	SIM_SERIAL.print("AT+HTTPPARA=\"URL\",\"");
+	SIM_SERIAL.print(F("AT+HTTPPARA=\"URL\",\""));
 	SIM_SERIAL.print(url);
 	if (args)
 	{
@@ -1440,7 +1435,7 @@ bool httpConnectStr(const char* url, String args)
 	delay(500);
 	if (sendCommand(0))
 	{
-		SIM_SERIAL.println("AT+HTTPACTION=0");
+		SIM_SERIAL.println(F("AT+HTTPACTION=0"));
 		httpState = HTTP_CONNECTING;
 		m_bytesRecv = 0;
 		m_checkTimer = millis();
@@ -1470,7 +1465,7 @@ byte httpIsConnected()
 
 void httpRead()
 {
-	SIM_SERIAL.println("AT+HTTPREAD");
+	SIM_SERIAL.println(F("AT+HTTPREAD"));
 	httpState = HTTP_READING;
 	m_bytesRecv = 0;
 	m_checkTimer = millis();
