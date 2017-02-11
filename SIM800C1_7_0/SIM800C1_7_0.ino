@@ -6,7 +6,6 @@
 
 */
 
-//#include "SIM800.h"
 #include <SoftwareSerial.h>
 #include <OneWire.h> 
 #include <DallasTemperature.h>
@@ -85,8 +84,23 @@ int Address_interval   = 200;                           // Адрес в EEPROM 
 int Address_SMS_center = 220;                           // Адрес в EEPROM SMS центра
 
 char data_tel[16];                                      // Буфер для номера телефоа
+byte ret        = 6;                                    // Признак "0" успешного подключения к интернету
+byte operator_Num = 0;                                  // Порядковый номер оператора
+char txt_Ok[]   = "OK\r";
+char txt_ERROR[]= "ERROR\r";
 
 // ++++++++++++++ Переменные библиотеки ++++++++++++++++++++
+
+
+
+typedef enum {
+	HTTP_DISABLED = 0,
+	HTTP_READY,
+	HTTP_CONNECTING,
+	HTTP_READING,
+	HTTP_ERROR,
+} HTTP_STATES;
+
 
 #define DEBUG Serial
 
@@ -96,7 +110,7 @@ String apn = "";
 String user = "";
 String pwd = "";
 String cont = "";
-char buffer[100];
+char buffer[140];
 byte httpState;
 String val = "";
 
@@ -113,7 +127,7 @@ bool getOperatorName();
 bool getIMEI();
 
 bool getSIMCCID();
-bool getGMR();
+
 bool ping(const char* url);
 // check for incoming SMS
 bool checkSMS();
@@ -145,13 +159,13 @@ byte sendCommand(const char* cmd, const char* expected1, const char* expected2, 
 bool available();
 void cleanStr(String & str);
 
+byte checkbuffer(const char* expected1, const char* expected2 = 0, unsigned int timeout = 2000);  // По умолчанию ожидание 2 секунды
+void purgeSerial();
 
 
 
 
-
-//------------------------------------------------------------------
-
+//===============================================================================================================================
 
 
 uint8_t oneWirePins[]={16, 17, 4};                      //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
@@ -227,42 +241,44 @@ void flash_time()                                      // Программа о�
  
 void sendTemps()
 {
-	//Serial.println("\nTemp");
+	Serial.println(("\nSend the data to the site"));
 	sensor1.requestTemperatures();
 	sensor2.requestTemperatures();
 	sensor3.requestTemperatures();
 	float t1 = sensor1.getTempCByIndex(0);
-	float t2 = sensor2.getTempCByIndex(0);
+	float t2 = sensor2.getTempCByIndex(0); 
 	float t3 = sensor3.getTempCByIndex(0);
 	float tsumma = t1 + t2 + t3 + 88.88;
-	int signal = 15;// gprs.getSignalQuality();
+	int signal = getSignalQuality();
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
 
 	String toSend = "t1=" + imei + DELIM + "17/2/1,21:2:28%2000" DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
 
-	//Serial.println(toSend);
+	Serial.println(toSend);
 
 	Serial.println(toSend.length());
 
 	int count_send = 0;
-	while (1)
-	{
-		//if (gprs_send(toSend))
-		//{
-		//	return;
-		//}
-		//else
-		//{
-		//	count_send++;
-		//	Serial.print("Attempt to transfer data .."); Serial.println(count_send);
-		//	if (count_send>5) resetFunc();                                // 5 попыток. Что то пошло не так с интернетом
-		//	//ping();
-		//}
-		//delay(6000);
-	}
+	gprs_send(toSend);
 
-}
+	//while (1)
+	//{
+	//	if (gprs_send(toSend))
+	//	{
+	//		return;
+	//	}
+	//	else
+	//	{
+	//		count_send++;
+	//		Serial.print("Attempt to transfer data .."); Serial.println(count_send);
+	//		if (count_send>5) resetFunc();                                // 5 попыток. Что то пошло не так с интернетом
+	//		//ping();
+	//	}
+	//	delay(6000);
+	//}
+
+} 
 
 
 String formEnd() 
@@ -280,160 +296,200 @@ String formEnd()
 
 bool gprs_send(String data) 
 {
- // con.print(F("Requesting .. Wait"));      
- // int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
- // for (;;)                                               // Бесконечный цикл пока не наступит, какое то состояние для выхода
- // {
-	//  if (gprs.httpInit()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
-	//  con.print(">");
-	//  con.println(gprs.buffer);                          // Не получилось, ("ERROR") 
-	//  String stringError = gprs.buffer;
-	//  if (stringError.indexOf(F("ERROR")) > -1)          
-	//  {
-	//	  con.println(F("\nNo internet connection"));
-	//	  delay(1000);
-	//  }
-	//  gprs.httpUninit();                                 // Не получилось, разединить и  попробовать снова 
-	//  delay(1000);                                       // Подождать секунду.
-	//  count_init++;
-	//  if(count_init > 60)  resetFunc();                 //вызываем reset при отсутствии доступа к серверу в течении 60 секунд
- // }
+	con.print(F("Requesting .. Wait"));   
+	ret = connect_GPRS();                                   // Подключение к интернету с применением стека HTTP
+	Serial.print(F("ret - ")); Serial.print(ret);
+	int count_init = 0;
 
- // if (ssl_set == true)
- // {
-	//  if (gprs.HTTP_ssl(true))
-	//  {
-	//	  con.println(F("\nHTTP_ssl: set ON successfully!"));
-	//  }
-	//  else
-	//  {
-	//	  con.println(F("\nHTTP_ssl: set ON false!"));
-	//  }
- // }
- // else
- // {
-	//  if (gprs.HTTP_ssl(false))
-	//  {
-	//	  con.println(F("\nHTTP_ssl: set OFF successfully!"));
-	//  }
-	//  else
-	//  {
-	//	  con.println(F("\nHTTP_ssl: set OFF false!"));
-	//  }
-
- // }
- //
- // if (ssl_set == true)
- // {
-	//  con.print(urlssl);
-	//  con.print('?');
-	//  con.println(data);
-
-	//  gprs.httpConnectStr(urlssl, data);
- // }
- // else
- // {
-	//  con.print(url1);
-	//  con.print('?');
-	//  con.println(data);
-	//  gprs.httpConnectStr(url1, data);
- // }
- // count++;
- // send_ok = false;
- //   
- // while (gprs.httpIsConnected() == 0) 
- // {
-	//con.write('.');
-	//for (byte n = 0; n < 25 && !gprs.available(); n++) 
+	//if (check_connect(ret))
 	//{
-	//  delay(15);
+	// //setup_ok = true;
 	//}
- // }
- // if (gprs.httpState == HTTP_ERROR) 
- // {
-	//con.println(F("Connect error"));
-	//	errors++;
-	//	errorAllmem();
-	//
-	//if (errors > 20)
-	//  {
-	//		con.println(F("Errors exceeded"));
-	//		delay(3000);
-	//		resetFunc();          // вызываем reset после 20 ошибок
-	//  }
-	//delay(3000);
-	//return; 
- // }
- // 
- // con.println();
- // gprs.httpRead();
- // int ret;
- // while ((ret = gprs.httpIsRead()) == 0)  //  Ожидаем сообщение HTTP
- // {
-	//// может сделать что-то здесь, во время ожидания
- // }
+	//else
+	//{
+	//   count_init++;             // Увеличить счетчик количества попыток 
+	//}
 
- // if (gprs.httpState == HTTP_ERROR)        // Ответ не пришел
- // {
-	//errors++;
-	//errorAllmem();
-	//if (errors > 20)
-	//  {
-	//		con.println(F("The number of server errors exceeded 20"));
-	//		delay(3000);
-	//		resetFunc();         // вызываем reset после 20 ошибок
-	//  }
-	//delay(3000);
-	//return; 
- // } 
+ // int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
+  for (;;)                                               // Бесконечный цикл пока не наступит, какое то состояние для выхода
+  {
+	  if (httpInit()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
+	  con.print(">");
+	  con.println(buffer);                          // Не получилось, ("ERROR") 
+	  String stringError = buffer;
+	  if (stringError.indexOf(F("ERROR")) > -1)          
+	  {
+		  con.println(F("\nNo internet connection"));
+		  delay(1000);
+	  }
+	   httpUninit();                                 // Не получилось, разединить и  попробовать снова 
+	  delay(1000);                                       // Подождать секунду.
+	  count_init++;
+	  if(count_init > 60)  resetFunc();                 //вызываем reset при отсутствии доступа к серверу в течении 60 секунд
+  }
 
- // // Теперь мы получили сообщение от сайта.
- //  con.print(F("[Payload] "));                        
- //  con.println(gprs.buffer);
- //  String val = gprs.buffer;                            // Получить строку данных с сервера
- // // gprs.httpUninit();                                    // Разорвать соединение
+  if (ssl_set == true)
+  {
+	  if (HTTP_ssl(true))
+	  {
+		  con.println(F("\nHTTP_ssl: set ON successfully!"));
+	  }
+	  else
+	  {
+		  con.println(F("\nHTTP_ssl: set ON false!"));
+	  }
+  }
+  else
+  {
+	  if (HTTP_ssl(false))
+	  {
+		  con.println(F("\nHTTP_ssl: set OFF successfully!"));
+	  }
+	  else
+	  {
+		  con.println(F("\nHTTP_ssl: set OFF false!"));
+	  }
 
- //  int p0[5];
- // // String val = "&010145&0202+79162632701&0303+79162632701&0400123456789#";  // Пример строки, принятой с сервера
- //  send_ok = true;                                                             // Команда принята успешно
+  }
 
- //  if (val.indexOf("&") > -1)              // Определить адреса (позиции) команд в строке 
- //  {
-	//   p0[0] = val.indexOf("&01");         // Адрес 1 команды
-	//   p0[1] = val.indexOf("&02");         // Адрес 2 команды
-	//   p0[2] = val.indexOf("&03");         // Адрес 3 команды
-	//   p0[3] = val.indexOf("&04");         // Адрес 4 команды
-	//   p0[4] = val.indexOf('#');           // Адрес конца команд
- //  }
+  //while (1)
+  //{
+  //	if (gprs_send(toSend))
+  //	{
+  //		return;
+  //	}
+  //	else
+  //	{
+  //		count_send++;
+  //		Serial.print("Attempt to transfer data .."); Serial.println(count_send);
+  //		if (count_send>5) resetFunc();                                // 5 попыток. Что то пошло не так с интернетом
+  //		//ping();
+  //	}
+  //	delay(6000);
+  //}
 
- //  for (int i=0;i<4;i++)
- //  {
-	//  String comm = val.substring(p0[i]+3, p0[i]+5);          // Выделить строку с номером команды
-	//  int comm1 = comm.toInt(); 
-	//  Serial.println(comm1);
-	//  comm = val.substring(p0[i] + 5, p0[i+1]);               // Выделить строку с данными
-	//  int len_str = comm.length();
-	//  comm[len_str] = '\0';
-	//  Serial.println(comm);
+ 
+  if (ssl_set == true)
+  {
+	  con.print(urlssl);
+	  con.print('?');
+	  con.println(data);
 
-	//  run_command(comm1, comm);                               // Последовательно выполнить все команды
+	  httpConnectStr(urlssl, data);
+  }
+  else
+  {
+	  con.print(url1);
+	  con.print('?');
+	  con.println(data);
+	  httpConnectStr(url1, data);
+  }
 
- //  }
+  
+  count++;
+  send_ok = false;
+    
+  while (httpIsConnected() == 0) 
+  {
+	con.write('.');
+	for (byte n = 0; n < 25 && !available(); n++) 
+	{
+	  delay(15);
+	}
+  }
+  if (httpState == HTTP_ERROR) 
+  {
+	con.println(F("Connect error"));
+		errors++;
+		errorAllmem();
+	
+	if (errors > 20)
+	  {
+			con.println(F("Errors exceeded"));
+			delay(3000);
+			resetFunc();          // вызываем reset после 20 ошибок
+	  }
+	delay(3000);
+	return; 
+  }
+  
+  con.println();
+  httpRead();
+  int ret;
+  while ((ret = httpIsRead()) == 0)  //  Ожидаем сообщение HTTP
+  {
+	// может сделать что-то здесь, во время ожидания
+  }
 
- // // Показать статистику
- // con.print(F("Total: "));                                   
- // con.print(count);
- // if (errors)                                           // Если есть ошибки - сообщить
- // {
-	//con.print(F(" Errors: "));                                
-	//con.print(errors);
- // }
- // con.println();
- // Serial.print("Inteval: ");
- // Serial.println(interval);
- // gprs.httpUninit();                                    // Разорвать соединение
+  if (httpState == HTTP_ERROR)        // Ответ не пришел
+  {
+	errors++;
+	errorAllmem();
+	if (errors > 20)
+	  {
+			con.println(F("The number of server errors exceeded 20"));
+			delay(3000);
+			resetFunc();         // вызываем reset после 20 ошибок
+	  }
+	delay(3000);
+	return; 
+  } 
 
- // return send_ok;
+
+
+
+
+
+
+
+
+  // Теперь мы получили сообщение от сайта.
+   con.print(F("[Payload] "));                        
+   con.println(buffer);
+   String val = buffer;                            // Получить строку данных с сервера
+  // gprs.httpUninit();                                    // Разорвать соединение
+
+   int p0[5];
+  // String val = "&010145&0202+79162632701&0303+79162632701&0400123456789#";  // Пример строки, принятой с сервера
+   send_ok = true;                                                             // Команда принята успешно
+
+   if (val.indexOf("&") > -1)              // Определить адреса (позиции) команд в строке 
+   {
+	   p0[0] = val.indexOf("&01");         // Адрес 1 команды
+	   p0[1] = val.indexOf("&02");         // Адрес 2 команды
+	   p0[2] = val.indexOf("&03");         // Адрес 3 команды
+	   p0[3] = val.indexOf("&04");         // Адрес 4 команды
+	   p0[4] = val.indexOf('#');           // Адрес конца команд
+   }
+
+   for (int i=0;i<4;i++)
+   {
+	  String comm = val.substring(p0[i]+3, p0[i]+5);          // Выделить строку с номером команды
+	  int comm1 = comm.toInt(); 
+	  Serial.println(comm1);
+	  comm = val.substring(p0[i] + 5, p0[i+1]);               // Выделить строку с данными
+	  int len_str = comm.length();
+	  comm[len_str] = '\0';
+	  Serial.println(comm);
+
+	  run_command(comm1, comm);                               // Последовательно выполнить все команды
+
+   }
+
+  // Показать статистику
+  con.print(F("Total: "));                                   
+  con.print(count);
+  if (errors)                                           // Если есть ошибки - сообщить
+  {
+	con.print(F(" Errors: "));                                
+	con.print(errors);
+  }
+  con.println();
+  Serial.print("Inteval: ");
+  Serial.println(interval);
+  httpUninit();                                    // Разорвать соединение
+
+   return send_ok;
 }
 
 void run_command(int command, String data)
@@ -576,9 +632,8 @@ void check_blink()
 
 	wdt_reset();
 	
-	metering_NETLIGHT = current_M - metering_temp; // переделать для уменьшения
+	metering_NETLIGHT = current_M - metering_temp;                            // 
 	metering_temp = current_M;
-	//Serial.println(metering_NETLIGHT);
 	if (metering_NETLIGHT > 3055 && metering_NETLIGHT < 3070)
 	{
 		state_device = 2;                                                     // 2 - Зарегистрировано в сети
@@ -592,20 +647,18 @@ void check_blink()
 	}
 	else if (metering_NETLIGHT > 855 && metering_NETLIGHT < 870)
 	{
-		state_device = 1;                // 1 Не зарегистрирован в сети, поиск
+		state_device = 1;                                                     // 1 Не зарегистрирован в сети, поиск
 		count_blink1++;
 		if (count_blink1 > 120) 
 		{
 			state_device = 0;
 			MsTimer2::stop();                                                 // Включить таймер прерывания
-			resetFunc();                   // Что то пошло не так с регистрацией на станции
+			resetFunc();                                                      // Что то пошло не так с регистрацией на станции
 		}
 	}
 	else if (metering_NETLIGHT > 350 && metering_NETLIGHT < 370)
 	{
-		state_device = 3;                // 3 - GPRS связь установлена
-
-                                      
+		state_device = 3;                                                     // 3 - к интернету подключен
 	}
 }
 
@@ -674,7 +727,7 @@ void start_init()
 		{
 			con.print(F("\nIMEI:"));
 			imei = buffer;                 // Отключить на время отладки
-			//gprs.cleanStr(imei);                // Отключить на время отладки
+			cleanStr(imei);                // Отключить на время отладки
 			con.println(imei);
 		}
 		else
@@ -689,7 +742,7 @@ void start_init()
 		{
 			con.print(F("\nSIM CCID:"));
 			SIMCCID = buffer;                 //  
-			//cleanStr(SIMCCID);                //  
+			cleanStr(SIMCCID);                //  
 			con.println(SIMCCID);
 		}
 		else
@@ -722,40 +775,77 @@ void start_init()
 			if (state_device == 2)                                                // Проверить аппаратно подключения модема к оператору
 			{
 				delay(2000);
-			/*	do
-				{*/
-					int signal = 16;// gprs.getSignalQuality();
-					Serial.print(F("rssi ..")); Serial.println(signal);
-					delay(1000);
-					Serial.println(F("GPRS connect .."));
-					byte ret = connect_GPRS();                                              // Подключение к GPRS
-					Serial.print(F("ret - ")); Serial.print(ret);
-					if (ret == 0)
-					{
-						while (state_device != 3)  // Ожидание регистрации в сети
-						{
-							delay(50);
-							// Уточнить программу перезапуска  если модуль не зарегистрировался не зарегистрировался через 60 секунд
-						}
-						Serial.println(F("\nGPRS connect OK!+"));
-						setup_ok = true;
-					}
-					else           // Модуль не подключиля к интернету
-					{
-						count_init++;             // Увеличить счетчик количества попыток 
-						Serial.println(F("Failed init GPRS"));
-						delay(5000);
-						if (state_device == 3)      // Модуль одумался и все таки подключиля к интернету
-						{
-							Serial.println(F("GPRS connect OK!-"));
-							setup_ok = true;
-						}
-					}
-				//} while (!setup_ok);             // 
+				/*	do
+					{*/
+				int signal = getSignalQuality();
+				Serial.print(F("rssi ..")); Serial.println(signal);
+
+				Serial.print(F("Init GPRS.. "));// Serial.println(n);
+
+												//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[48])));
+												//sendCommand(bufcom, 20000);                  // sendCommand("AT+CIPSHUT", 20000);
+
+												//if (!sendCommand("AT+CGATT=1")) return 2;    // Регистрация в GPRS
+
+												//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));
+				//if (!sendCommand("AT+CGATT?")) return 2;   // if (!sendCommand("AT+CGATT?"))     // Регистрация в GPRS
+
+														   //strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[10])));
+				//if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\"")) return 3;   // if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))     return 3;// 
+
+				getOperatorName();
+
+				delay(1000);
+				Serial.println(F("GPRS connect .."));
+
+				//ret = connect_GPRS();                                              // Подключение к GPRS
+				//Serial.print(F("ret - ")); Serial.print(ret);
+
+				//if (check_connect(ret))
+				//{
+					setup_ok = true;
+				//}
+				//else
+				//{
+				//   count_init++;             // Увеличить счетчик количества попыток 
+			 //   }
+			  //} while (!setup_ok);             // 
 			}
 		}
 	} while (count_init > 30 || setup_ok == false);    // 30 попыток зарегистрироваться в сети
 }
+
+
+bool check_connect(byte ret)
+{
+	if (ret == 0)
+	{
+		while (state_device != 3)  // Ожидание регистрации в сети
+		{
+			delay(50);
+			// Уточнить программу перезапуска  если модуль не зарегистрировался не зарегистрировался через 60 секунд
+		}
+		Serial.println(F("\nGPRS connect OK!+"));
+		return  true;
+	}
+	else           // Модуль не подключиля к интернету
+	{
+		//count_init++;             // Увеличить счетчик количества попыток 
+		Serial.println(F("Failed init GPRS"));
+		delay(5000);
+		if (state_device == 3)      // Модуль одумался и все таки подключиля к интернету
+		{
+			Serial.println(F("GPRS connect OK!-"));
+			return true;
+		}
+	}
+	return false;
+}
+
+
+
+
+
 
 void setup()
 {
@@ -799,10 +889,9 @@ void setup()
 	wdt_enable(WDTO_8S);                               // Для тестов не рекомендуется устанавливать значение менее 8 сек.
 	MsTimer2::set(300, flash_time);                    // 30ms период таймера прерывани
 	start_init();
-	
 	int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
 
-	//for (;;)                                               // Бесконечный цикл пока не наступит, какое то состояние для выхода
+	//for (;;)                                             // Бесконечный цикл пока не наступит, какое то состояние для выхода
 	//{
 	//	if (gprs.httpInit()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
 	//	con.print(">");
@@ -855,20 +944,15 @@ void setup()
 	con.print(F("\nfree memory: "));
 	con.println(freeRam());
 
-	//if (gprs.val.indexOf("REC READ") > -1)               //если обнаружена старая  СМС 
-	//{
-	//	if (gprs.deleteSMS(0))
-	//	{
-	//		con.println(F("All SMS delete"));                    // 
-	//	}
-	//}
-
-	delay(2000);
+//	delay(2000);
+	//ping();
+	con.println(F("\nSIM800 setup end"));
 	MsTimer2::stop();
 	setColor(COLOR_GREEN);                                      // Включить зеленый светодиод
-	ping();
-	con.println(F("\nSIM800 setup end"));
+	delay(2000);
 	sendTemps();
+
+//	delay(2000);
 	time = millis();                                              // Старт отсчета суток
 	
 }
@@ -926,21 +1010,21 @@ void loop()
  // }
   
 	unsigned long currentMillis = millis();
-	if(!time_set)                                                               // 
-	{
-		 EEPROM.get( Address_interval, interval);                               // Получить интервал из EEPROM Address_interval
-	}
-	if ((unsigned long)(currentMillis - previousMillis) >= interval*1000) 
-	{
-		con.print(F("Interval sec:"));                                       
-		con.println((currentMillis-previousMillis)/1000);
-		setColor(COLOR_BLUE);
-		previousMillis = currentMillis;
-		sendTemps();
-		setColor(COLOR_GREEN);
-		con.print(F("\nfree memory: "));                                 
-		con.println(freeRam());
-	}
+	//if(!time_set)                                                               // 
+	//{
+	//	 EEPROM.get( Address_interval, interval);                               // Получить интервал из EEPROM Address_interval
+	//}
+	//if ((unsigned long)(currentMillis - previousMillis) >= interval*1000) 
+	//{
+	//	con.print(F("Interval sec:"));                                       
+	//	con.println((currentMillis-previousMillis)/1000);
+	//	setColor(COLOR_BLUE);
+	//	previousMillis = currentMillis;
+	//	sendTemps();
+	//	setColor(COLOR_GREEN);
+	//	con.print(F("\nfree memory: "));                                 
+	//	con.println(freeRam());
+	//}
 
 	currentMillis = millis();
 
@@ -950,7 +1034,7 @@ void loop()
 		con.println((currentMillis - previousPing) / 1000);
 		setColor(COLOR_BLUE);
 		previousPing = currentMillis;
-	//	ping();
+		//ping();
 		setColor(COLOR_GREEN);
 	}
 
@@ -1021,7 +1105,7 @@ bool getIMEI()
 {
 	//delay(1000);
 
-	if (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1)               // (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
+	if (sendCommand("AT+GSN", txt_Ok, txt_ERROR) == 1)               // (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
 	{
 		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
 												 //на которую указывает str1, строки, указанной str2 (исключая завершающий нулевой символ).
@@ -1047,7 +1131,7 @@ bool getSIMCCID()
 {
 	/*strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[20])));
 	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[33])));*/
-	if (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)             // (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
+	if (sendCommand("AT+CCID", txt_Ok, txt_ERROR) == 1)             // (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
 	{
 		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
 												 //Если совпадений не обнаружено, возвращается NULL.
@@ -1066,7 +1150,19 @@ bool getSIMCCID()
 	return false;
 }
 
-
+int getSignalQuality()
+{
+    sendCommand("AT+CSQ");
+	char *p = strstr(buffer, "CSQ:");
+	if (p) {
+		int n = atoi(p + 5);
+		if (n == 99 || n == -1) return 0;
+		return n;
+	}
+	else {
+		return 0;
+	}
+}
 
 uint8_t getNetworkStatus()
 {
@@ -1097,8 +1193,8 @@ uint8_t getNetworkStatus()
 
 				if (mode == '1' || mode == '5')
 				{
-					sendCommand("AT+CSQ", 1000); 	//sendCommand("AT+CSQ",1000); 
-					char *p = strstr(buffer, "CSQ: ");                           //
+					//sendCommand("AT+CSQ", 1000); 	//sendCommand("AT+CSQ",1000); 
+					//char *p = strstr(buffer, "CSQ: ");                           //
 					return mode;
 				}
 			}
@@ -1108,133 +1204,51 @@ uint8_t getNetworkStatus()
 }
 
 
-
 byte connect_GPRS()
 {
 	//for (byte n = 0; n < 30; n++)
 	//{
-		Serial.print(F("Init GPRS.. "));// Serial.println(n);
 
-		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[48])));
-		//sendCommand(bufcom, 20000);                  // sendCommand("AT+CIPSHUT", 20000);
+		if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\"")) return 1;                      // if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))     return 3;// 
 
-		//if (!sendCommand("AT+CGATT=1")) return 2;    // Регистрация в GPRS
-
-		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));
-		if (!sendCommand("AT+CGATT?")) return 2;   // if (!sendCommand("AT+CGATT?"))     // Регистрация в GPRS
-
-		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[10])));
-		if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\"")) return 3;   // if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))     return 3;// 
-
-		getOperatorName();
-		String OperatorName = buffer;
-		Serial.println(buffer);
-		//cleanStr(OperatorName);
-		
-		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[12]))); //"MTS"
-		if (OperatorName.indexOf("MTS") > -1)
-		{
-			//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[11])));
-			//apn = bufcom;
-			apn  = "internet.mts.ru";
-			//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[13])));
-			//user = bufcom;
-			//pwd = bufcom;
-			user = "mts";
-			pwd  = "mts";
-			//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[11])));
-			//cont = bufcom;
-			cont = "internet.mts.ru";
-			//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[12]))); //"MTS"
-			//															  //Serial.println(bufcom);
-		}
-		else if (OperatorName.indexOf("Bee") > -1)
-		{
-			////Serial.println(buffer);                                        //Serial.println("Beeline");
-			//strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[15])));
-			//apn = combuf1;                                                 //apn = "internet.beeline.ru";
-			//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[16])));
-			//user = bufcom;                                                 //user = "beeline";
-			//pwd = bufcom;                                                  //pwd = "beeline";
-			//cont = combuf1;                                                //cont = "internet.beeline.ru";
-			//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[14])));
-			////Serial.println(bufcom);                                        //Serial.println("Beeline");
-		}
-		else if (OperatorName.indexOf("Mega") > -1)
-		{
-			//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[17])));
-			//strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[18])));
-			//apn = combuf1;	                                                   //apn = "internet";
-			//user = "";
-			//pwd = "";
-			//cont = combuf1;	                                                   //cont = "internet";
-																			   //Serial.println(bufcom);                                            //Serial.println("MEGAFON");
-		}
-
-		//  Настройки для операторов:
-		//  МТС - APN internet.mts.ru Имя пользователя и пароль mts , номер дозвона *99#
-		//  МЕГАФОН - APN internet Имя пользователя и пароль internet , номер дозвона *99#
-		//  БИЛАЙН - APN internet.beeline.ru Имя пользователя и пароль beeline , номер дозвона *99# - для Сим карты от телефона
-		//  БИЛАЙН - APN home.beeline.ru Имя пользователя и пароль beeline , номер дозвона *99# - для специальной сим для модема
-
-		//  AT+CGDCONT=1,"IP","home.beeline.ru" и сохраняем. 
-		//  для сим от телефона Билайн AT+CGDCONT=1,"IP","internet.beeline.ru" 
-		//  для Мегафона AT+CGDCONT=1,"IP","internet"
-		//  для МТС AT+CGDCONT=1,"IP","internet.mts.ru"
-
-		
-		
-		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[22])));
 		SIM_SERIAL.print(F("AT+SAPBR=3,1,\"APN\",\""));                                       //
 		SIM_SERIAL.print(apn);
 		SIM_SERIAL.println('\"');
-		if (!sendCommand(0))   return 4;
+		if (!sendCommand(0))   return 2;
 
-		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[23])));
 		SIM_SERIAL.print(F("AT+SAPBR=3,1,\"USER\",\""));                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"USER\",\"");
 		SIM_SERIAL.print(user);
 		SIM_SERIAL.println('\"');
-		if (!sendCommand(0))   return 4;
+		if (!sendCommand(0))   return 2;
 
-		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[24])));
 		SIM_SERIAL.print(F("AT+SAPBR=3,1,\"PWD\",\""));                                       //SIM_SERIAL.print("AT+SAPBR=3,1,\"PWD\",\"");
 		SIM_SERIAL.print(pwd);
 		SIM_SERIAL.println('\"');
-		if (!sendCommand(0))   return 4;
+		if (!sendCommand(0))   return 2;
 
-		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[25])));
 		SIM_SERIAL.print(F("AT+CGDCONT=1,\"IP\",\""));                                      //SIM_SERIAL.print("AT+CGDCONT=1,\"IP\",\"");
 		SIM_SERIAL.print(cont);
 		SIM_SERIAL.println('\"');
-		if (!sendCommand(0))   return 4;
-		
-	//	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[26])));
-		sendCommand("AT+SAPBR=1,1", 20000);                                    //sendCommand("AT+SAPBR=1,1", 10000);                     // установка GPRS связи
-		//delay(20000);
-		while (state_device != 3)  // Ожидание регистрации в сети
+		if (!sendCommand(0))   return 2;
+	
+		sendCommand("AT+SAPBR=1,1", 20000);                                                 // установка GPRS связи
+		while (state_device != 3)                                                           // Ожидание регистрации в сети
 		{
 			delay(50);
 			// Уточнить программу перезапуска  если модуль не зарегистрировался не зарегистрировался через 60 секунд
 		}
-																			   //strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[27])));
-		if (sendCommand("AT+SAPBR=2,1", 70000)) return 0;       //                           //sendCommand("AT+SAPBR=2,1", 10000);                     // полученный IP адрес
-/*
-		delay(30000);	*/										////return 0;                                                      // !!! переделать возврат Успешная регистрация
-														//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[48])));
-														//sendCommand(bufcom, 20000);                  // sendCommand("AT+CIPSHUT", 20000);
+																			
+		if (sendCommand("AT+SAPBR=2,1", 70000)) return 0;                                   // полученный IP адрес
+	
 	//}
-	return 5;                                                          // Неуспешная регистрация
+	return 3;                                                                               // Неуспешная регистрация
 }
 
 
 
 bool getOperatorName()
 {
-	// display operator name
-	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[31])));
-	//strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[33])));
-
-	if (sendCommand("AT+COPS?", "OK\r", "ERROR\r") == 1)   // if (sendCommand("AT+COPS?", "OK\r", "ERROR\r") == 1) 
+	if (sendCommand("AT+COPS?", txt_Ok, txt_ERROR) == 1)   // if (sendCommand("AT+COPS?", "OK\r", "ERROR\r") == 1) 
 	{
 		char *p = strstr(buffer, ",\"");
 		if (p)
@@ -1243,6 +1257,37 @@ bool getOperatorName()
 			char *s = strchr(p, '\"');
 			if (s) *s = 0;
 			strcpy(buffer, p);
+
+			String OperatorName = buffer;
+			Serial.println(buffer);
+
+			if (OperatorName.indexOf("MTS") > -1)
+			{
+				apn = "internet.mts.ru";
+				user = "mts";
+				pwd = "mts";
+				cont = "internet.mts.ru";
+				Serial.println(F("MTS"));
+				operator_Num = 0;                                  // Порядковый номер оператора МТС
+			}
+			else if (OperatorName.indexOf("Bee") > -1)
+			{
+				apn = "internet.beeline.ru";
+				user = "beeline";
+				pwd = "beeline";
+				cont = "internet.beeline.ru";
+				Serial.println(F("Beeline"));
+				operator_Num = 1;                                  // Порядковый номер оператора Beeline
+			}
+			else if (OperatorName.indexOf("Mega") > -1)
+			{
+				apn = "internet";
+				user = "";
+				pwd = "";
+				cont = "internet";
+				Serial.println(F("MEGAFON"));     
+				operator_Num = 2;                                  // Порядковый номер оператора Megafon
+			}
 			return true;
 		}
 	}
@@ -1250,91 +1295,84 @@ bool getOperatorName()
 }
 
 
-
-
-
 bool ping(const char* url)
 {
-	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));     //sendCommand("AT+CGATT?", 1000);  Проверить подключение к сервису GPRS
-	//sendCommand("AT+CGATT?", 1000);                                       // Переделать, добавить проверку подключения к интернету
-	//delay(100);
-
-	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[7])));     //"AT+CREG?"  проверим регистрацию сети
-	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[33])));    // "ERROR\r"
-	if (sendCommand("AT+CREG?", "OK\r", "ERROR\r") == 1)                   // в сети зарегистрированы
+	int count_connect = 0;                                               // Счетчик количества попыток проверки подключения Network registration (сетевому оператору)
+	for (;;)                                                          // Бесконечный цикл пока не наступит, какое то состояние для выхода
 	{
-		//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[9])));     //"AT+CGATT?"  проверим GPRS аттач
-																		 //strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[33])));    // "ERROR\r"
-
-		if (sendCommand("AT+CGATT?", "OK\r", "ERROR\r") == 1)                   // Attach or Detach from GPRS Service
+		if (sendCommand("AT+CREG?", txt_Ok, txt_ERROR) == 1) break;   // Все нормально, в сети оператора зарегистрированы , Прервать попытки и выйти из цикла
+		con.print(">");
+		con.println(buffer);                                          // Не получилось, ("ERROR") 
+		String stringError = buffer;
+		if (stringError.indexOf(F("ERROR")) > -1)
 		{
-
-			//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
-			//sendCommand("AT+CIFSR", 3000);                                       //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
-			//delay(1000);
-
-		//	strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[54])));    // SIM_SERIAL->print("AT+CIPPING=\"");
-			SIM_SERIAL.print(F("AT+CIPPING=\""));                                       // SIM_SERIAL->print("AT+CIPPING=\"");
-			SIM_SERIAL.print(url);
-			SIM_SERIAL.println('\"');
-
-			//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[55])));
-			//strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[50])));
-			delay(10000);
-
-			// Ожидаем ответ сайта на ping 
-			if (sendCommand(0, "+CIPPING", "ERROR", 6000) == 1) // (sendCommand(0, "+CIPPING", "ERROR",3000) == 1)
-			{
-				return true;
-			}
-
-			//sendCommand(bufcom);                             // sendCommand("AT+CSQ");
-
-
-
+			con.println(F("\nNo GPRS connection"));
+			delay(1000);
 		}
-		/*	else
+		delay(1000);                                                  // Подождать секунду.
+		count_connect++;
+		if (count_connect > 60)  resetFunc();                         //вызываем reset при отсутствии доступа к сетевому оператору в течении 60 секунд
+	}
+	delay(2000);
+	count_connect = 0;                                                // Счетчик количества попыток проверки подключения Attach from GPRS service
+	for (;;)                                                          // Бесконечный цикл пока не наступит, какое то состояние для выхода
+	{
+		if (sendCommand("AT+CGATT?", txt_Ok, txt_ERROR) == 1) break;  // Все нормально, модуль подключен к GPRS service , Прервать попытки и выйти из цикла
+		con.print(">");
+		con.println(buffer);                                          // Не получилось, ("ERROR") 
+		String stringError = buffer;
+		if (stringError.indexOf(F("ERROR")) > -1)
 		{
-
-
-
-		}*/
-
+			con.println(F("\nNo GPRS connection"));
+			delay(1000);
+		}
+		delay(1000);                                                  // Подождать секунду.
+		count_connect++;
+		if (count_connect > 60)  resetFunc();                          //вызываем reset при отсутствии доступа к  GPRS service в течении 60 секунд
 	}
 
+	    //++++++++++++++++ Проверки пройдены, подключаемся к интернету по протоколу TCP для проверки ping ++++++++++++
 
+		switch (operator_Num)                                          // Определяем вариант подключения в зависимости от оператора
+		{
+			case 0:
+				sendCommand("AT+CSTT=\"internet.mts.ru\"", 1000);      //Настроить точку доступа MTS. При повторных пингах будет выдавать ошибку. Это нормально потому что данные уже внесены.
+			    break;
+			case 1:
+				sendCommand("AT+CSTT=\"internet.beeline.ru\"", 1000);  //Настроить точку доступа  beeline
+				break;
+			case 2:
+				sendCommand("AT+CSTT=\"internet\"", 1000);             //Настроить точку доступа Megafon
+				break;
+		}
 
+		delay(2000);
 
+		count_connect = 0;                                             // Счетчик количества попыток проверки подключения к интернету
 
+		sendCommand("AT+CIICR", 10000);                                // Поднимаем протокол Bring Up Wireless Connection with GPRS  
+		while (state_device != 3)                                      // Ожидание подключения к интернету
+		{
+			delay(50);
+			count_connect++;
+			if (count_connect > 3000)  resetFunc();                     //вызываем reset при отсутствии доступа к  интернету
+		}
 
+		sendCommand("AT+CIFSR", 6000);                                  //Получить локальный IP-адрес
+		delay(1000);
+		SIM_SERIAL.print("AT+CIPPING=\"");                              // Отправить команду ping
+		SIM_SERIAL.print(url);
+		SIM_SERIAL.println('\"');
+	//	delay(10000);
 
-
-	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[51])));
-	//sendCommand(bufcom, 1000);      //
-	//sendCommand("AT+CSTT=\"internet.mts.ru\"", 1000);//Настроить точку доступа ????
-	/*SIM_SERIAL->print("AT+CSTT=\"");
-	SIM_SERIAL->print(apn);
-	SIM_SERIAL->print('\"');*/
-	//delay(1000);
-	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[52])));
-	//sendCommand(bufcom, 1000);                  // sendCommand("AT+CIICR", 1000); Установить GPRS-соединение   ????   
-	//delay(1000);
-	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[53])));
-	//sendCommand(bufcom, 3000);                  //sendCommand("AT+CIFSR", 3000);   Получить локальный IP-адрес
-	//delay(1000);
-	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[54])));
-	//SIM_SERIAL->print(bufcom);              // SIM_SERIAL->print("AT+CIPPING=\"");
-	//SIM_SERIAL->print(url);
-	//SIM_SERIAL->println('\"');
-	//strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[55])));
-	//strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[50])));
-	//delay(10000);
-
-	//// Ожидаем ответ сайта на ping 
-	//if (sendCommand(0, bufcom, combuf1,6000) == 1) // (sendCommand(0, "+CIPPING", "ERROR",3000) == 1)
-	//{
-	//	return true;
-	//}
+		//++++++++++++++++++++++++++ Ожидаем ответ сайта на ping  ++++++++++++++++++++++++++++++++++++++++                
+		if (sendCommand(0, "+CIPPING", "ERROR", 10000) == 1)            // Ответ на ping получен 
+		{
+			SIM_SERIAL.print("AT+CIPSHUT");                             // Закрыть соединение
+			return true;
+		}
+  
+	SIM_SERIAL.print("AT+CIPSHUT");                                     // Ошибка, что то не так пошло. На всякий случай закрываем соединение
 	return false;
 }
 
@@ -1342,37 +1380,127 @@ bool ping(const char* url)
 
 
 
+void httpUninit()
+{
+	sendCommand("AT+HTTPTERM");
+}
+
+bool httpInit()
+{
+	if  (!sendCommand("AT+HTTPINIT", 10000) || !sendCommand("AT+HTTPPARA=\"CID\",1", 5000)) 
+	{
+		httpState = HTTP_DISABLED;
+		return false;
+	}
+	httpState = HTTP_READY;
+
+	return true;
+}
 
 
 
 
+bool httpConnect(const char* url, const char* args)
+{
+	SIM_SERIAL.print("AT+HTTPPARA=\"URL\",\"");
+	SIM_SERIAL.print(url);
+	if (args)
+	{
+		SIM_SERIAL.print('?');
+		SIM_SERIAL.print(args);
+	}
 
+	SIM_SERIAL.println('\"');
+	if (sendCommand(0))
+	{
+		// Starts GET action
+		SIM_SERIAL.println("AT+HTTPACTION=0");
+		httpState = HTTP_CONNECTING;
+		m_bytesRecv = 0;
+		m_checkTimer = millis();
+	}
+	else
+	{
+		httpState = HTTP_ERROR;
+	}
+	return false;
+}
 
+bool httpConnectStr(const char* url, String args)
+{
+	SIM_SERIAL.print("AT+HTTPPARA=\"URL\",\"");
+	SIM_SERIAL.print(url);
+	if (args)
+	{
+		SIM_SERIAL.print('?');
+		SIM_SERIAL.print(args);
+	}
 
+	SIM_SERIAL.println('\"');
+	delay(500);
+	if (sendCommand(0))
+	{
+		SIM_SERIAL.println("AT+HTTPACTION=0");
+		httpState = HTTP_CONNECTING;
+		m_bytesRecv = 0;
+		m_checkTimer = millis();
+	}
+	else
+	{
+		httpState = HTTP_ERROR;
+	}
+	return false;
+}
 
+// check if HTTP connection is established
+// return 0 for in progress, 1 for success, 2 for error
+// Проверить, если соединение HTTP установлено
+// Возвращает 0 для прогресса в, 1 для успеха, 2 для ошибки
 
+byte httpIsConnected()
+{
+	byte ret = checkbuffer("0,200", "0,60", 10000);
+	if (ret >= 2)
+	{
+		httpState = HTTP_ERROR;
+		return -1;
+	}
+	return ret;
+}
 
+void httpRead()
+{
+	SIM_SERIAL.println("AT+HTTPREAD");
+	httpState = HTTP_READING;
+	m_bytesRecv = 0;
+	m_checkTimer = millis();
+}
+// check if HTTP connection is established
+// return 0 for in progress, -1 for error, number of http payload bytes on success
+// Проверить, если соединение HTTP установлено
+// Возвращает значение 0 для продолжается, -1 для ошибки, количество байтов полезной нагрузки HTTP на успех
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+int httpIsRead()
+{
+	byte ret = checkbuffer("+HTTPREAD: ", "Error", 10000) == 1;
+	if (ret == 1)       // Ответ +HTTPREAD:
+	{
+		m_bytesRecv = 0;
+		// read the rest data
+		sendCommand(0, 100, "\r\n");
+		int bytes = atoi(buffer);
+		sendCommand(0);
+		bytes = min(bytes, sizeof(buffer) - 1);
+		buffer[bytes] = 0;
+		return bytes;
+	}
+	else if (ret >= 2)   // Ответ "Error"
+	{
+		httpState = HTTP_ERROR;
+		return -1;
+	}
+	return 0;
+}
 
 
 
@@ -1381,11 +1509,11 @@ boolean HTTP_ssl(boolean onoff)
 {
 	if (onoff)
 	{
-		if (sendCommand("AT+HTTPSSL=1", "OK\r", "ERROR\r") == 1) return true;
+		if (sendCommand("AT+HTTPSSL=1", txt_Ok, txt_ERROR) == 1) return true;
 	}
 	else
 	{
-		if (sendCommand("AT+HTTPSSL=0", "OK\r", "ERROR\r") == 1) return true;
+		if (sendCommand("AT+HTTPSSL=0", txt_Ok, txt_ERROR) == 1) return true;
 	}
 	return false;
 }
@@ -1395,8 +1523,7 @@ byte sendCommand(const char* cmd, unsigned int timeout, const char* expected)
 {      // синтаксис - команда, 
 	if (cmd)                                 // Если есть команда - отправить.
 	{
-		while (SIM_SERIAL.available()) SIM_SERIAL.read();
-		//purgeSerial();                         // Очистить приемный буффер
+		purgeSerial();                         // Очистить приемный буффер
 #ifdef DEBUG
 		DEBUG.print('>');
 		DEBUG.println(cmd);
@@ -1417,7 +1544,7 @@ byte sendCommand(const char* cmd, unsigned int timeout, const char* expected)
 			}
 			buffer[n++] = c;                                   // Записать символ  в буфер и увеличить счетчик на 1                                    
 			buffer[n] = 0;                                     // Записать 0 в конец строки
-			if (strstr(buffer, expected ? expected : "OK\r"))   // возвращает указатель на первое вхождение в строку,
+			if (strstr(buffer, expected ? expected : txt_Ok))   // возвращает указатель на первое вхождение в строку,
 																// на которую указывает buffer, строки, указанной expected (исключая завершающий нулевой символ). 
 																// Если совпадений не обнаружено, возвращается NULL.
 			{                                                  // Переместит указатель на текст expected или "OK\r".
@@ -1441,22 +1568,20 @@ byte sendCommand(const char* cmd, const char* expected1, const char* expected2, 
 {        // Отправить команду и ожидать ответ при совпадении слов в буфере по строкам expected1 или expected2 в течении timeout
 	if (cmd)
 	{
-		while (SIM_SERIAL.available()) SIM_SERIAL.read();
-
-//		purgeSerial();                     // Очистить приемный буффер
+		purgeSerial();                     // Очистить приемный буффер
 #ifdef DEBUG
 		DEBUG.print('>');
 		DEBUG.println(cmd);
 #endif
 		SIM_SERIAL.println(cmd);           // Отправить команду
 	}
-	uint32_t t = millis();                // Записать время старта
-	byte n = 0;                           // Сбросить счетчик символов 
+	uint32_t t = millis();                        // Записать время старта
+	byte n = 0;                                   // Сбросить счетчик символов 
 	do {
-		if (SIM_SERIAL.available())    // Если буфер не пустой - читать сообщения от модуля
+		if (SIM_SERIAL.available())               // Если буфер не пустой - читать сообщения от модуля
 		{
-			char c = SIM_SERIAL.read();  // Читать сообщения от модуля
-			if (n >= sizeof(buffer) - 1)  // При переполнении буфера - урезать в 2 раза
+			char c = SIM_SERIAL.read();           // Читать сообщения от модуля
+			if (n >= sizeof(buffer) - 1)          // При переполнении буфера - урезать в 2 раза
 			{
 				// buffer full, discard first half
 				n = sizeof(buffer) / 2 - 1;
@@ -1518,10 +1643,10 @@ byte checkbuffer(const char* expected1, const char* expected2, unsigned int time
 														  // Два варианта окончания подпрограммы 0 - уложились вовремя или 3 время вышло при неуспешном
 }
 
-//void purgeSerial()    // Очистить приемный буффер
-//{
-//	while (SIM_SERIAL.available()) SIM_SERIAL.read();
-//}
+void purgeSerial()                                        // Очистить приемный буффер
+{
+	while (SIM_SERIAL.available()) SIM_SERIAL.read();
+}
 bool available()
 {
 	return SIM_SERIAL.available();
@@ -1549,3 +1674,11 @@ void SIM800C_read()
 }
 
 
+void cleanStr(String & str)
+{
+	str.replace("OK", "");
+	str.replace("\"", "");
+	str.replace("\n", "");
+	str.replace("\r", "");
+	str.trim();
+}
