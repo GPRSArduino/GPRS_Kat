@@ -666,7 +666,12 @@ void start_init()
 					Serial.print(F("rssi ..")); Serial.println(signal);
 					delay(1000);
 					Serial.println(F("GPRS connect .."));
-					byte ret = gprs.setup();                                              // Подключение к GPRS
+					gprs.getOperatorName();
+					// Включаем временно для настройки
+					
+					
+					
+					byte ret = gprs.connect_GPRS();                                              // Подключение к GPRS
 					Serial.print(F("ret - ")); Serial.print(ret);
 					if (ret == 0)
 					{
@@ -675,6 +680,9 @@ void start_init()
 							delay(50);
 							// Уточнить программу перезапуска  если модуль не зарегистрировался не зарегистрировался через 60 секунд
 						}
+
+						gprs.connect_IP_GPRS();                       // Получить IP адрес
+
 						Serial.println(F("\nGPRS connect OK!+"));
 						//setColor(COLOR_GREEN);                 // Включить зеленый светодиод
 						setup_ok = true;
@@ -890,7 +898,7 @@ void loop()
 		con.println((currentMillis - previousPing) / 1000);
 		setColor(COLOR_BLUE);
 		previousPing = currentMillis;
-		ping();
+		//ping();
 		setColor(COLOR_GREEN);
 	}
 

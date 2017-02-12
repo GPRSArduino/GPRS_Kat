@@ -15,17 +15,17 @@ typedef	Stream 						FONAStreamType;
 #define DEBUG Serial
 
 
-const char  txt_ATE0[]               PROGMEM  = "ATE0";
-const char  txt_IPR[]                PROGMEM  = "AT+IPR=19200";
-const char  txt_CFUN[]               PROGMEM  = "AT+CFUN=1";
-const char  txt_CMGF1[]              PROGMEM  = "AT+CMGF=1";
-const char  txt_CLIP[]               PROGMEM  = "AT+CLIP=1";
-const char  txt_CSCS[]               PROGMEM  = "AT+CSCS=\"GSM\"";
-const char  txt_CNMI[]               PROGMEM  = "AT+CNMI=2,2";
+const char  txt_ATE0[]               PROGMEM  = "";
+const char  txt_IPR[]                PROGMEM  = "";
+const char  txt_CFUN[]               PROGMEM  = "";
+const char  txt_CMGF1[]              PROGMEM  = "";
+const char  txt_CLIP[]               PROGMEM  = "";
+const char  txt_CSCS[]               PROGMEM  = "";
+const char  txt_CNMI[]               PROGMEM  = "";
 const char  txt_CREG[]               PROGMEM  = "AT+CREG?";
 const char  txt_CSQ[]                PROGMEM  = "AT+CSQ";
 const char  txt_CGATT[]              PROGMEM  = "AT+CGATT?";
-const char  txt_SAPBR0[]             PROGMEM  = "AT+SAPBR=3,1,\"Contype\",\"GPRS\"";
+const char  txt_SAPBR0[]             PROGMEM  = "";
 const char  txt_internet_mts_ru[]    PROGMEM  = "internet.mts.ru";
 const char  txt_MTSB[]               PROGMEM  = "MTS";
 const char  txt_mts[]                PROGMEM  = "mts";
@@ -37,14 +37,14 @@ const char  txt_internet[]           PROGMEM  = "internet";
 const char  txt_CMTE[]               PROGMEM  = "AT+CMTE";
 const char  txt_CCID[]               PROGMEM  = "AT+CCID";
 const char  txt_GMR[]                PROGMEM  = "AT+GMR";
-const char  txt_SAPBR1[]             PROGMEM  = "AT+SAPBR=3,1,\"APN\",\"";
-const char  txt_SAPBR2[]             PROGMEM  = "AT+SAPBR=3,1,\"USER\",\""; 
-const char  txt_SAPBR3[]             PROGMEM  = "AT+SAPBR=3,1,\"PWD\",\"";
-const char  txt_CGDCONT[]            PROGMEM  = "AT+CGDCONT=1,\"IP\",\"";
-const char  txt_SAPBR4[]             PROGMEM  = "AT+SAPBR=1,1";
-const char  txt_SAPBR5[]             PROGMEM  = "AT+SAPBR=2,1";
+const char  txt_SAPBR1[]             PROGMEM  = "";
+const char  txt_SAPBR2[]             PROGMEM  = ""; 
+const char  txt_SAPBR3[]             PROGMEM  = "";
+const char  txt_CGDCONT[]            PROGMEM  = "";
+const char  txt_SAPBR4[]             PROGMEM  = "";
+const char  txt_SAPBR5[]             PROGMEM  = "";
 const char  txt_CMGF2[]              PROGMEM  = "AT+CMGF=1";
-const char  txt_CPMS[]               PROGMEM  = "AT+CPMS=\"SM\",\"SM\",\"SM\"";
+const char  txt_CPMS[]               PROGMEM  = "";
 const char  txt_GSN[]                PROGMEM  = "AT+GSN";
 const char  txt_COPS[]               PROGMEM  = "AT+COPS?";
 const char  txt_OK[]                 PROGMEM  = "OK\r";
@@ -175,12 +175,12 @@ public:
 	void close_GPRS();
 
 	uint8_t getNetworkStatus();
-
+	byte connect_GPRS();
+	bool connect_IP_GPRS();
     // get network operator name
     bool getOperatorName();
 	bool getIMEI();
 	bool getSIMCCID();
-	bool getGMR();
 	bool ping(const char* url);
     // check for incoming SMS
 	bool checkSMS();
@@ -205,9 +205,10 @@ public:
     int httpIsRead();
     // send AT command and check for expected response
     byte sendCommand(const char* cmd, unsigned int timeout = 2000, const char* expected = 0);
+	byte sendCommandS(String cmd, unsigned int timeout, const char* expected);
     // send AT command and check for two possible responses
     byte sendCommand(const char* cmd, const char* expected1, const char* expected2, unsigned int timeout = 2000);
-  
+	byte sendCommandS(String cmd);
     // check if there is available serial data
     bool available();
 	void cleanStr(String & str);
@@ -225,6 +226,10 @@ private:
     String user = "";
     String pwd  = ""; 
     String cont = "";
+	const char* expected1 = "OK\r";
+	const char* expected2 = "ERROR\r";
+	unsigned int timeout = 2000;
+	byte operator_Num = 0;                                  // Порядковый номер оператора
 
 	char bufcom[30];
 	char combuf1[23];
