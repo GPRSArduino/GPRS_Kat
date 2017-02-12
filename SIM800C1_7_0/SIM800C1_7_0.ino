@@ -110,7 +110,7 @@ String apn = "";
 String user = "";
 String pwd = "";
 String cont = "";
-char buffer[125];
+char buffer[200];
 byte httpState;
 String val = "";
 
@@ -161,6 +161,87 @@ void cleanStr(String & str);
 
 byte checkbuffer(const char* expected1, const char* expected2 = 0, unsigned int timeout = 2000);  // По умолчанию ожидание 2 секунды
 void purgeSerial();
+
+
+const char  txt_CREG[]               PROGMEM = "AT+CREG?";                            //***
+const char  txt_CSQ[]                PROGMEM = "AT+CSQ";                              //***
+const char  txt_CGATT[]              PROGMEM = "AT+CGATT?";                           //***
+const char  txt_SAPBR0[]             PROGMEM = "AT+SAPBR=3,1,\"Contype\",\"GPRS\"";   //***
+const char  txt_internet_mts_ru[]    PROGMEM = "internet.mts.ru";                     //***
+const char  txt_mts[]                PROGMEM = "mts";                                 //*** 
+const char  txt_internet_beeline[]   PROGMEM = "internet.beeline.ru";                 //***
+const char  txt_beeline[]            PROGMEM = "beeline";                             //*** 
+const char  txt_internet[]           PROGMEM = "internet";                            //***
+const char  txt_CCID[]               PROGMEM = "AT+CCID";                             //***
+const char  txt_SAPBR4[]             PROGMEM = "AT+SAPBR=1,1";                        //***
+const char  txt_SAPBR5[]             PROGMEM = "AT+SAPBR=2,1";                        //***
+const char  txt_CPMS[]               PROGMEM = "AT+CPMS=\"SM\",\"SM\",\"SM\"";
+const char  txt_GSN[]                PROGMEM = "AT+GSN";                              //***
+const char  txt_COPS[]               PROGMEM = "AT+COPS?";                            //***
+const char  txt_HTTPTERM[]           PROGMEM = "AT+HTTPTERM";                         //***
+const char  txt_HTTPINIT[]           PROGMEM = "AT+HTTPINIT";                         //***
+const char  txt_HTTPPARA1[]          PROGMEM = "AT+HTTPPARA=\"CID\",1";               //***    
+const char  txt_200[]                PROGMEM = "0,200";                               //***
+const char  txt_60[]                 PROGMEM = "0,60";                                //***
+const char  txt_HTTPREAD[]           PROGMEM = "+HTTPREAD: ";                         //***
+const char  txt_Error1[]             PROGMEM = "Error";                               //***
+const char  txt_r_n[]                PROGMEM = "\r\n";                                //***
+const char  txt_CIPSHUT[]            PROGMEM = "AT+CIPSHUT";                          //***
+const char  txt_CSQ1[]               PROGMEM = "CSQ: ";                               //***
+const char  txt_ERROR1[]             PROGMEM = "ERROR";                               //*** 
+const char  txt_CSTT[]               PROGMEM = "AT+CSTT=\"internet\"";                //***
+const char  txt_CIICR[]              PROGMEM = "AT+CIICR";                            //***
+const char  txt_CIFSR[]              PROGMEM = "AT+CIFSR";                            //*** 
+const char  txt_PCIPPING[]           PROGMEM = "+CIPPING";                            //***
+const char  txt_CMGDA[]              PROGMEM = "AT+CMGDA=\"DEL ALL\"";   //***
+const char  txt_CSTT_mts[]           PROGMEM = "AT+CSTT=\"internet.mts.ru\"";
+const char  txt_CSTT_Bee[]           PROGMEM = "AT+CSTT=\"internet.beeline.ru\"";
+const char  txt_CSTT_internet[]      PROGMEM = "AT+CSTT=\"internet\"";
+const char  txt_SSL1[]               PROGMEM = "AT+HTTPSSL=1";
+const char  txt_SSL0C[]              PROGMEM = "AT+HTTPSSL=0";
+
+
+const char* const table_message[] PROGMEM =
+{
+	txt_CREG,                    // 0 "AT+CREG?"
+	txt_CSQ,                     // 1 "AT+CSQ"
+	txt_CGATT,                   // 2 "AT+CGATT?"
+	txt_SAPBR0,                  // 3 "AT+SAPBR=3,1,\"Contype\",\"GPRS\""
+	txt_internet_mts_ru,         // 4 "internet.mts.ru"
+	txt_mts,                     // 5 "mts
+	txt_internet_beeline,        // 6 "internet.beeline.ru";
+	txt_beeline,                 // 7 "beeline";
+	txt_internet,                // 8 "internet"; 
+	txt_CCID,                    // 9 ""AT+CCID"";
+	txt_SAPBR4,                  // 10 "AT+SAPBR=1,1";
+	txt_SAPBR5,                  // 11 "AT+SAPBR=2,1";
+	txt_CPMS,                    // 12 "AT+CPMS=\"SM\",\"SM\",\"SM\"";
+	txt_GSN,                     // 13 "AT+GSN";
+	txt_COPS,                    // 14 "AT+COPS?";
+	txt_HTTPTERM,                // 15 "AT+HTTPTERM";
+	txt_HTTPINIT,                // 16 "AT+HTTPINIT";
+	txt_HTTPPARA1,               // 17 "AT+HTTPPARA=\"CID\",1";
+	txt_200,                     // 18 "0,200" ;
+	txt_60,                      // 19 "0,60";
+	txt_HTTPREAD,                // 20 "+HTTPREAD: ";
+	txt_Error1,                  // 21 "Error";
+	txt_r_n,                     // 22 "\r\n";  
+	txt_CIPSHUT,                 // 23 "AT+CIPSHUT";
+	txt_CSQ1,                    // 24 "CSQ: "; 
+	txt_ERROR1,                  // 25 "ERROR"
+	txt_CSTT,                    // 26 "AT+CSTT=\"internet\"";
+	txt_CIICR,                   // 27 "AT+CIICR";
+	txt_CIFSR,                   // 28 "AT+CIFSR";
+	txt_PCIPPING,                // 29 "+CIPPING";
+	txt_CMGDA,                   // 30 "AT+CMGDA=\"DEL ALL\"";
+	txt_CSTT_mts,                // 31 "AT+CSTT=\"internet.mts.ru\"";
+	txt_CSTT_Bee,                // 32 "AT+CSTT=\"internet.beeline.ru\"";
+	txt_CSTT_internet,           // 33 "AT+CSTT=\"internet\"";
+	txt_SSL1,                    // 34 "AT+HTTPSSL=1";
+	txt_SSL0C                    // 35 "AT+HTTPSSL=0";
+
+};
+
 
 
 
@@ -241,7 +322,7 @@ void flash_time()                                      // Программа о�
  
 void sendTemps()
 {
-	Serial.println(("\nSend the data to the site"));
+	Serial.println(F("\nSend the data to the site"));
 	sensor1.requestTemperatures();
 	sensor2.requestTemperatures();
 	sensor3.requestTemperatures();
@@ -252,8 +333,8 @@ void sendTemps()
 	int signal = getSignalQuality();
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
-
-	String toSend = "t1=" + imei + DELIM + "17/2/1,21:2:28%2000" DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
+	//+ "17/2/1,21:2:28%2000"
+	String toSend = "t1=";// +imei + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma);
 
 //	Serial.println(toSend);
 
@@ -296,7 +377,7 @@ bool gprs_send(String data)
 	ret = connect_GPRS();                                   // Подключение к интернету с применением стека HTTP
 	Serial.print(F("ret - ")); Serial.print(ret);
 	int count_init = 0;
-
+   // t1=861445030362268@17/2/12,15:15:27 00@-127.00@-127.00@-127.00@13@0@0@+79162632701@89701010063818618608@-292.12
 	//if (check_connect(ret))
 	//{
 	// //setup_ok = true;
@@ -375,9 +456,11 @@ bool gprs_send(String data)
   }
   else
   {
+	  data = "t1 = 861445030362268@17/2 / 12, 15:15 : 27 00@-127.00@-127.00@-127.00@13@0@0@+79162632701@89701010063818618608@-292.12";
 	  con.print(url1);
 	  con.print('?');
 	  con.println(data);
+	 
 	  httpConnectStr(url1, data);
   }
     
@@ -430,12 +513,7 @@ bool gprs_send(String data)
 	return; 
   } 
 
-
-
-
-
-
-
+  
 
 
   // Теперь мы получили сообщение от сайта.
@@ -716,8 +794,7 @@ void start_init()
 		delay(2000);
 		con.println(F("Power SIM800 On"));
 
-
-		
+	
 		if (getIMEI())                       // Получить IMEI
 		{
 			con.print(F("\nIMEI:"));
@@ -745,6 +822,7 @@ void start_init()
 			return;  // SIMCCID не определился
 		}
 		
+
 		while (state_device != 2)  // Ожидание регистрации в сети
 		{
 			delay(1000);
@@ -1099,8 +1177,9 @@ bool begin()
 bool getIMEI()
 {
 	//delay(1000);
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[13])));
 
-	if (sendCommand("AT+GSN", txt_Ok, txt_ERROR) == 1)               // (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
+	if (sendCommand(buffer, txt_Ok, txt_ERROR) == 1)               // (sendCommand("AT+GSN", "OK\r", "ERROR\r") == 1) 
 	{
 		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
 												 //на которую указывает str1, строки, указанной str2 (исключая завершающий нулевой символ).
@@ -1110,9 +1189,9 @@ bool getIMEI()
 			p += 2;
 
 			// char *s = strstr(buffer, "OK");  // Ищем завершения операции
-			char *s = strchr(p, '\r');       // Функция strchr() возвращает указатель на первое вхождение символа ch в строку, 
-											 //на которую указывает str. Если символ ch не найден,
-											 //возвращается NULL. 
+			char *s = strchr(p, '\r');          // Функция strchr() возвращает указатель на первое вхождение символа ch в строку, 
+											    //на которую указывает str. Если символ ch не найден,
+											    //возвращается NULL. 
 			if (s) *s = 0;   strcpy(buffer, p);
 			return true;
 		}
@@ -1124,8 +1203,7 @@ bool getIMEI()
 
 bool getSIMCCID()
 {
-	/*strcpy_P(bufcom, (char*)pgm_read_word(&(table_message[20])));
-	strcpy_P(combuf1, (char*)pgm_read_word(&(table_message[33])));*/
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[9])));
 	if (sendCommand("AT+CCID", txt_Ok, txt_ERROR) == 1)             // (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
 	{
 		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
@@ -1134,7 +1212,7 @@ bool getSIMCCID()
 		{
 			p += 2;
 
-			 char *s = strstr(buffer, "OK");  // Ищем завершения операции
+			 char *s = strstr(buffer, "OK");      // Ищем завершения операции
 			//char *s = strchr(p, '\r');          // Функция strchr() возвращает указатель на первое вхождение символа ch в строку, 
 												//на которую указывает str. Если символ ch не найден,
 												//возвращается NULL. 
@@ -1147,7 +1225,8 @@ bool getSIMCCID()
 
 int getSignalQuality()
 {
-    sendCommand("AT+CSQ");
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[1])));
+    sendCommand(buffer);
 	char *p = strstr(buffer, "CSQ:");
 	if (p) {
 		int n = atoi(p + 5);
@@ -1163,7 +1242,9 @@ uint8_t getNetworkStatus()
 {
 	//for (byte n = 0; n < 2; n++)
 	//{
-		if (sendCommand("AT+CREG?", 2000))       // if (sendCommand("AT+CREG?", 2000))  // Тип регистрации сети
+
+	    strcpy_P(buffer, (char*)pgm_read_word(&(table_message[0])));
+		if (sendCommand(buffer, 2000))       // if (sendCommand("AT+CREG?", 2000))  // Тип регистрации сети
 		{
 			// Первый параметр:
 			// 0 – нет кода регистрации сети
@@ -1203,8 +1284,8 @@ byte connect_GPRS()
 {
 	//for (byte n = 0; n < 30; n++)
 	//{
-
-		if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\"")) return 1;                      // if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))     return 3;// 
+	    strcpy_P(buffer, (char*)pgm_read_word(&(table_message[3])));
+		if (!sendCommand(buffer)) return 1;                      // if (!sendCommand("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))     return 3;// 
 
 		SIM_SERIAL.print(F("AT+SAPBR=3,1,\"APN\",\""));                                       //
 		SIM_SERIAL.print(apn);
@@ -1226,14 +1307,17 @@ byte connect_GPRS()
 		SIM_SERIAL.println('\"');
 		if (!sendCommand(0))   return 2;
 	
-		sendCommand("AT+SAPBR=1,1", 20000);                                                 // установка GPRS связи
+
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[10])));
+
+		sendCommand(buffer, 20000);                                                 //sendCommand("AT+SAPBR=1,1", 20000); // установка GPRS связи
 		while (state_device != 3)                                                           // Ожидание регистрации в сети
 		{
 			delay(50);
 			// Уточнить программу перезапуска  если модуль не зарегистрировался не зарегистрировался через 60 секунд
 		}
-																			
-		if (sendCommand("AT+SAPBR=2,1", 70000)) return 0;                                   // полученный IP адрес
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[11])));
+		if (sendCommand(buffer, 70000)) return 0;                                   // if (sendCommand("AT+SAPBR=2,1", 70000)) return 0; // полученный IP адрес
 	
 	//}
 	return 3;                                                                               // Неуспешная регистрация
@@ -1243,7 +1327,8 @@ byte connect_GPRS()
 
 bool getOperatorName()
 {
-	if (sendCommand("AT+COPS?", txt_Ok, txt_ERROR) == 1)   // if (sendCommand("AT+COPS?", "OK\r", "ERROR\r") == 1) 
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[14])));
+	if (sendCommand(buffer, txt_Ok, txt_ERROR) == 1)   // if (sendCommand("AT+COPS?", "OK\r", "ERROR\r") == 1) 
 	{
 		char *p = strstr(buffer, ",\"");
 		if (p)
@@ -1256,30 +1341,33 @@ bool getOperatorName()
 			String OperatorName = buffer;
 			Serial.println(buffer);
 
-			if (OperatorName.indexOf("MTS") > -1)
+			if (OperatorName.indexOf(F("MTS")) > -1)
 			{
-				apn = "internet.mts.ru";
+				strcpy_P(buffer, (char*)pgm_read_word(&(table_message[4])));
+				apn = buffer;
 				user = "mts";
 				pwd = "mts";
-				cont = "internet.mts.ru";
+				cont = buffer;
 				Serial.println(F("MTS"));
 				operator_Num = 0;                                  // Порядковый номер оператора МТС
 			}
-			else if (OperatorName.indexOf("Bee") > -1)
+			else if (OperatorName.indexOf(F("Bee")) > -1)
 			{
-				apn = "internet.beeline.ru";
+				strcpy_P(buffer, (char*)pgm_read_word(&(table_message[6])));
+				apn  = buffer;
 				user = "beeline";
-				pwd = "beeline";
-				cont = "internet.beeline.ru";
+				pwd  = "beeline";
+				cont = buffer;
 				Serial.println(F("Beeline"));
 				operator_Num = 1;                                  // Порядковый номер оператора Beeline
 			}
-			else if (OperatorName.indexOf("Mega") > -1)
+			else if (OperatorName.indexOf(F("Mega")) > -1)
 			{
-				apn = "internet";
+				strcpy_P(buffer, (char*)pgm_read_word(&(table_message[8])));
+				apn = buffer;
 				user = "";
 				pwd = "";
-				cont = "internet";
+				cont = buffer;
 				Serial.println(F("MEGAFON"));     
 				operator_Num = 2;                                  // Порядковый номер оператора Megafon
 			}
@@ -1295,7 +1383,8 @@ bool ping(const char* url)
 	int count_connect = 0;                                               // Счетчик количества попыток проверки подключения Network registration (сетевому оператору)
 	for (;;)                                                          // Бесконечный цикл пока не наступит, какое то состояние для выхода
 	{
-		if (sendCommand("AT+CREG?", txt_Ok, txt_ERROR) == 1) break;   // Все нормально, в сети оператора зарегистрированы , Прервать попытки и выйти из цикла
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[0])));
+		if (sendCommand(buffer, txt_Ok, txt_ERROR) == 1) break;   // Все нормально, в сети оператора зарегистрированы , Прервать попытки и выйти из цикла
 		con.print(">");
 		con.println(buffer);                                          // Не получилось, ("ERROR") 
 		String stringError = buffer;
@@ -1312,7 +1401,8 @@ bool ping(const char* url)
 	count_connect = 0;                                                // Счетчик количества попыток проверки подключения Attach from GPRS service
 	for (;;)                                                          // Бесконечный цикл пока не наступит, какое то состояние для выхода
 	{
-		if (sendCommand("AT+CGATT?", txt_Ok, txt_ERROR) == 1) break;  // Все нормально, модуль подключен к GPRS service , Прервать попытки и выйти из цикла
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[2])));
+		if (sendCommand(buffer, txt_Ok, txt_ERROR) == 1) break;  // Все нормально, модуль подключен к GPRS service , Прервать попытки и выйти из цикла
 		con.print(">");
 		con.println(buffer);                                          // Не получилось, ("ERROR") 
 		String stringError = buffer;
@@ -1331,33 +1421,36 @@ bool ping(const char* url)
 		switch (operator_Num)                                          // Определяем вариант подключения в зависимости от оператора
 		{
 			case 0:
-				sendCommand("AT+CSTT=\"internet.mts.ru\"", 1000);      //Настроить точку доступа MTS. При повторных пингах будет выдавать ошибку. Это нормально потому что данные уже внесены.
+				strcpy_P(buffer, (char*)pgm_read_word(&(table_message[31])));
+				sendCommand(buffer, 1000);                                  //Настроить точку доступа MTS. При повторных пингах будет выдавать ошибку. Это нормально потому что данные уже внесены.
 			    break;
 			case 1:
-				sendCommand("AT+CSTT=\"internet.beeline.ru\"", 1000);  //Настроить точку доступа  beeline
+				strcpy_P(buffer, (char*)pgm_read_word(&(table_message[32])));
+				sendCommand(buffer, 1000);                                   //Настроить точку доступа  beeline
 				break;
 			case 2:
-				sendCommand("AT+CSTT=\"internet\"", 1000);             //Настроить точку доступа Megafon
+				strcpy_P(buffer, (char*)pgm_read_word(&(table_message[33])));
+				sendCommand(buffer, 1000);                                    //Настроить точку доступа Megafon
 				break;
 		}
 
 		delay(2000);
 
 		count_connect = 0;                                             // Счетчик количества попыток проверки подключения к интернету
-
-		sendCommand("AT+CIICR", 10000);                                // Поднимаем протокол Bring Up Wireless Connection with GPRS  
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[27])));
+		sendCommand(buffer, 10000);                                // Поднимаем протокол Bring Up Wireless Connection with GPRS  
 		while (state_device != 3)                                      // Ожидание подключения к интернету
 		{
 			delay(50);
 			count_connect++;
 			if (count_connect > 3000)  resetFunc();                     //вызываем reset при отсутствии доступа к  интернету
 		}
-
-		sendCommand("AT+CIFSR", 6000);                                  //Получить локальный IP-адрес
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[28])));
+		sendCommand(buffer, 6000);                                  //Получить локальный IP-адрес
 		delay(1000);
 		SIM_SERIAL.print(F("AT+CIPPING=\""));                              // Отправить команду ping
 		SIM_SERIAL.print(url);
-		SIM_SERIAL.println(F('\"'));
+		SIM_SERIAL.println('\"');
 	//	delay(10000);
 
 		//++++++++++++++++++++++++++ Ожидаем ответ сайта на ping  ++++++++++++++++++++++++++++++++++++++++                
@@ -1377,12 +1470,14 @@ bool ping(const char* url)
 
 void httpUninit()
 {
-	sendCommand("AT+HTTPTERM");
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[15])));
+	sendCommand(buffer);
 }
 
 bool httpInit()
 {
-	if  (!sendCommand("AT+HTTPINIT", 10000) || !sendCommand("AT+HTTPPARA=\"CID\",1", 5000)) 
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[17])));
+	if  (!sendCommand("AT+HTTPINIT", 10000) || !sendCommand(buffer, 5000))      //sendCommand("AT+HTTPPARA=\"CID\",1", 5000)) 
 	{
 		httpState = HTTP_DISABLED;
 		return false;
@@ -1397,7 +1492,7 @@ bool httpInit()
 
 bool httpConnect(const char* url, const char* args)
 {
-	SIM_SERIAL.print("AT+HTTPPARA=\"URL\",\"");
+	SIM_SERIAL.print(F("AT+HTTPPARA=\"URL\",\""));
 	SIM_SERIAL.print(url);
 	if (args)
 	{
@@ -1454,7 +1549,8 @@ bool httpConnectStr(const char* url, String args)
 
 byte httpIsConnected()
 {
-	byte ret = checkbuffer("0,200", "0,60", 10000);
+	strcpy_P(buffer, (char*)pgm_read_word(&(table_message[18])));
+	byte ret = checkbuffer(buffer, "0,60", 10000);
 	if (ret >= 2)
 	{
 		httpState = HTTP_ERROR;
@@ -1477,6 +1573,7 @@ void httpRead()
 
 int httpIsRead()
 {
+
 	byte ret = checkbuffer("+HTTPREAD: ", "Error", 10000) == 1;
 	if (ret == 1)       // Ответ +HTTPREAD:
 	{
@@ -1504,12 +1601,14 @@ boolean HTTP_ssl(boolean onoff)
 {
 	if (onoff)
 	{
-		if (sendCommand("AT+HTTPSSL=1", txt_Ok, txt_ERROR) == 1) return true;
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[34])));
+		if (sendCommand(buffer, txt_Ok, txt_ERROR) == 1) return true;   //(sendCommand("AT+HTTPSSL=1", txt_Ok, txt_ERROR) == 1) return true;
 	}
 	else
 	{
-		if (sendCommand("AT+HTTPSSL=0", txt_Ok, txt_ERROR) == 1) return true;
-	}
+		strcpy_P(buffer, (char*)pgm_read_word(&(table_message[35])));
+		if (sendCommand(buffer, txt_Ok, txt_ERROR) == 1) return true;  // if (sendCommand("AT+HTTPSSL=0", txt_Ok, txt_ERROR) == 1) return true;
+	}  
 	return false;
 }
 
@@ -1677,3 +1776,4 @@ void cleanStr(String & str)
 	str.replace("\r", "");
 	str.trim();
 }
+
