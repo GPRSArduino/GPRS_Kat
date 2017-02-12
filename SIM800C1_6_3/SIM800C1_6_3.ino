@@ -177,23 +177,23 @@ void sendTemps()
 	//Serial.println(toSend);
 
 	Serial.println(toSend.length());
-
-	int count_send = 0;
-	while (1)
-	{
-		if (gprs_send(toSend))
-		{
-			return;
-		}
-		else
-		{
-			count_send++;
-			Serial.print("Attempt to transfer data .."); Serial.println(count_send);
-			if (count_send>5) resetFunc();                                // 5 попыток. Что то пошло не так с интернетом
-			//ping();
-		}
-		delay(6000);
-	}
+	gprs_send(toSend);
+	//int count_send = 0;
+	//while (1)
+	//{
+	//	if (gprs_send(toSend))
+	//	{
+	//		return;
+	//	}
+	//	else
+	//	{
+	//		count_send++;
+	//		Serial.print("Attempt to transfer data .."); Serial.println(count_send);
+	//		if (count_send>5) resetFunc();                                // 5 попыток. Что то пошло не так с интернетом
+	//		//ping();
+	//	}
+	//	delay(6000);
+	//}
 
 }
 
