@@ -180,13 +180,13 @@ bool CGPRS_SIM800::getSIMCCID()
 	if (sendCommandS(F("AT+CCID")) == 1)             // (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
 	{      
 		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
-               								     //Если совпадений не обнаружено, возвращается NULL.
+												 //Если совпадений не обнаружено, возвращается NULL.
 		if (p)
 		{
 			p += 2;
 			char *s = strchr(p, '\r');          // Функция strchr() возвращает указатель на первое вхождение символа ch в строку, 
-											    //на которую указывает str. Если символ ch не найден,
-											    //возвращается NULL. 
+												//на которую указывает str. Если символ ch не найден,
+												//возвращается NULL. 
 			if (s) *s = 0;   strcpy(buffer, p);
 			return true;
 		}
@@ -351,7 +351,7 @@ bool CGPRS_SIM800::checkSMS()
 	}
 	 expected1 = OK_r;
 	 expected2 = ERROR_r;
-     return false; 
+	 return false; 
 }
 
 bool CGPRS_SIM800::deleteSMS(int n_sms)
@@ -382,41 +382,6 @@ int CGPRS_SIM800::getSignalQuality()
    return 0; 
   }
 }
-
-bool CGPRS_SIM800::getLocation(GSM_LOCATION* loc)
-{
-	timeout = 10000;
-	if (sendCommandS(F("AT+CIPGSMLOC=1,1"))) do         // if (sendCommand("AT+CIPGSMLOC=1,1", 10000)) do 
-	{
-		char *p;
-		if (!(p = strchr(buffer, ':'))) break;
-		if (!(p = strchr(p, ','))) break;
-		loc->lon = atof(++p);
-		if (!(p = strchr(p, ','))) break;
-		loc->lat = atof(++p);
-		if (!(p = strchr(p, ','))) break;
-		loc->year = atoi(++p) - 2000;
-		if (!(p = strchr(p, '/'))) break;
-		loc->month = atoi(++p);
-		if (!(p = strchr(p, '/'))) break;
-		loc->day = atoi(++p);
-		if (!(p = strchr(p, ','))) break;
-		loc->hour = atoi(++p);
-		if (!(p = strchr(p, ':'))) break; 
-		loc->minute = atoi(++p);
-		if (!(p = strchr(p, ':'))) break;
-		loc->second = atoi(++p);
-		timeout = 2000;
-		return true;
-	} while (0);
-	timeout = 2000;
-	return false;
-}
-
-
-
-
-
 
 
 
@@ -450,7 +415,7 @@ bool CGPRS_SIM800::httpConnect(const char* url, const char* args)
 	}
 
 	SIM_SERIAL->println('\"');
-	if (sendCommand(0))
+	if (sendCommandS(no))
 	{
 		// Starts GET action
 		SIM_SERIAL->println(F("AT+HTTPACTION=0"));                         
@@ -579,8 +544,8 @@ byte CGPRS_SIM800::sendCommand(const char* cmd, unsigned int timeout, const char
 	  buffer[n++] = c;                                   // Записать символ  в буфер и увеличить счетчик на 1                                    
 	  buffer[n] = 0;                                     // Записать 0 в конец строки
 	 if (strstr(buffer, expected ? expected : "OK\r"))   // возвращает указатель на первое вхождение в строку,
-		                                                 // на которую указывает buffer, строки, указанной expected (исключая завершающий нулевой символ). 
-		                                                 // Если совпадений не обнаружено, возвращается NULL.
+														 // на которую указывает buffer, строки, указанной expected (исключая завершающий нулевой символ). 
+														 // Если совпадений не обнаружено, возвращается NULL.
 	  {                                                  // Переместит указатель на текст expected или "OK\r".
 #ifdef DEBUG                                             
 	   DEBUG.print("[1]");
@@ -754,7 +719,7 @@ byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, uns
 		char c = SIM_SERIAL->read();
 		if (m_bytesRecv >= sizeof(buffer) - 1)        // При вызове подпрограммы m_bytesRecv сбрасывается в"0" (при применении http)
 		{
-			                                          // Если количество символов больше размера буфера - половина текста удаляется.
+													  // Если количество символов больше размера буфера - половина текста удаляется.
 			m_bytesRecv = sizeof(buffer) / 2 - 1;    // buffer full, discard first half буфер заполнен, выбросьте первую половину
 			memcpy(buffer, buffer + sizeof(buffer) / 2, m_bytesRecv);  // Скопировать оставшуюся половину в buffer
 		}
@@ -770,7 +735,7 @@ byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, uns
 		}
 	}
 	return (millis() - m_checkTimer < timeout) ? 0 : 3;   // Время ожидания задано в m_checkTimer используется при применении http
-	                                                      // Два варианта окончания подпрограммы 0 - уложились вовремя или 3 время вышло при неуспешном
+														  // Два варианта окончания подпрограммы 0 - уложились вовремя или 3 время вышло при неуспешном
 }
 
 void CGPRS_SIM800::purgeSerial()    // Очистить приемный буффер

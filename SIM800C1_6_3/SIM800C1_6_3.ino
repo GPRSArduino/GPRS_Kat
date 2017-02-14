@@ -76,7 +76,7 @@ unsigned long interval         = 60;                    // Интервал пе
 //unsigned long interval         = 300;                   // Интервал передачи данных 5 минут
 bool time_set                  = false;                 // Фиксировать интервал заданный СМС
 bool ssl_set                   = false;                 // Признак шифрования
-unsigned long time_ping        = 180;                   // Интервал проверки ping 6 минут.
+unsigned long time_ping        = 180;                   // Интервал проверки ping 6 минут. 
 unsigned long previousPing     = 0;                     // Временный Интервал проверки ping
 
 int Address_tel1       = 100;                           // Адрес в EEPROM телефона 1
@@ -829,10 +829,9 @@ void setup()
 	ping();
 	MsTimer2::stop();
 	setColor(COLOR_GREEN);                                      // Включить зеленый светодиод
+	sendTemps();
+	time = millis();                                            // Старт отсчета суток
 	con.println(F("\nSIM800 setup end"));
-	//sendTemps();
-	time = millis();                                              // Старт отсчета суток
-	
 }
 
 void loop()

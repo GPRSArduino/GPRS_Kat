@@ -57,6 +57,7 @@ public:
 	bool deleteSMS(int n_sms);
     // get signal quality level (in dB)
     int getSignalQuality();
+	
     // initialize HTTP connection
     bool httpInit();
     // terminate HTTP connection
