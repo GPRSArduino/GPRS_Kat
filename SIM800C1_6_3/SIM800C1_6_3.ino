@@ -100,7 +100,7 @@ DallasTemperature sensor3(&ds18x20_3);
 
 void(* resetFunc) (void) = 0;                           // объявляем функцию reset
 
-void flash_time()                                      // Программа обработчик прерывистого свечения светодиодов при старте
+void flash_time()                                       // Программа обработчик прерывистого свечения светодиодов при старте
 {
 	if (state_device == 0)
 	{
@@ -214,6 +214,14 @@ String formEnd()
 bool gprs_send(String data) 
 {
   con.print(F("Requesting .. Wait"));      
+
+
+
+
+
+
+
+
   int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
   for (;;)                                               // Бесконечный цикл пока не наступит, какое то состояние для выхода
   {
@@ -542,21 +550,22 @@ void check_blink()
 	}
 }
 
-bool check_ping()
-{
-	con.print(F("Ping -> "));
-	con.print(url_ping);
-	if (gprs.ping(url_ping))
-	{
-		con.println(F(".. Ok!"));
-		return true;
-	}
-	con.println(F(".. false!"));
-	return false;
-}
+
 void ping()
 {
 	int count_ping = 0;
+	int count_wait = 0;                                                // Счетчик количества попыток проверки подключения Network registration (сетевому оператору)
+	byte ret = gprs.ping_connect_internet();                     
+
+	if(ret !=0)   resetFunc();                                        // Что то пошло не так с интернетом
+
+	while (state_device != 3)                                         // Ожидание подключения к интернету
+	{
+		delay(50);
+		count_wait++;
+		if (count_wait > 3000)  resetFunc();                     //вызываем reset при отсутствии доступа к  интернету
+	}
+
 	while (1)
 	{
 		if (check_ping())
@@ -571,6 +580,23 @@ void ping()
 		delay(1000);
 	}
 }
+
+
+
+
+bool check_ping()
+{
+	con.print(F("Ping -> "));
+	con.println(url_ping);
+	if (gprs.ping(url_ping))
+	{
+		con.println(F(".. Ok!"));
+		return true;
+	}
+	con.println(F(".. false!"));
+	return false;
+}
+
 
 void start_init()
 {
@@ -667,10 +693,9 @@ void start_init()
 					delay(1000);
 					Serial.println(F("GPRS connect .."));
 					gprs.getOperatorName();
-					// Включаем временно для настройки
 					
-					
-					
+					// +++++++++++++++ Включаем временно для настройки ++++++++++++++++++++++++++++++++++++++++
+				/*
 					byte ret = gprs.connect_GPRS();                                              // Подключение к GPRS
 					Serial.print(F("ret - ")); Serial.print(ret);
 					if (ret == 0)
@@ -680,7 +705,7 @@ void start_init()
 							delay(50);
 							// Уточнить программу перезапуска  если модуль не зарегистрировался не зарегистрировался через 60 секунд
 						}
-
+						con.println(F("Wait IP"));
 						gprs.connect_IP_GPRS();                       // Получить IP адрес
 
 						Serial.println(F("\nGPRS connect OK!+"));
@@ -699,7 +724,11 @@ void start_init()
 							setup_ok = true;
 						}
 					}
+					*/
+					//===========================================================================
 					//gprs.close_GPRS();                                //   закрываем GPRS-сессию у оператора
+
+					setup_ok = true;
 
 				} while (!setup_ok);             // 
 			}
@@ -749,25 +778,6 @@ void setup()
 	start_init();
 	
 	int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
-
-	//for (;;)                                               // Бесконечный цикл пока не наступит, какое то состояние для выхода
-	//{
-	//	if (gprs.httpInit()) break;                        // Все нормально, модуль ответил , Прервать попытки и выйти из цикла
-	//	con.print(">");
-	//	con.println(gprs.buffer);                          // Не получилось, ("ERROR") 
-	//	String stringError = gprs.buffer;
-	//	if (stringError.indexOf(F("ERROR")) > -1)
-	//	{
-	//		con.println(F("\nNo internet connection"));
-	//		delay(1000);
-	//	}
-	//	gprs.httpUninit();                                 // Не получилось, разединить и  попробовать снова 
-	//	delay(1000);                                       // Подождать секунду.
-	//	count_init++;
-	//	if (count_init > 60)  resetFunc();                 //вызываем reset при отсутствии доступа к серверу в течении 60 секунд
-	//}
-
-
 	con.println(F("OK"));   
 
 
@@ -812,11 +822,11 @@ void setup()
 	}
 
 	delay(2000);
+	ping();
 	MsTimer2::stop();
 	setColor(COLOR_GREEN);                                      // Включить зеленый светодиод
-	//ping();
 	con.println(F("\nSIM800 setup end"));
-	sendTemps();
+	//sendTemps();
 	time = millis();                                              // Старт отсчета суток
 	
 }
@@ -884,7 +894,7 @@ void loop()
 		con.println((currentMillis-previousMillis)/1000);
 		setColor(COLOR_BLUE);
 		previousMillis = currentMillis;
-		sendTemps();
+		//sendTemps();
 		setColor(COLOR_GREEN);
 		con.print(F("\nfree memory: "));                                 
 		con.println(freeRam());
@@ -898,7 +908,7 @@ void loop()
 		con.println((currentMillis - previousPing) / 1000);
 		setColor(COLOR_BLUE);
 		previousPing = currentMillis;
-		//ping();
+		ping();
 		setColor(COLOR_GREEN);
 	}
 

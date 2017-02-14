@@ -54,12 +54,12 @@ const char  txt_HTTPTERM[]           PROGMEM  = "AT+HTTPTERM";
 const char  txt_HTTPINIT[]           PROGMEM  = "AT+HTTPINIT";
 const char  txt_HTTPPARA1[]          PROGMEM  = "AT+HTTPPARA=\"CID\",1";
 const char  txt_HTTPPARA2[]          PROGMEM  = "AT+HTTPPARA=\"URL\",\"";
-const char  txt_HTTPACTION1[]        PROGMEM  = "AT+HTTPACTION=0";
-const char  txt_HTTPPARA3[]          PROGMEM  = "AT+HTTPPARA=\"URL\",\"";
-const char  txt_HTTPACTION2[]        PROGMEM  = "AT+HTTPACTION=0";
-const char  txt_200[]                PROGMEM  = "0,200";
-const char  txt_60[]                 PROGMEM  = "0,60";
-const char  txt_HTTPREAD1[]          PROGMEM  = "AT+HTTPREAD";
+const char  txt_HTTPACTION1[]        PROGMEM  = "";
+const char  txt_HTTPPARA3[]          PROGMEM  = "";
+const char  txt_HTTPACTION2[]        PROGMEM  = "";
+const char  txt_200[]                PROGMEM  = "";
+const char  txt_60[]                 PROGMEM  = "";
+const char  txt_HTTPREAD1[]          PROGMEM  = "";
 const char  txt_HTTPREAD2[]          PROGMEM  = "+HTTPREAD: ";
 const char  txt_Error1[]             PROGMEM  = "Error";
 const char  txt_r_n[]                PROGMEM  = "\r\n";
@@ -151,28 +151,26 @@ typedef enum {
     HTTP_ERROR,
 } HTTP_STATES;
 
-typedef struct {
-  float lat;
-  float lon;
-  uint8_t year; /* year past 2000, e.g. 15 for 2015 */
-  uint8_t month;
-  uint8_t day;
-  uint8_t hour;
-  uint8_t minute;
-  uint8_t second;
-} GSM_LOCATION;
+//typedef struct {
+//  float lat;
+//  float lon;
+//  uint8_t year; /* year past 2000, e.g. 15 for 2015 */
+//  uint8_t month;
+//  uint8_t day;
+//  uint8_t hour;
+//  uint8_t minute;
+//  uint8_t second;
+//} GSM_LOCATION;
 
 
 class CGPRS_SIM800 {
 public:
+
     CGPRS_SIM800():httpState(HTTP_DISABLED) {}
     // initialize the module
   
-
 	bool begin(Stream &port);
-    // setup network
-    byte setup();
-	void close_GPRS();
+ 	void close_GPRS();
 
 	uint8_t getNetworkStatus();
 	byte connect_GPRS();
@@ -181,6 +179,8 @@ public:
     bool getOperatorName();
 	bool getIMEI();
 	bool getSIMCCID();
+	void restart_sys();
+	byte ping_connect_internet();
 	bool ping(const char* url);
     // check for incoming SMS
 	bool checkSMS();
@@ -222,14 +222,16 @@ private:
     void purgeSerial();
     byte m_bytesRecv;                         // 
     uint32_t m_checkTimer;
-	String apn  = "";
-    String user = "";
-    String pwd  = ""; 
-    String cont = "";
+	String apn            = "";
+    String user           = "";
+    String pwd            = ""; 
+    String cont           = "";
 	const char* expected1 = "OK\r";
 	const char* expected2 = "ERROR\r";
-	unsigned int timeout = 2000;
-	byte operator_Num = 0;                                  // Порядковый номер оператора
+	const char* OK_r      = "OK\r";
+	const char* ERROR_r   = "ERROR\r";
+	unsigned int timeout  = 2000;
+	byte operator_Num     = 0;                                  // Порядковый номер оператора
 
 	char bufcom[30];
 	char combuf1[23];
