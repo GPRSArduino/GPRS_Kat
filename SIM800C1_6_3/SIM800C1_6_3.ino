@@ -211,16 +211,10 @@ String formEnd()
 
 }
 
+
 bool gprs_send(String data) 
 {
   con.print(F("Requesting .. Wait"));      
-
-
-
-
-
-
-
 
   int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
   for (;;)                                               // Бесконечный цикл пока не наступит, какое то состояние для выхода
@@ -376,6 +370,54 @@ bool gprs_send(String data)
 
   return send_ok;
 }
+
+
+void connect_internet_HTTP()
+{
+	bool setup_ok = false;
+	do
+	{
+		Serial.println(F("Internet HTTP connect .."));
+		
+		byte ret = gprs.connect_GPRS();                                              // Подключение к GPRS
+		Serial.print(F("ret - ")); Serial.print(ret);
+		if (ret == 0)
+		{
+			while (state_device != 3)  // Ожидание регистрации в сети
+			{
+				delay(50);
+				// Уточнить программу перезапуска  если модуль не зарегистрировался не зарегистрировался через 60 секунд
+			}
+
+			con.println(F("Wait IP"));
+			gprs.connect_IP_GPRS();                             // Получить IP адрес
+			Serial.println(F("Internet connect OK!-"));
+			//setColor(COLOR_GREEN);                            // Включить зеленый светодиод
+			setup_ok = true;
+		}
+		else                                                    // Модуль не подключиля к интернету
+		{
+		//	count_init++;                                        // Увеличить счетчик количества попыток
+			Serial.println(F("\nFailed connect internet"));
+			delay(5000);
+			if (state_device == 3)                              // Модуль одумался и все таки подключиля к интернету
+			{
+				Serial.println(F("Internet connect OK!-"));
+				//setColor(COLOR_GREEN);                        // Включить зеленый светодиод
+				setup_ok = true;
+			}
+
+
+			
+		}
+	} while (!setup_ok);             // 
+
+}
+
+
+
+
+
 
 void run_command(int command, String data)
 {
@@ -563,7 +605,7 @@ void ping()
 	{
 		delay(50);
 		count_wait++;
-		if (count_wait > 3000)  resetFunc();                     //вызываем reset при отсутствии доступа к  интернету
+		if (count_wait > 3000)  resetFunc();                           //вызываем reset при отсутствии доступа к  интернету
 	}
 
 	while (1)
@@ -575,7 +617,7 @@ void ping()
 		else
 		{
 			count_ping++;
-			if (count_ping > 7) resetFunc(); // 7 попыток. Что то пошло не так с интернетом
+			if (count_ping > 7) resetFunc();                           // 7 попыток. Что то пошло не так с интернетом
 		}
 		delay(1000);
 	}
