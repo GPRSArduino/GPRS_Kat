@@ -76,7 +76,7 @@ unsigned long interval         = 60;                    // Интервал пе
 //unsigned long interval         = 300;                   // Интервал передачи данных 5 минут
 bool time_set                  = false;                 // Фиксировать интервал заданный СМС
 bool ssl_set                   = false;                 // Признак шифрования
-unsigned long time_ping        = 60;                   // Интервал проверки ping 6 минут.
+unsigned long time_ping        = 180;                   // Интервал проверки ping 6 минут.
 unsigned long previousPing     = 0;                     // Временный Интервал проверки ping
 
 int Address_tel1       = 100;                           // Адрес в EEPROM телефона 1
@@ -215,6 +215,9 @@ String formEnd()
 bool gprs_send(String data) 
 {
   con.print(F("Requesting .. Wait"));      
+
+  connect_internet_HTTP();
+
 
   int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
   for (;;)                                               // Бесконечный цикл пока не наступит, какое то состояние для выхода
@@ -375,6 +378,7 @@ bool gprs_send(String data)
 void connect_internet_HTTP()
 {
 	bool setup_ok = false;
+	int count_init = 0;
 	do
 	{
 		Serial.println(F("Internet HTTP connect .."));
@@ -397,24 +401,20 @@ void connect_internet_HTTP()
 		}
 		else                                                    // Модуль не подключиля к интернету
 		{
-		//	count_init++;                                        // Увеличить счетчик количества попыток
+			count_init++;                                        // Увеличить счетчик количества попыток
+			if(count_init > 120) resetFunc();                    // вызываем reset после 120 ошибок
+
 			Serial.println(F("\nFailed connect internet"));
-			delay(5000);
+			delay(1000);
 			if (state_device == 3)                              // Модуль одумался и все таки подключиля к интернету
 			{
 				Serial.println(F("Internet connect OK!-"));
 				//setColor(COLOR_GREEN);                        // Включить зеленый светодиод
 				setup_ok = true;
 			}
-
-
-			
 		}
 	} while (!setup_ok);             // 
-
 }
-
-
 
 
 
@@ -735,41 +735,6 @@ void start_init()
 					delay(1000);
 					Serial.println(F("GPRS connect .."));
 					gprs.getOperatorName();
-					
-					// +++++++++++++++ Включаем временно для настройки ++++++++++++++++++++++++++++++++++++++++
-				/*
-					byte ret = gprs.connect_GPRS();                                              // Подключение к GPRS
-					Serial.print(F("ret - ")); Serial.print(ret);
-					if (ret == 0)
-					{
-						while (state_device != 3)  // Ожидание регистрации в сети
-						{
-							delay(50);
-							// Уточнить программу перезапуска  если модуль не зарегистрировался не зарегистрировался через 60 секунд
-						}
-						con.println(F("Wait IP"));
-						gprs.connect_IP_GPRS();                       // Получить IP адрес
-
-						Serial.println(F("\nGPRS connect OK!+"));
-						//setColor(COLOR_GREEN);                 // Включить зеленый светодиод
-						setup_ok = true;
-					}
-					else           // Модуль не подключиля к интернету
-					{
-						count_init++;             // Увеличить счетчик количества попыток 
-						Serial.println(F("Failed init GPRS"));
-						delay(5000);
-						if (state_device == 3)      // Модуль одумался и все таки подключиля к интернету
-						{
-							Serial.println(F("GPRS connect OK!-"));
-							//setColor(COLOR_GREEN);                 // Включить зеленый светодиод
-							setup_ok = true;
-						}
-					}
-					*/
-					//===========================================================================
-					//gprs.close_GPRS();                                //   закрываем GPRS-сессию у оператора
-
 					setup_ok = true;
 
 				} while (!setup_ok);             // 
@@ -821,9 +786,6 @@ void setup()
 	
 	int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
 	con.println(F("OK"));   
-
-
-
 
 	if(EEPROM.read(0)!=32)
 	{
@@ -890,13 +852,13 @@ void loop()
 		EEPROM.get(Address_tel1, buf);                                         // Восстановить телефон хозяина 1
 		String master_tel1(buf);
 
-		//EEPROM.get(Address_SMS_center, buf);                                   // Восстановить телефон СМС центра
+		//EEPROM.get(Address_SMS_center, buf);                                 // Восстановить телефон СМС центра
 		//String master_SMS_center(buf);
 		String master_SMS_center = "4556w6072556w6";
 		//con.println(master_SMS_center);
 		if (gprs.deleteSMS(1))
 		{
-			con.println(F("SMS delete"));                    //  con.print("SMS:");
+			con.println(F("SMS delete"));                    //      con.print("SMS:");
 		}
 
 		if (gprs.val.indexOf(master_tel1) > -1)                              //если СМС от хозяина 1
@@ -936,7 +898,7 @@ void loop()
 		con.println((currentMillis-previousMillis)/1000);
 		setColor(COLOR_BLUE);
 		previousMillis = currentMillis;
-		//sendTemps();
+		sendTemps();
 		setColor(COLOR_GREEN);
 		con.print(F("\nfree memory: "));                                 
 		con.println(freeRam());
