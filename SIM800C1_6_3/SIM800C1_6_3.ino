@@ -63,15 +63,18 @@ bool send_ok                         = false;           // Признак усп
 bool count_All_reset                 = false;           // Признак выполнения команды сброса счетчика ошибок.
 
 CGPRS_SIM800 gprs;
-uint32_t count      = 0;
-uint32_t errors     = 0;
-//String imei       = "";
-String imei         = "861445030362268";                // Тест IMEI
-String CSQ          = "";                               // Уровень сигнала приема
-String SMS_center   = "";
-String zero_tel     = "";
-String SIMCCID      = "";
-String CMTE         = "";                               // Внутренний датчик температуры
+uint32_t count           = 0;
+uint32_t errors          = 0;
+//String imei            = "";
+String imei              = "861445030362268";           // Тест IMEI
+String CSQ               = "";                          // Уровень сигнала приема
+String SMS_center        = "";
+String zero_tel          = "";
+String SIMCCID           = "";
+String CMTE              = "";                          // Внутренний датчик температуры
+String master_tel1       = "";
+String master_SMS_center = "";                          // телефон СМС центра
+
 #define DELIM "@"
 
 unsigned long time             = 0;                     // Переменная для суточного сброса
@@ -93,7 +96,7 @@ int Address_Dev3       = 260;                           // Адрес в EEPROM 
 int Address_Dev3_ind   = 262;                           // Адрес в EEPROM признак управления сполнительного устройства Dev3
 int dev3               = 0;                         // признак управления сполнительного устройства Dev3
 char data_tel[16];                                      // Буфер для номера телефона
-
+char buf[16];
 uint8_t oneWirePins[]={16, 17, 4};                      //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
 														// Сейчас первым идет внутренний датчик.
 uint8_t oneWirePinsCount=sizeof(oneWirePins)/sizeof(int);
@@ -336,10 +339,10 @@ bool gprs_send(String data)
   // Теперь мы получили сообщение от сайта.
    con.print(F("[Payload] "));                        
    con.println(gprs.buffer);
-  // String val = gprs.buffer;                            // Получить строку данных с сервера
+   String val = gprs.buffer;                            // Получить строку данных с сервера
    send_ok = true;                                      // Команда принята успешно
    int p0[8];
-  String val = "&010155&0202+79162632701&03034556w6072556w6&040400&050500&060601&070700#";  // Пример строки, принятой с сервера
+  //String val = "&010155&0202+79162632701&03034556w6072556w6&040400&050500&060601&070700#";  // Пример строки, принятой с сервера
 													  // Команда принята успешно
 
    if (val.indexOf("&") > -1)              // Определить адреса (позиции) команд в строке 
@@ -391,10 +394,10 @@ void connect_internet_HTTP()
 	int count_init = 0;
 	do
 	{
-		Serial.println(F("Internet HTTP connect .."));
+		Serial.println(F("\nInternet HTTP connect .."));
 		
 		byte ret = gprs.connect_GPRS();                                              // Подключение к GPRS
-		Serial.print(F("ret - ")); Serial.print(ret);
+		//Serial.print(F("ret - ")); Serial.print(ret);
 		if (ret == 0)
 		{
 			while (state_device != 3)  // Ожидание регистрации в сети
@@ -746,15 +749,15 @@ void start_init()
 		{
 			//return;  // SIMCCID не определился
 		}
-
+		Serial.print(F("\nSetting up network..."));
 		while (state_device != 2)  // Ожидание регистрации в сети
 		{
+			Serial.print(F("."));
 			delay(1000);
 			// Уточнить программу перезапуска  если модуль не зарегистрировался через 70 секунд
 		}
 		delay(1000);
-		Serial.print(F("\nSetting up network..."));
-
+	
 		char n = gprs.getNetworkStatus();
 		
 		Serial.print(F("\nNetwork status "));
@@ -852,7 +855,6 @@ void setup()
 		con.println (F("Clear EEPROM End"));                              
 	}
 
-	//SMS_center = "4556w6072556w6";                               // SMS_center = "SMS.RU";
 	//EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
 	//EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
 	EEPROM.get(Address_interval, interval);                      // Получить из EEPROM интервал
@@ -860,9 +862,17 @@ void setup()
 	ssl_set = EEPROM.read(Address_ssl);							 // Устанивить признак шифрования
 	con.print(F("Interval sec:"));
 	con.println(interval);
-	con.print(F("SMS_center .."));
-	con.println(SMS_center);
 
+	con.print(F("Telepfon .."));
+	EEPROM.get(Address_tel1, buf);                               // Получить из EEPROM телефон хозяина
+	master_tel1  = String(buf);
+	con.println(master_tel1);
+	
+	EEPROM.get(Address_SMS_center, buf);                          // Получить из EEPROM СМС центр
+	master_SMS_center = String(buf);
+	con.print(F("SMS_center .."));
+	con.println(master_SMS_center); 
+	
 	con.print(F("\nfree memory: "));
 	con.println(freeRam());
 
@@ -895,7 +905,7 @@ void loop()
 	if (gprs.val.indexOf("REC UNREAD") > -1)  //если обнаружена новая  СМС 
 	{    
 		//------------- поиск кодового слова в СМС 
-		char buf[16] ;
+		//char buf[16] ;
 
 		EEPROM.get(Address_tel1, buf);                                         // Восстановить телефон хозяина 1
 		String master_tel1(buf);
@@ -903,7 +913,7 @@ void loop()
 		EEPROM.get(Address_SMS_center, buf);                                 // Восстановить телефон СМС центра
 		String master_SMS_center(buf);
 		//String master_SMS_center = "4556w6072556w6";
-		con.println(master_SMS_center);
+		//con.println(master_SMS_center);
 		if (gprs.deleteSMS(1))
 		{
 			con.println(F("SMS delete"));                    //      con.print("SMS:");

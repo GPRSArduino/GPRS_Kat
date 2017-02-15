@@ -187,7 +187,7 @@ bool CGPRS_SIM800::getSIMCCID()
 				if (buffer[i] >= '0'&&buffer[i] <= '9') // если цифру найдено - то выводим ее
 				{
 					buffer1[i] = buffer[i];
-					Serial.print(buffer1[i]);
+					//Serial.print(buffer1[i]);
 				}
 			}
 			return true;

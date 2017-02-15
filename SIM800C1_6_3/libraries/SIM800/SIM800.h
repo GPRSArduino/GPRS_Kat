@@ -11,7 +11,7 @@ typedef	Stream 						FONAStreamType;
 
 
 // define DEBUG to one serial UART to enable debug information output
-#define DEBUG Serial
+//#define DEBUG Serial
 
 typedef enum {
     HTTP_DISABLED = 0,
@@ -67,7 +67,7 @@ public:
     // check if there is available serial data
     bool available();
 	void cleanStr(String & str);
-    char buffer[120];
+    char buffer[140];
 	char buffer1[22];
     byte httpState;
 	String val = "";
