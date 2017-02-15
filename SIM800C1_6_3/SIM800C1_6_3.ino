@@ -830,7 +830,7 @@ void setup()
 	MsTimer2::stop();
 	setColor(COLOR_GREEN);                                      // Включить зеленый светодиод
 	sendTemps();
-	time = millis();                                            // Старт отсчета суток
+	time = millis();                                             // Старт отсчета суток
 	con.println(F("\nSIM800 setup end"));
 }
 
