@@ -7,8 +7,6 @@
 
 #include "SIM800.h"
 #include <SoftwareSerial.h>
-#include <avr/pgmspace.h>
-
 
 bool CGPRS_SIM800::begin(Stream &port)
 {
@@ -105,13 +103,6 @@ bool CGPRS_SIM800::connect_IP_GPRS()
 	return false;
 }
 
-void  CGPRS_SIM800::close_GPRS()
-{
-
-	sendCommandS(F("AT + CIPSHUT"));  // закрываем GPRS-сессию у оператора
-
-}
-
 
 void CGPRS_SIM800::cleanStr(String & str) 
 {
@@ -166,7 +157,7 @@ bool CGPRS_SIM800::getIMEI()
 	  if (p) 
 	  {
 		p += 2;
-		 char *s = strchr(p, '\r');       // Функция strchr() возвращает указатель на первое вхождение символа ch в строку, 
+		 char *s = strchr(p, '\r');         // Функция strchr() возвращает указатель на первое вхождение символа ch в строку, 
 											//на которую указывает str. Если символ ch не найден,
 											//возвращается NULL. 
 		 if (s) *s = 0;   strcpy(buffer, p);
@@ -179,8 +170,8 @@ bool CGPRS_SIM800::getSIMCCID()
 {
 	if (sendCommandS(F("AT+CCID")) == 1)             // (sendCommand("AT+CCID", "OK\r", "ERROR\r") == 1)
 	{      
-		char *p = strstr(buffer, "\r");          //Функция strstr() возвращает указатель на первое вхождение в строку, 
-												 //Если совпадений не обнаружено, возвращается NULL.
+		char *p = strstr(buffer, "\r");              //Функция strstr() возвращает указатель на первое вхождение в строку, 
+												     //Если совпадений не обнаружено, возвращается NULL.
 		if (p)
 		{
 			p += 2;
@@ -188,6 +179,17 @@ bool CGPRS_SIM800::getSIMCCID()
 												//на которую указывает str. Если символ ch не найден,
 												//возвращается NULL. 
 			if (s) *s = 0;   strcpy(buffer, p);
+			int i=0;
+
+			for (i=0;i<120;i++)
+			{
+				if (buffer[i] == "f")  break;
+				if (buffer[i] >= '0'&&buffer[i] <= '9') // если цифру найдено - то выводим ее
+				{
+					buffer1[i] = buffer[i];
+					Serial.print(buffer1[i]);
+				}
+			}
 			return true;
 		}
 	}
@@ -267,7 +269,7 @@ byte CGPRS_SIM800::ping_connect_internet()
 	for (;;)                                                          // Бесконечный цикл пока не наступит, какое то состояние для выхода
 	{
 		if (sendCommandS(F("AT+CGATT?")) == 1) break;                  // Все нормально, модуль подключен к GPRS service , Прервать попытки и выйти из цикла
-		Serial.print(">");
+		Serial.print(F(">"));
 		Serial.println(buffer);                                          // Не получилось, ("ERROR") 
 		String stringError = buffer;
 		if (stringError.indexOf(F("ERROR")) > -1)
@@ -459,11 +461,11 @@ bool CGPRS_SIM800::httpConnectStr(const char* url, String args)
 // check if HTTP connection is established
 // return 0 for in progress, 1 for success, 2 for error
 // Проверить, если соединение HTTP установлено
-// Возвращает 0 для прогресса в, 1 для успеха, 2 для ошибки
+// Возвращает 0 - в работе, 1 для успешно, 2 для ошибки
 
 byte CGPRS_SIM800::httpIsConnected()
 {
-	byte ret = checkbuffer("0,200", "0,60", 10000);           
+	byte ret = checkbuffer("0,200", "0,60", 15000);           
 	if (ret >= 2) 
 	{
 		httpState = HTTP_ERROR;
@@ -517,72 +519,25 @@ boolean CGPRS_SIM800::HTTP_ssl(boolean onoff)
 	return false;           
 }
 
-/*
-byte CGPRS_SIM800::sendCommand(const char* cmd, unsigned int timeout, const char* expected)
-{   
-  if (cmd)                                               // Если есть команда - отправить.
-  {
-	purgeSerial();                                       // Очистить приемный буффер
-#ifdef DEBUG
-	DEBUG.print('>');
-	DEBUG.println(cmd);
-#endif
-	SIM_SERIAL->println(cmd);                            // Отправить команду в модем
-  }
-  uint32_t t = millis();                                 // Записать текущее время в начале чтения ответа
-  byte n = 0;
-  do {                                                   // Читает ответ с модема
-	if (SIM_SERIAL->available()) 
-	{
-	  char c = SIM_SERIAL->read();
-	  if (n >= sizeof(buffer) - 1)                       // Если буффер переполнен - удалить первую часть  
-	  {
-		// buffer full, discard first half
-		n = sizeof(buffer) / 2 - 1;                      // Буфер заполнен, выбросьте первую половину
-		memcpy(buffer, buffer + sizeof(buffer) / 2, n);  // Переместить вторую половину сообщения
-	  }
-	  buffer[n++] = c;                                   // Записать символ  в буфер и увеличить счетчик на 1                                    
-	  buffer[n] = 0;                                     // Записать 0 в конец строки
-	 if (strstr(buffer, expected ? expected : "OK\r"))   // возвращает указатель на первое вхождение в строку,
-														 // на которую указывает buffer, строки, указанной expected (исключая завершающий нулевой символ). 
-														 // Если совпадений не обнаружено, возвращается NULL.
-	  {                                                  // Переместит указатель на текст expected или "OK\r".
-#ifdef DEBUG                                             
-	   DEBUG.print("[1]");
-	   DEBUG.println(buffer);                            // в буфере сообщение после отсечки указателя содержимого в expected
-#endif
-	  return n;                                          // Позиция текущего указателя , Контрольная строка обнаружена 
-	  }
-	}
-  } while (millis() - t < timeout);                      // Считывать сообщение не более timeout миллисекунд.
-#ifdef DEBUG
-   DEBUG.print("[0]");  
-   DEBUG.println(buffer);
-#endif
-  return 0;                                              // Контрольная строка не обнаружена 
-}
-
-*/
-
 byte CGPRS_SIM800::sendCommandS(String cmd, unsigned int timeout, const char* expected)
 {   
-	if (cmd!= "no")                                       // Если есть команда - отправить.
+	if (cmd!= "no")                                              // Если есть команда - отправить.
 	{
-		purgeSerial();                                   // Очистить приемный буффер
+		purgeSerial();                                           // Очистить приемный буффер
 #ifdef DEBUG
 		DEBUG.print('>');
 		DEBUG.println(cmd);
 #endif
-		SIM_SERIAL->println(cmd);                            // Отправить команду в модем
+		SIM_SERIAL->println(cmd);                                // Отправить команду в модем
 	}
-	uint32_t t = millis();                                 // Записать текущее время в начале чтения ответа
+	uint32_t t = millis();                                       // Записать текущее время в начале чтения ответа
 	byte n = 0;
-	do {                                                   // Читает ответ с модема
+	do {                                                         // Читает ответ с модема
 		if (SIM_SERIAL->available())
 		{
 			char c = SIM_SERIAL->read();
-			if (n >= sizeof(buffer) - 1)                       // Если буффер переполнен - удалить первую часть  
-			{
+			if (n >= sizeof(buffer) - 1)                        // Если буффер переполнен - удалить первую часть  
+			{ 
 				// buffer full, discard first half
 				n = sizeof(buffer) / 2 - 1;                      // Буфер заполнен, выбросьте первую половину
 				memcpy(buffer, buffer + sizeof(buffer) / 2, n);  // Переместить вторую половину сообщения
@@ -607,58 +562,6 @@ byte CGPRS_SIM800::sendCommandS(String cmd, unsigned int timeout, const char* ex
 #endif
 	return 0;                                              // Контрольная строка не обнаружена 
 }
-
-/*
-byte CGPRS_SIM800::sendCommand(const char* cmd, const char* expected1, const char* expected2, unsigned int timeout)
-{   
-  if (cmd) // Отправить команду и ожидать ответ при совпадении слов в буфере по строкам expected1 или expected2 в течении timeout
-  {
-	purgeSerial();                                          // Очистить приемный буффер
-	#ifdef DEBUG
-		DEBUG.print('>');
-		DEBUG.println(cmd);
-	#endif
-	SIM_SERIAL->println(cmd);                               // Отправить команду
-  }
-  uint32_t t = millis();                                    // Записать время старта
-  byte n = 0;                                               // Сбросить счетчик символов 
-	do {
-		if (SIM_SERIAL->available())                        // Если буфер не пустой - читать сообщения от модуля
-		{
-		  char c = SIM_SERIAL->read();                      // Читать сообщения от модуля
-		  if (n >= sizeof(buffer) - 1)                      // При переполнении буфера - урезать в 2 раза
-		  {
-			n = sizeof(buffer) / 2 - 1;
-			memcpy(buffer, buffer + sizeof(buffer) / 2, n);
-		  }
-		  buffer[n++] = c;
-		  buffer[n] = 0;
-		  if (strstr(buffer, expected1))                    // Искать по строке  expected1, указатель перемещен
-		  {
-			#ifdef DEBUG
-				   DEBUG.print("[1]");
-				   DEBUG.println(buffer);
-			#endif
-		   return 1;
-		  }
-		  if (strstr(buffer, expected2))                    // Искать по строке  expected2, указатель перемещен
-		  {
-			#ifdef DEBUG
-				   DEBUG.print("[2]");
-				   DEBUG.println(buffer);
-			#endif
-		   return 2;
-		  }
-		}
-	} while (millis() - t < timeout);
-#if DEBUG
-   DEBUG.print("[0]");
-   DEBUG.println(buffer);
-#endif
-  return 0;                                                // Строка expected1 или expected2 не найдена.
-}
-
-*/
 byte CGPRS_SIM800::sendCommandS(String cmd)
 {     
 	if (cmd != "no")        // Отправить команду и ожидать ответ при совпадении слов в буфере по строкам expected1 или expected2 в течении timeout
@@ -720,17 +623,25 @@ byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, uns
 		if (m_bytesRecv >= sizeof(buffer) - 1)        // При вызове подпрограммы m_bytesRecv сбрасывается в"0" (при применении http)
 		{
 													  // Если количество символов больше размера буфера - половина текста удаляется.
-			m_bytesRecv = sizeof(buffer) / 2 - 1;    // buffer full, discard first half буфер заполнен, выбросьте первую половину
-			memcpy(buffer, buffer + sizeof(buffer) / 2, m_bytesRecv);  // Скопировать оставшуюся половину в buffer
+			//m_bytesRecv = sizeof(buffer) / 2 - 1;    // buffer full, discard first half буфер заполнен, выбросьте первую половину
+			//memcpy(buffer, buffer + sizeof(buffer) / 2, m_bytesRecv);  // Скопировать оставшуюся половину в buffer
 		}
 		buffer[m_bytesRecv++] = c;                   // Записать символ в буфер на место, указанное в m_bytesRecv
 		buffer[m_bytesRecv] = 0;                     // Последним в буфере записать "0"
 		if (strstr(buffer, expected1))               // Найдено первое слово  return 1;
 		{
+
+				//DEBUG.print(F("[1-checkbuffer ]"));
+			 //   DEBUG.println(buffer);
+ 
 			return 1;
 		}
 		if (expected2 && strstr(buffer, expected2))  // Если текст в буфере равен expected2 return 2;
 		{
+/*
+				DEBUG.print(F("[2-checkbuffer ]"));
+			    DEBUG.println(buffer);*/
+  
 			return 2;
 		}
 	}

@@ -6,7 +6,6 @@
 *************************************************************************/
 
 #include <Arduino.h>
-#include <avr/pgmspace.h>
 
 typedef	Stream 						FONAStreamType;
 
@@ -22,17 +21,6 @@ typedef enum {
     HTTP_ERROR,
 } HTTP_STATES;
 
-typedef struct {
-  float lat;
-  float lon;
-  uint8_t year; /* year past 2000, e.g. 15 for 2015 */
-  uint8_t month;
-  uint8_t day;
-  uint8_t hour;
-  uint8_t minute;
-  uint8_t second;
-} GSM_LOCATION;
-
 
 class CGPRS_SIM800 {
 public:
@@ -41,9 +29,7 @@ public:
     // initialize the module
   
 	bool begin(Stream &port);
- 	void close_GPRS();
-
-	uint8_t getNetworkStatus();
+ 	uint8_t getNetworkStatus();
 	byte connect_GPRS();
 	bool connect_IP_GPRS();
     // get network operator name
@@ -81,7 +67,8 @@ public:
     // check if there is available serial data
     bool available();
 	void cleanStr(String & str);
-    char buffer[150];
+    char buffer[120];
+	char buffer1[22];
     byte httpState;
 	String val = "";
 
