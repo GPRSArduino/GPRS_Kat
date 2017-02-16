@@ -14,73 +14,73 @@ typedef	Stream 						FONAStreamType;
 //#define DEBUG Serial
 
 typedef enum {
-    HTTP_DISABLED = 0,
-    HTTP_READY,
-    HTTP_CONNECTING,
-    HTTP_READING,
-    HTTP_ERROR,
+	HTTP_DISABLED = 0,
+	HTTP_READY,
+	HTTP_CONNECTING,
+	HTTP_READING,
+	HTTP_ERROR,
 } HTTP_STATES;
 
 
 class CGPRS_SIM800 {
 public:
 
-    CGPRS_SIM800():httpState(HTTP_DISABLED) {}
-    // initialize the module
+	CGPRS_SIM800():httpState(HTTP_DISABLED) {}
+	// initialize the module
   
 	bool begin(Stream &port);
- 	uint8_t getNetworkStatus();
+	uint8_t getNetworkStatus();
 	byte connect_GPRS();
 	bool connect_IP_GPRS();
-    // get network operator name
-    bool getOperatorName();
+	// get network operator name
+	bool getOperatorName();
 	bool getIMEI();
 	bool getSIMCCID();
 	byte ping_connect_internet();
 	bool ping(const char* url);
-    // check for incoming SMS
+	// check for incoming SMS
 	bool checkSMS();
 	bool deleteSMS(int n_sms);
-    // get signal quality level (in dB)
-    int getSignalQuality();
+	// get signal quality level (in dB)
+	int getSignalQuality();
 	
-    // initialize HTTP connection
-    bool httpInit();
-    // terminate HTTP connection
-    void httpUninit();
-    // connect to HTTP server
-    bool httpConnect(const char* url, const char* args = 0);
+	// initialize HTTP connection
+	bool httpInit();
+	// terminate HTTP connection
+	void httpUninit();
+	// connect to HTTP server
+	bool httpConnect(const char* url, const char* args = 0);
 	bool httpConnectStr(const char* url, String args = "");
 	boolean HTTP_ssl(boolean onoff);
-    // check if HTTP connection is established
-    // return 0 for in progress, 1 for success, 2 for error
-    byte httpIsConnected();
-    // read data from HTTP connection
-    void httpRead();
-    // check if HTTP connection is established
-    // return 0 for in progress, -1 for error, bytes of http payload on success
-    int httpIsRead();
-    // send AT command and check for expected response
- 	byte sendCommandS(String cmd, unsigned int timeout, const char* expected);
-    // send AT command and check for two possible responses
- 	byte sendCommandS(String cmd);
-    // check if there is available serial data
-    bool available();
+	// check if HTTP connection is established
+	// return 0 for in progress, 1 for success, 2 for error
+	byte httpIsConnected();
+	// read data from HTTP connection
+	void httpRead();
+	// check if HTTP connection is established
+	// return 0 for in progress, -1 for error, bytes of http payload on success
+	int httpIsRead();
+	// send AT command and check for expected response
+	byte sendCommandS(String cmd, unsigned int timeout, const char* expected);
+	// send AT command and check for two possible responses
+	byte sendCommandS(String cmd);
+	// check if there is available serial data
+	bool available();
 	void cleanStr(String & str);
-    char buffer[140];
+	char buffer[180];
 	char buffer1[22];
-    byte httpState;
+	byte httpState;
 	String val = "";
 
 private:
-    byte checkbuffer(const char* expected1, const char* expected2 = 0, unsigned int timeout = 2000);  // По умолчанию ожидание 2 секунды
-    void purgeSerial();
-    byte m_bytesRecv;                         // 
-    uint32_t m_checkTimer;
+	byte checkbuffer(const char* expected1, const char* expected2 = 0, unsigned int timeout = 2000);  // По умолчанию ожидание 2 секунды
+	void purgeSerial();
+	byte m_bytesRecv;                         // 
+	uint32_t m_checkTimer;
 	String apn            = "";
-    String user           = "";
-    String pwd            = ""; 
-    String cont           = "";
+	String user           = "";
+	String pwd            = ""; 
+	String cont           = "";
 	String no             = "no";
 	const char* expected1 = "OK\r";
 	const char* expected2 = "ERROR\r";

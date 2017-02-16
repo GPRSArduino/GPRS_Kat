@@ -17,10 +17,12 @@
 
 #define con Serial
 #define speed_Serial 115200
-static const char* url1 = "http://trm7.xyz/r.php";
-//static const char* url1   = "http://vps3908.vps.host.ru/recieveReadings.php";
-static const char* urlssl = "https://trm7.xyz/r.php";
-static const char* url_ping = "www.yandex.ru";
+static const char* url1      = "http://trm7.xyz/r.php";
+//static const char* url1    = "http://vps3908.vps.host.ru/recieveReadings.php";
+static const char* urlssl    = "https://trm7.xyz/r.php";
+static const char* url_ping1 = "www.yandex.ru";
+static const char* url_ping2 = "www.google.com";
+byte num_site_ping           = 0;
 
 #define PIN_TX           7                              // Подключить  к выводу 7 сигнал RX модуля GPRS
 #define PIN_RX           8                              // Подключить  к выводу 8 сигнал TX модуля GPRS
@@ -61,6 +63,7 @@ volatile int count_blink1            = 0;               // Счетчик поп
 volatile int count_blink2            = 0;               // Счетчик попыток подключиться к базовой станции
 bool send_ok                         = false;           // Признак успешной передачи данных
 bool count_All_reset                 = false;           // Признак выполнения команды сброса счетчика ошибок.
+bool temp_dev3                       = false;           // Переменная для временного хранения состояния исполнительного устройства
 
 CGPRS_SIM800 gprs;
 uint32_t count           = 0;
@@ -87,14 +90,15 @@ bool ssl_set                   = false;                 // Признак шиф
 unsigned long time_ping        = 180;                   // Интервал проверки ping 6 минут. 
 unsigned long previousPing     = 0;                     // Временный Интервал проверки ping
 
-int Address_tel1       = 100;                           // Адрес в EEPROM телефона 1
-int Address_ssl        = 120;                           // Адрес в EEPROM признака шифрования
-int Address_errorAll   = 160;                           // Адрес в EEPROM счетчика общих ошибок
-int Address_interval   = 200;                           // Адрес в EEPROM величины интервала
-int Address_SMS_center = 220;                           // Адрес в EEPROM SMS центра
-int Address_Dev3       = 260;                           // Адрес в EEPROM состояния исполнительного устройства Dev3
-int Address_Dev3_ind   = 262;                           // Адрес в EEPROM признак управления сполнительного устройства Dev3
-int dev3               = 0;                         // признак управления сполнительного устройства Dev3
+int Address_tel1          = 100;                           // Адрес в EEPROM телефона 1
+int Address_ssl           = 120;                           // Адрес в EEPROM признака шифрования
+int Address_errorAll      = 160;                           // Адрес в EEPROM счетчика общих ошибок
+int Address_interval      = 200;                           // Адрес в EEPROM величины интервала
+int Address_SMS_center    = 220;                           // Адрес в EEPROM SMS центра
+int Address_Dev3          = 260;                           // Адрес в EEPROM состояния исполнительного устройства Dev3
+int Address_Dev3_ind      = 264;                           // Адрес в EEPROM признак управления сполнительного устройства Dev3
+int Address_num_site_ping = 268;                           // Адрес в EEPROM признак управления сполнительного устройства Dev3
+byte dev3                 = 0;                         // признак управления сполнительного устройства Dev3
 char data_tel[16];                                      // Буфер для номера телефона
 char buf[16];
 uint8_t oneWirePins[]={16, 17, 4};                      //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
@@ -170,7 +174,6 @@ void flash_time()                                       // Программа о
  
 void sendTemps()
 {
-	//Serial.println("\nTemp");
 	sensor1.requestTemperatures();
 	sensor2.requestTemperatures();
 	sensor3.requestTemperatures();
@@ -184,12 +187,11 @@ void sendTemps()
 
 	int dev1 = analogRead(analog_dev1);                   // Аналоговый вход 1
 	bool dev2 = digitalRead(digital_inDev2);              // Цифровой вход 2
-	dev3 = EEPROM.read(Address_Dev3);
+	dev3 = EEPROM.read(Address_Dev3);                     // Состояние исполнительного устройства
+	num_site_ping = EEPROM.read(Address_num_site_ping);   // Вариант сайта для ping
+	String toSend = "t1=" + imei + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma) +DELIM + String(dev1) + DELIM + String(dev2) + DELIM + String(dev3) + DELIM + String(num_site_ping);
 
-	String toSend = "t1=" + imei + DELIM + "17/2/1,21:2:28%2000" DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma) +DELIM + String(dev1) + DELIM + String(dev2) + DELIM + String(dev3);
-
-	//Serial.println(toSend);
-
+	Serial.print(F("toSend.length: "));
 	Serial.println(toSend.length());
 	int count_send = 0;
 	while (1)
@@ -208,7 +210,6 @@ void sendTemps()
 	}
 
 }
-
 
 String formEnd() 
 {
@@ -433,8 +434,9 @@ void connect_internet_HTTP()
 void run_command(int command, String data)
 {
 	unsigned long interval1 = 0;
-	int dev3_set            = 0;
-	int dev3_data           = 0;
+	byte dev3_set            = 0;
+	byte dev3_data           = 0;
+	byte ping_data           = 0;
 	switch (command) 
 	{
 		case 1:
@@ -523,7 +525,20 @@ void run_command(int command, String data)
 			}
 			break;
 		case 7:
-		
+			num_site_ping = EEPROM.read(Address_num_site_ping);
+			ping_data = data.toInt();
+			if (ping_data != num_site_ping)
+			{
+				EEPROM.write(Address_num_site_ping, ping_data);
+				if (ping_data == 0)
+				{
+					Serial.println(F("www.yandex.ru"));
+				}
+				else
+				{
+					Serial.println(F("www.google.com"));
+				}
+			}
 			break;
 		default:
 			break;
@@ -586,13 +601,13 @@ void setTime(String val, String f_phone)
   {
 	  EEPROM.write(Address_Dev3, 1);                  // Включить исполнительное устройство
 	  EEPROM.write(Address_Dev3_ind, 1);
-	  Serial.println(F("Device ON"));
+	  con.println(F("Device ON"));
   }
   else if (val.indexOf(F("Devoff")) > -1)
   {
 	  EEPROM.write(Address_Dev3, 0);                  // Отключить исполнительное устройство
 	  EEPROM.write(Address_Dev3_ind, 0);                  // 
-	  Serial.println(F("Device OFF"));
+	  con.println(F("Device OFF"));
   }
 
   else
@@ -675,12 +690,25 @@ void ping()
 
 bool check_ping()
 {
+	num_site_ping = EEPROM.read(Address_num_site_ping);
 	con.print(F("Ping -> "));
-	con.println(url_ping);
-	if (gprs.ping(url_ping))
+	if (num_site_ping == 0)
 	{
-		con.println(F(".. Ok!"));
-		return true;
+		con.println(url_ping1);
+		if (gprs.ping(url_ping1))
+		{
+			con.println(F(".. Ok!"));
+			return true;
+		}
+	}
+	else
+	{
+		con.println(url_ping2);
+		if (gprs.ping(url_ping2))
+		{
+			con.println(F(".. Ok!"));
+			return true;
+		}
 	}
 	con.println(F(".. false!"));
 	return false;
@@ -749,7 +777,7 @@ void start_init()
 		{
 			//return;  // SIMCCID не определился
 		}
-		Serial.print(F("\nSetting up network..."));
+		Serial.print(F("\nSetting up mobile network..."));
 		while (state_device != 2)  // Ожидание регистрации в сети
 		{
 			Serial.print(F("."));
@@ -975,15 +1003,20 @@ void loop()
 	}
 
 	dev3 = EEPROM.read(Address_Dev3);
-	if (dev3 == 0)
+	if (dev3 != temp_dev3)
 	{
-		digitalWrite(digital_outDev3, LOW); 	       // Цифровой выход 3
+		temp_dev3 = dev3;
+		if (dev3 == 0)
+		{
+			con.println(F("Device OFF"));
+			digitalWrite(digital_outDev3, LOW); 	       // Цифровой выход 3
+		}
+		else
+		{
+			con.println(F("Device ON"));
+			digitalWrite(digital_outDev3, HIGH); 	       // Цифровой выход 3
+		}
 	}
-	else
-	{
-		digitalWrite(digital_outDev3, HIGH); 	       // Цифровой выход 3
-	}
-
 
 	if(millis() - time > time_day*1000) resetFunc();                         //вызываем reset интервалом в сутки
 	delay(500);

@@ -336,8 +336,6 @@ bool CGPRS_SIM800::checkSMS()
 {
 	expected1 = "+CMGR:";
 	expected2 = ERROR_r;
-//	timeout = 2000;
-
 
 	if (sendCommandS(F("AT+CMGR=1")) == 1)                            //  отправляет команду "AT+CMGR=1", поиск ответного сообщения +CMGR:
 	{ 
@@ -384,7 +382,6 @@ int CGPRS_SIM800::getSignalQuality()
    return 0; 
   }
 }
-
 
 
 void CGPRS_SIM800::httpUninit()
@@ -564,7 +561,7 @@ byte CGPRS_SIM800::sendCommandS(String cmd, unsigned int timeout, const char* ex
 }
 byte CGPRS_SIM800::sendCommandS(String cmd)
 {     
-	if (cmd != "no")        // Отправить команду и ожидать ответ при совпадении слов в буфере по строкам expected1 или expected2 в течении timeout
+	if (cmd != "no")                                      // Отправить команду и ожидать ответ при совпадении слов в буфере по строкам expected1 или expected2 в течении timeout
 	{
 		purgeSerial();                                    // Очистить приемный буффер
 #ifdef DEBUG
@@ -612,8 +609,6 @@ byte CGPRS_SIM800::sendCommandS(String cmd)
 }
 
 
-
-
 byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, unsigned int timeout)
 {
 	// Поиск в тексте, пришедшем из модуля текстов, указанных в expected1 и expected2, ожидание не дольше чем в timeout
@@ -623,25 +618,17 @@ byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, uns
 		if (m_bytesRecv >= sizeof(buffer) - 1)        // При вызове подпрограммы m_bytesRecv сбрасывается в"0" (при применении http)
 		{
 													  // Если количество символов больше размера буфера - половина текста удаляется.
-			//m_bytesRecv = sizeof(buffer) / 2 - 1;    // buffer full, discard first half буфер заполнен, выбросьте первую половину
-			//memcpy(buffer, buffer + sizeof(buffer) / 2, m_bytesRecv);  // Скопировать оставшуюся половину в buffer
+			m_bytesRecv = sizeof(buffer) / 2 - 1;    // buffer full, discard first half буфер заполнен, выбросьте первую половину
+			memcpy(buffer, buffer + sizeof(buffer) / 2, m_bytesRecv);  // Скопировать оставшуюся половину в buffer
 		}
 		buffer[m_bytesRecv++] = c;                   // Записать символ в буфер на место, указанное в m_bytesRecv
 		buffer[m_bytesRecv] = 0;                     // Последним в буфере записать "0"
 		if (strstr(buffer, expected1))               // Найдено первое слово  return 1;
 		{
-
-				//DEBUG.print(F("[1-checkbuffer ]"));
-			 //   DEBUG.println(buffer);
- 
 			return 1;
 		}
 		if (expected2 && strstr(buffer, expected2))  // Если текст в буфере равен expected2 return 2;
 		{
-/*
-				DEBUG.print(F("[2-checkbuffer ]"));
-			    DEBUG.println(buffer);*/
-  
 			return 2;
 		}
 	}
