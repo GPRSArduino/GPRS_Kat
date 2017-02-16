@@ -505,14 +505,16 @@ int CGPRS_SIM800::httpIsRead()
 
 boolean CGPRS_SIM800::HTTP_ssl(boolean onoff) 
 {
+	timeout  = 4000;
 	if (onoff)
 	{
-		if(sendCommandS(F("AT+HTTPSSL=1")) == 1) return true;
+		if(sendCommandS(F("AT+HTTPSSL=1")) == 1)timeout  = 2000; return true;
 	}
 	else
 	{
-		if (sendCommandS(F("AT+HTTPSSL=0")) == 1) return true;
+		if (sendCommandS(F("AT+HTTPSSL=0")) == 1) timeout  = 2000; return true;
 	}
+	timeout  = 2000; 
 	return false;           
 }
 
