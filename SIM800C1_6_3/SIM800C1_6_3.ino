@@ -867,17 +867,17 @@ void setup()
 	int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
 	con.println(F("OK"));   
 
-	if(EEPROM.read(0)!=31)                              // Программа записи начальных установок при первом включении устройства после монтажа.
+	if(EEPROM.read(0)!=32)                              // Программа записи начальных установок при первом включении устройства после монтажа.
 	{
 		con.println (F("Start clear EEPROM"));               //  
 		for(int i = 0; i<1023;i++)
 		{
-			EEPROM.write(i,0);
+			EEPROM.write(i,0); 
 		}
-		EEPROM.write(0,31);
+		EEPROM.write(0,32);
 		EEPROM.put(Address_interval, interval);                  // строка начальной установки интервалов
-		EEPROM.put(Address_tel1, "+79162632701");      
-		//EEPROM.put(Address_tel1, "+79852517615");
+		//EEPROM.put(Address_tel1, "+79162632701");      
+		EEPROM.put(Address_tel1, "+79852517615");
 		EEPROM.put(Address_SMS_center, "4556w6072556w6");
 		EEPROM.write(Address_ssl, false);
 		con.println (F("Clear EEPROM End"));                              
