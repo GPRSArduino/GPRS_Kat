@@ -17,11 +17,7 @@
 
 #define con Serial
 #define speed_Serial 115200
-static const char* url1      = "http://trm7.xyz/r.php";
-//static const char* url1    = "http://vps3908.vps.host.ru/recieveReadings.php";
-static const char* urlssl    = "https://trm7.xyz/r.php";
-static const char* url_ping1 = "www.ya.ru";
-static const char* url_ping2 = "www.google.com";
+
 
 #define PIN_TX           7                              // Подключить  к выводу 7 сигнал RX модуля GPRS
 #define PIN_RX           8                              // Подключить  к выводу 8 сигнал TX модуля GPRS
@@ -71,7 +67,6 @@ uint32_t errors          = 0;
 String imei              = "861445030362268";           // Тест IMEI
 String CSQ               = "";                          // Уровень сигнала приема
 String SMS_center        = "";
-String zero_tel          = "";
 String SIMCCID           = "";
 String CMTE              = "";                          // Внутренний датчик температуры
 String master_tel1       = "";
@@ -89,16 +84,16 @@ bool ssl_set                   = true;                  // Признак шиф
 unsigned long time_ping        = 180;                   // Интервал проверки ping 6 минут. 
 unsigned long previousPing     = 0;                     // Временный Интервал проверки ping
 
-int Address_tel1          = 100;                           // Адрес в EEPROM телефона 1
-int Address_ssl           = 120;                           // Адрес в EEPROM признака шифрования
-int Address_errorAll      = 160;                           // Адрес в EEPROM счетчика общих ошибок
-int Address_interval      = 200;                           // Адрес в EEPROM величины интервала
-int Address_SMS_center    = 220;                           // Адрес в EEPROM SMS центра
-int Address_Dev3          = 260;                           // Адрес в EEPROM состояния исполнительного устройства Dev3
-int Address_Dev3_ind      = 264;                           // Адрес в EEPROM признак управления сполнительного устройства Dev3
-int Address_num_site_ping = 268;                           // Адрес в EEPROM признак управления сполнительного устройства Dev3
-byte dev3                 = 0;                         // признак управления сполнительного устройства Dev3
-char data_tel[16];                                      // Буфер для номера телефона
+int Address_tel1          = 100;                        // Адрес в EEPROM телефона 1
+int Address_ssl           = 120;                        // Адрес в EEPROM признака шифрования
+int Address_errorAll      = 160;                        // Адрес в EEPROM счетчика общих ошибок
+int Address_interval      = 200;                        // Адрес в EEPROM величины интервала
+int Address_SMS_center    = 220;                        // Адрес в EEPROM SMS центра
+int Address_Dev3          = 260;                        // Адрес в EEPROM состояния исполнительного устройства Dev3
+int Address_Dev3_ind      = 264;                        // Адрес в EEPROM признак управления сполнительного устройства Dev3
+int Address_num_site_ping = 268;                        // Адрес в EEPROM признак управления сполнительного устройства Dev3
+byte dev3                 = 0;                          // признак управления сполнительного устройства Dev3
+//char data_tel[16];                                      // Буфер для номера телефона
 char buf[16];
 uint8_t oneWirePins[]={16, 17, 4};                      //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
 														// Сейчас первым идет внутренний датчик.
@@ -117,7 +112,7 @@ void flash_time()                                       // Программа о
 {
 	if (state_device == 0)
 	{
-		setColor(COLOR_NONE);
+		setColor(COLOR_RED);
 	}
 	if (state_device == 1)
 	{
@@ -187,8 +182,9 @@ void sendTemps()
 	int dev1 = analogRead(analog_dev1);                   // Аналоговый вход 1
 	bool dev2 = digitalRead(digital_inDev2);              // Цифровой вход 2
 	dev3 = EEPROM.read(Address_Dev3);                     // Состояние исполнительного устройства
-
-	String toSend = "t2=" + imei + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma) +DELIM + String(dev1) + DELIM + String(dev2) + DELIM + String(dev3);
+	//imei = "IMEI=" + imei;
+	//String toSend = "t2=" + imei + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma) +DELIM + String(dev1) + DELIM + String(dev2) + DELIM + String(dev3);
+	String toSend = "t2=" + imei + DELIM + "D1=" +String(t1) + DELIM + "D2=" + String(t2) + DELIM + "D3=" + String(t3) + DELIM + "Sig=" + String(signal) + DELIM + "Er=" + String(errors) + DELIM + "Al=" + String(error_All) + formEnd() + DELIM + "S="+String(tsumma) + DELIM + "I1="+String(dev1) + DELIM + "I2="+String(dev2) + DELIM + "O="+ String(dev3);
 
 	Serial.print(F("toSend.length: "));
 	Serial.println(toSend.length());
@@ -203,7 +199,7 @@ void sendTemps()
 		{
 			count_send++;
 			Serial.print("Attempt to transfer data .."); Serial.println(count_send);
-			if (count_send>10)  ping();                             // 5 попыток. Что то пошло не так с интернетом
+			if (count_send>7)  ping();                             // 5 попыток. Что то пошло не так с интернетом
 		}
 		delay(5000);                      // Подождать 5 секунд
 	}
@@ -216,10 +212,12 @@ String formEnd()
 
 	EEPROM.get(Address_tel1, buf);
 	String master_tel1(buf);
+	master_tel1 = "Tel=" + master_tel1;
+
 
 	EEPROM.get(Address_SMS_center, SMS_center);   //Получить из EEPROM СМС центр
 
-	return DELIM + master_tel1 + DELIM + SIMCCID;
+	return DELIM +  master_tel1 + DELIM + "SIM="+SIMCCID;
 
 }
 
@@ -228,6 +226,8 @@ bool gprs_send(String data)
 {
   con.print(F("Requesting .. Wait"));      
   setColor(COLOR_BLUE);
+  static const char* url1 = "http://trm7.xyz/r.php";
+  static const char* urlssl = "https://trm7.xyz/r.php";
   connect_internet_HTTP();                               // Подключиться к интернету с учетом стека HTTP
   
   int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
@@ -245,7 +245,7 @@ bool gprs_send(String data)
 	  gprs.httpUninit();                                 // Не получилось, разединить и  попробовать снова 
 	  delay(1000);                                       // Подождать секунду.
 	  count_init++;
-	  if(count_init > 80)  resetFunc();                 //вызываем reset при отсутствии доступа к серверу в течении 60 секунд
+	  if(count_init > 80)  resetFunc();                  //вызываем reset при отсутствии доступа к серверу в течении 60 секунд
   }
 
   if (ssl_set == true)
@@ -455,12 +455,12 @@ void run_command(int command, String data)
 			con.println(interval);
 			break;
 		case 2:
-			EEPROM.get(Address_tel1, data_tel);             // Получить номер телефона из EEPROM
-			Serial.println(data_tel);
-			if (data != data_tel)                           // Если информиция не изменилась - не писать в EEPROM
+			EEPROM.get(Address_tel1, buf);             // Получить номер телефона из EEPROM
+			Serial.println(buf);
+			if (data != buf)                           // Если информиция не изменилась - не писать в EEPROM
 			{
 				con.println(F("no compare"));               //Serial.println("no compare");
-				char buf[16];
+				//char buf[16];
 				for (int i = 0; i<13; i++)
 				{
 					EEPROM.write(i + Address_tel1, data[i]);
@@ -474,8 +474,8 @@ void run_command(int command, String data)
 			}
 			break;
 		case 3:
-			EEPROM.get(Address_SMS_center, data_tel);      // Получить из EEPROM СМС центр
-			if (data != data_tel)                          // Если информиция не изменилась - не писать в EEPROM
+			EEPROM.get(Address_SMS_center, buf);      // Получить из EEPROM СМС центр
+			if (data != buf)                          // Если информиция не изменилась - не писать в EEPROM
 			{
 				Serial.println(F("no compare"));
 				for (int i = 0; i<13; i++)
@@ -675,6 +675,9 @@ void ping()
 
 bool check_ping()
 {
+	static const char* url_ping1 = "www.ya.ru";
+	static const char* url_ping2 = "www.google.com";
+
 	con.print(F("Ping -> "));
 		con.println(url_ping1);
 		if (gprs.ping(url_ping1))
