@@ -20,9 +20,8 @@
 static const char* url1      = "http://trm7.xyz/r.php";
 //static const char* url1    = "http://vps3908.vps.host.ru/recieveReadings.php";
 static const char* urlssl    = "https://trm7.xyz/r.php";
-static const char* url_ping1 = "www.yandex.ru";
+static const char* url_ping1 = "www.ya.ru";
 static const char* url_ping2 = "www.google.com";
-byte num_site_ping           = 0;
 
 #define PIN_TX           7                              // Подключить  к выводу 7 сигнал RX модуля GPRS
 #define PIN_RX           8                              // Подключить  к выводу 8 сигнал TX модуля GPRS
@@ -86,7 +85,7 @@ unsigned long previousMillis   = 0;                     //
 unsigned long interval         = 60;                    // Интервал передачи данных 60 секунд
 //unsigned long interval         = 300;                   // Интервал передачи данных 5 минут
 bool time_set                  = false;                 // Фиксировать интервал заданный СМС
-bool ssl_set                   = false;                 // Признак шифрования 
+bool ssl_set                   = true;                  // Признак шифрования 
 unsigned long time_ping        = 180;                   // Интервал проверки ping 6 минут. 
 unsigned long previousPing     = 0;                     // Временный Интервал проверки ping
 
@@ -188,8 +187,8 @@ void sendTemps()
 	int dev1 = analogRead(analog_dev1);                   // Аналоговый вход 1
 	bool dev2 = digitalRead(digital_inDev2);              // Цифровой вход 2
 	dev3 = EEPROM.read(Address_Dev3);                     // Состояние исполнительного устройства
-	num_site_ping = EEPROM.read(Address_num_site_ping);   // Вариант сайта для ping
-	String toSend = "t1=" + imei + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma) +DELIM + String(dev1) + DELIM + String(dev2) + DELIM + String(dev3) + DELIM + String(num_site_ping);
+
+	String toSend = "t2=" + imei + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma) +DELIM + String(dev1) + DELIM + String(dev2) + DELIM + String(dev3);
 
 	Serial.print(F("toSend.length: "));
 	Serial.println(toSend.length());
@@ -204,7 +203,7 @@ void sendTemps()
 		{
 			count_send++;
 			Serial.print("Attempt to transfer data .."); Serial.println(count_send);
-			if (count_send>5)  ping();                             // 5 попыток. Что то пошло не так с интернетом
+			if (count_send>10)  ping();                             // 5 попыток. Что то пошло не так с интернетом
 		}
 		delay(5000);                      // Подождать 5 секунд
 	}
@@ -246,7 +245,7 @@ bool gprs_send(String data)
 	  gprs.httpUninit();                                 // Не получилось, разединить и  попробовать снова 
 	  delay(1000);                                       // Подождать секунду.
 	  count_init++;
-	  if(count_init > 60)  resetFunc();                 //вызываем reset при отсутствии доступа к серверу в течении 60 секунд
+	  if(count_init > 80)  resetFunc();                 //вызываем reset при отсутствии доступа к серверу в течении 60 секунд
   }
 
   if (ssl_set == true)
@@ -294,7 +293,7 @@ bool gprs_send(String data)
   while (gprs.httpIsConnected() == 0)     // 0 - ожидание ответа, 1 - успешно, 
   {
 	con.write('.');
-	for (byte n = 0; n < 40 && !gprs.available(); n++) 
+	for (byte n = 0; n < 50 && !gprs.available(); n++) 
 	{
 	  delay(15);
 	}
@@ -525,20 +524,6 @@ void run_command(int command, String data)
 			}
 			break;
 		case 7:
-			num_site_ping = EEPROM.read(Address_num_site_ping);
-			ping_data = data.toInt();
-			if (ping_data != num_site_ping)
-			{
-				EEPROM.write(Address_num_site_ping, ping_data);
-				if (ping_data == 0)
-				{
-					Serial.println(F("www.yandex.ru"));
-				}
-				else
-				{
-					Serial.println(F("www.google.com"));
-				}
-			}
 			break;
 		default:
 			break;
@@ -624,12 +609,12 @@ void check_blink()
 	
 	metering_NETLIGHT = current_M - metering_temp; // переделать для уменьшения
 	metering_temp = current_M;
-	//Serial.println(metering_NETLIGHT);
+//	Serial.println(metering_NETLIGHT);
 	if (metering_NETLIGHT > 3055 && metering_NETLIGHT < 3070)
 	{
 		state_device = 2;                                                     // 2 - Зарегистрировано в сети
 		count_blink2++;
-		if (count_blink2 > 50)
+		if (count_blink2 > 150)
 		{
 			state_device = 0;
 			MsTimer2::stop();                                                 // Включить таймер прерывания
@@ -690,26 +675,23 @@ void ping()
 
 bool check_ping()
 {
-	num_site_ping = EEPROM.read(Address_num_site_ping);
 	con.print(F("Ping -> "));
-	if (num_site_ping == 0)
-	{
 		con.println(url_ping1);
 		if (gprs.ping(url_ping1))
 		{
 			con.println(F(".. Ok!"));
 			return true;
 		}
-	}
-	else
-	{
-		con.println(url_ping2);
-		if (gprs.ping(url_ping2))
+		else
 		{
-			con.println(F(".. Ok!"));
-			return true;
+			con.print(F("\nPing -> "));
+			con.println(url_ping2);
+			if (gprs.ping(url_ping2))
+			{
+				con.println(F(".. Ok!"));
+				return true;
+			}
 		}
-	}
 	con.println(F(".. false!"));
 	return false;
 }
@@ -867,19 +849,19 @@ void setup()
 	int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
 	con.println(F("OK"));   
 
-	if(EEPROM.read(0)!=32)                              // Программа записи начальных установок при первом включении устройства после монтажа.
+	if(EEPROM.read(0)!=33)                              // Программа записи начальных установок при первом включении устройства после монтажа.
 	{
 		con.println (F("Start clear EEPROM"));               //  
 		for(int i = 0; i<1023;i++)
 		{
 			EEPROM.write(i,0); 
 		}
-		EEPROM.write(0,32);
+		EEPROM.write(0,33);
 		EEPROM.put(Address_interval, interval);                  // строка начальной установки интервалов
 		//EEPROM.put(Address_tel1, "+79162632701");      
 		EEPROM.put(Address_tel1, "+79852517615");
 		EEPROM.put(Address_SMS_center, "4556w6072556w6");
-		EEPROM.write(Address_ssl, false);
+		EEPROM.write(Address_ssl, true);
 		con.println (F("Clear EEPROM End"));                              
 	}
 
