@@ -63,11 +63,8 @@ CGPRS_SIM800 gprs;
 uint32_t count           = 0;
 uint32_t errors          = 0;
 //String imei            = "";
-String imei              = "861445030362268";           // Тест IMEI
+//String imei              = "861445030362268";           // Тест IMEI
 String SMS_center        = "";
-String SIMCCID           = "";
-String CMTE              = "";                          // Внутренний датчик температуры
-
 
 #define DELIM "@"
 
@@ -91,7 +88,7 @@ int Address_Dev3_ind      = 264;                        // Адрес в EEPROM 
 int Address_num_site_ping = 268;                        // Адрес в EEPROM признак управления сполнительного устройства Dev3
 byte dev3                 = 0;                          // признак управления сполнительного устройства Dev3
 //char data_tel[16];                                      // Буфер для номера телефона
-char buf[16];
+//char buf[16];
 uint8_t oneWirePins[]={16, 17, 4};                      //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
 														// Сейчас первым идет внутренний датчик.
 uint8_t oneWirePinsCount=sizeof(oneWirePins)/sizeof(int);
@@ -165,6 +162,15 @@ void flash_time()                                       // Программа о
  
 void sendTemps()
 {
+	String imei = "861445030362268";           // Тест IMEI
+	if (gprs.getIMEI())                       // Получить IMEI
+	{
+		con.print(F("\nIMEI:"));
+		//imei = gprs.buffer;                 // Отключить на время отладки
+		//gprs.cleanStr(imei);                // Отключить на время отладки
+		con.println(imei);
+	}
+	
 	sensor1.requestTemperatures();
 	sensor2.requestTemperatures();
 	sensor3.requestTemperatures();
@@ -205,8 +211,16 @@ void sendTemps()
 
 String formEnd() 
 {
-	//char buf[13] ;
-	EEPROM.get(Address_tel1, buf);
+	char buf[13] ;
+	String SIMCCID = "";
+	if (gprs.getSIMCCID())                       // Получить Номер СИМ карты
+	{
+		con.print(F("\nSIM CCID:"));
+		SIMCCID = gprs.buffer1;                 //  
+		gprs.cleanStr(SIMCCID);                //  
+		con.println(SIMCCID);
+	}
+    EEPROM.get(Address_tel1, buf);
 	String master_tel1(buf);
 	master_tel1 = "Tel=" + master_tel1;
 
@@ -393,7 +407,6 @@ void connect_internet_HTTP()
 		Serial.println(F("\nInternet HTTP connect .."));
 		
 		byte ret = gprs.connect_GPRS();                                              // Подключение к GPRS
-		//Serial.print(F("ret - ")); Serial.print(ret);
 		if (ret == 0)
 		{
 			while (state_device != 3)  // Ожидание регистрации в сети
@@ -432,6 +445,7 @@ void run_command(int command, String data)
 	byte dev3_set            = 0;
 	byte dev3_data           = 0;
 	byte ping_data           = 0;
+	char buf[16];
 	switch (command) 
 	{
 		case 1:
@@ -456,7 +470,6 @@ void run_command(int command, String data)
 			if (data != buf)                           // Если информиция не изменилась - не писать в EEPROM
 			{
 				con.println(F("no compare"));               //Serial.println("no compare");
-				//char buf[16];
 				for (int i = 0; i<13; i++)
 				{
 					EEPROM.write(i + Address_tel1, data[i]);
@@ -734,30 +747,6 @@ void start_init()
 		}
 		con.println(F("OK"));                  // 
 
-
-		if (gprs.getIMEI())                       // Получить IMEI
-		{
-			con.print(F("\nIMEI:"));
-			//imei = gprs.buffer;                 // Отключить на время отладки
-			//gprs.cleanStr(imei);                // Отключить на время отладки
-			con.println(imei);
-		}
-		else
-		{
-			return;  // IMEI не определился
-		}
-
-		if (gprs.getSIMCCID())                       // Получить Номер СИМ карты
-		{
-			con.print(F("\nSIM CCID:"));
-			SIMCCID = gprs.buffer1;                 //  
-			gprs.cleanStr(SIMCCID);                //  
-			con.println(SIMCCID);
-		}
-		else
-		{
-			//return;  // SIMCCID не определился
-		}
 		Serial.print(F("\nSetting up mobile network..."));
 		while (state_device != 2)  // Ожидание регистрации в сети
 		{
@@ -864,24 +853,10 @@ void setup()
 		con.println (F("Clear EEPROM End"));                              
 	}
 
-	//EEPROM.put(Address_interval, interval);                    // Закоментировать строку после установки интервалов
-	//EEPROM.put(Address_SMS_center, SMS_center);                  // Закоментировать строку после установки СМС центра
 	EEPROM.get(Address_interval, interval);                      // Получить из EEPROM интервал
-	//EEPROM.get(Address_SMS_center, SMS_center);                // Получить из EEPROM СМС центр
 	ssl_set = EEPROM.read(Address_ssl);							 // Устанивить признак шифрования
 	con.print(F("Interval sec:"));
 	con.println(interval);
-
-	con.print(F("Telepfon .."));
-	EEPROM.get(Address_tel1, buf);                               // Получить из EEPROM телефон хозяина
-	String master_tel1(buf);
-	con.println(master_tel1);
-	
-	EEPROM.get(Address_SMS_center, buf);                          // Получить из EEPROM СМС центр
-	SMS_center = String(buf);
-	con.print(F("SMS_center .."));
-	con.println(SMS_center); 
-	
 	con.print(F("\nfree memory: "));
 	con.println(freeRam());
 
@@ -914,7 +889,7 @@ void loop()
 	if (gprs.val.indexOf("REC UNREAD") > -1)  //если обнаружена новая  СМС 
 	{    
 		//------------- поиск кодового слова в СМС 
-		//char buf[16] ;
+		char buf[16] ;
 
 		EEPROM.get(Address_tel1, buf);                                         // Восстановить телефон хозяина 1
 		String master_tel1(buf);
