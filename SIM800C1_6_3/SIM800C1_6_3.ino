@@ -18,7 +18,6 @@
 #define con Serial
 #define speed_Serial 115200
 
-
 #define PIN_TX           7                              // Подключить  к выводу 7 сигнал RX модуля GPRS
 #define PIN_RX           8                              // Подключить  к выводу 8 сигнал TX модуля GPRS
 
@@ -65,12 +64,10 @@ uint32_t count           = 0;
 uint32_t errors          = 0;
 //String imei            = "";
 String imei              = "861445030362268";           // Тест IMEI
-String CSQ               = "";                          // Уровень сигнала приема
 String SMS_center        = "";
 String SIMCCID           = "";
 String CMTE              = "";                          // Внутренний датчик температуры
-String master_tel1       = "";
-String master_SMS_center = "";                          // телефон СМС центра
+
 
 #define DELIM "@"
 
@@ -208,8 +205,7 @@ void sendTemps()
 
 String formEnd() 
 {
-	char buf[13] ;
-
+	//char buf[13] ;
 	EEPROM.get(Address_tel1, buf);
 	String master_tel1(buf);
 	master_tel1 = "Tel=" + master_tel1;
@@ -878,13 +874,13 @@ void setup()
 
 	con.print(F("Telepfon .."));
 	EEPROM.get(Address_tel1, buf);                               // Получить из EEPROM телефон хозяина
-	master_tel1  = String(buf);
+	String master_tel1(buf);
 	con.println(master_tel1);
 	
 	EEPROM.get(Address_SMS_center, buf);                          // Получить из EEPROM СМС центр
-	master_SMS_center = String(buf);
+	SMS_center = String(buf);
 	con.print(F("SMS_center .."));
-	con.println(master_SMS_center); 
+	con.println(SMS_center); 
 	
 	con.print(F("\nfree memory: "));
 	con.println(freeRam());
@@ -925,8 +921,7 @@ void loop()
 
 		EEPROM.get(Address_SMS_center, buf);                                 // Восстановить телефон СМС центра
 		String master_SMS_center(buf);
-		//String master_SMS_center = "4556w6072556w6";
-		//con.println(master_SMS_center);
+	
 		if (gprs.deleteSMS(1))
 		{
 			con.println(F("SMS delete"));                    //      con.print("SMS:");
