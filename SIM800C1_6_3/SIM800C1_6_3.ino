@@ -187,7 +187,7 @@ void sendTemps()
 	dev3 = EEPROM.read(Address_Dev3);                     // Состояние исполнительного устройства
 	//imei = "IMEI=" + imei;
 	//String toSend = "t2=" + imei + DELIM + String(t1) + DELIM + String(t2) + DELIM + String(t3) + DELIM + String(signal) + DELIM + String(errors) + DELIM + String(error_All) + formEnd() + DELIM + String(tsumma) +DELIM + String(dev1) + DELIM + String(dev2) + DELIM + String(dev3);
-	String toSend = "t2=" + imei + DELIM + "D1=" +String(t1) + DELIM + "D2=" + String(t2) + DELIM + "D3=" + String(t3) + DELIM + "Sig=" + String(signal) + DELIM + "Er=" + String(errors) + DELIM + "Al=" + String(error_All) + formEnd() + DELIM + "S="+String(tsumma) + DELIM + "I1="+String(dev1) + DELIM + "I2="+String(dev2) + DELIM + "O="+ String(dev3);
+	String toSend = "t2=" + imei + DELIM + "D1=" +String(t1) + DELIM + "D2=" + String(t2) + DELIM + "D3=" + String(t3) + DELIM + "Sig=" + String(signal) + DELIM + "Err=" + String(errors) + DELIM + "All=" + String(error_All) + formEnd() + DELIM + "Sum="+String(tsumma) + DELIM + "In1="+String(dev1) + DELIM + "In2="+String(dev2) + DELIM + "Out="+ String(dev3);
 
 	Serial.print(F("toSend.length: "));
 	Serial.println(toSend.length());
@@ -220,7 +220,7 @@ String formEnd()
 		gprs.cleanStr(SIMCCID);                //  
 		con.println(SIMCCID);
 	}
-    EEPROM.get(Address_tel1, buf);
+	EEPROM.get(Address_tel1, buf);
 	String master_tel1(buf);
 	master_tel1 = "Tel=" + master_tel1;
 
@@ -423,12 +423,14 @@ void connect_internet_HTTP()
 		else                                                    // Модуль не подключиля к интернету
 		{
 			count_init++;                                        // Увеличить счетчик количества попыток
-			if(count_init > 120) resetFunc();                    // вызываем reset после 120 ошибок
+			if(count_init > 10) resetFunc();                    // вызываем reset после 10 ошибок
 
 			Serial.println(F("\nFailed connect internet"));
 			delay(1000);
-			if (state_device == 3)                              // Модуль одумался и все таки подключиля к интернету
+			if (state_device == 3)                               // Модуль одумался и все таки подключиля к интернету
 			{
+				con.println(F("Wait IP"));
+				gprs.connect_IP_GPRS();                          // Получить IP адрес
 				Serial.println(F("Internet connect OK!-"));
 				setup_ok = true;
 			}
@@ -613,17 +615,15 @@ void setTime(String val, String f_phone)
 void check_blink()
 {
 	unsigned long current_M = millis();
-
 	wdt_reset();
-	
-	metering_NETLIGHT = current_M - metering_temp; // переделать для уменьшения
+	metering_NETLIGHT = current_M - metering_temp;                            // переделать для уменьшения
 	metering_temp = current_M;
 //	Serial.println(metering_NETLIGHT);
 	if (metering_NETLIGHT > 3055 && metering_NETLIGHT < 3070)
 	{
 		state_device = 2;                                                     // 2 - Зарегистрировано в сети
 		count_blink2++;
-		if (count_blink2 > 150)
+		if (count_blink2 > 250)
 		{
 			state_device = 0;
 			MsTimer2::stop();                                                 // Включить таймер прерывания
@@ -634,16 +634,16 @@ void check_blink()
 	{
 		state_device = 1;                // 1 Не зарегистрирован в сети, поиск
 		count_blink1++;
-		if (count_blink1 > 120) 
+		if (count_blink1 > 250) 
 		{
 			state_device = 0;
 			MsTimer2::stop();                                                 // Включить таймер прерывания
-			resetFunc();                   // Что то пошло не так с регистрацией на станции
+			resetFunc();                                                      // Что то пошло не так с регистрацией на станции
 		}
 	}
 	else if (metering_NETLIGHT > 350 && metering_NETLIGHT < 370)
 	{
-		state_device = 3;                // 3 - GPRS связь установлена
+		state_device = 3;                                                      // 3 - GPRS связь установлена
 									  
 	}
 }
@@ -680,8 +680,6 @@ void ping()
 }
 
 
-
-
 bool check_ping()
 {
 	static const char* url_ping1 = "www.ya.ru";
@@ -712,19 +710,24 @@ bool check_ping()
 void start_init()
 {
 	bool setup_ok = false;
-	uint8_t count_init = 0;
+	int count_init = 0;
 	MsTimer2::start();                                                 // Включить таймер прерывания
 	do
 	{
 		con.println(F("Initializing....(May take 5-10 seconds)"));
-
+		delay(1000);
+		
 		digitalWrite(SIM800_RESET_PIN, LOW);                      // Сигнал сброс в исходное состояние
 		digitalWrite(LED13, LOW);
 		digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
-		delay(2000);
+		while (digitalRead(STATUS) != LOW) 
+		{
+   		    delay(100);
+		}
+		delay(1000);
 		digitalWrite(LED13, HIGH);
 		digitalWrite(PWR_On, LOW);
-		delay(1500);
+		delay(2000);                                             // 
 		digitalWrite(SIM800_RESET_PIN, HIGH);                     // Производим сброс модема после включения питания
 		delay(1200);
 		digitalWrite(SIM800_RESET_PIN, LOW);
@@ -732,12 +735,14 @@ void start_init()
 		while (digitalRead(STATUS) == LOW)
 		{
 			count_status++;
-			if(count_status > 150) resetFunc(); // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
+			if (count_status > 100) resetFunc(); // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
 			delay(100);
 		}
 		delay(2000);
-		con.println(F("Power SIM800 On"));
 
+		
+		con.println(F("Power SIM800 On"));
+		wdt_enable(WDTO_8S);                               // Для тестов не рекомендуется устанавливать значение менее 8 сек.
 		GPRSSerial->begin(19200);                               // Скорость обмена с модемом SIM800C
 
 		while (!gprs.begin(*GPRSSerial))                        // Настройка модуля SIM800C
@@ -752,7 +757,6 @@ void start_init()
 		{
 			Serial.print(F("."));
 			delay(1000);
-			// Уточнить программу перезапуска  если модуль не зарегистрировался через 70 секунд
 		}
 		delay(1000);
 	
@@ -795,6 +799,7 @@ void setup()
 	con.println(F("\nSIM800 setup start"));     
 
 	pinMode(SIM800_RESET_PIN, OUTPUT);
+	digitalWrite(SIM800_RESET_PIN, LOW);                      // Сигнал сброс в исходное состояние
 	pinMode(LED13, OUTPUT);
 	pinMode(PWR_On, OUTPUT);
 
@@ -816,6 +821,8 @@ void setup()
 	setColor(COLOR_BLUE);
 	delay(300);
 	setColor(COLOR_RED);
+
+
 	
 	DeviceAddress deviceAddress;
 	sensor1.setOneWire(&ds18x20_1);
@@ -830,7 +837,7 @@ void setup()
 
 	attachInterrupt(1,check_blink, RISING);            // Включить прерывания. Индикация состояния модема
 	delay(1000);
-	wdt_enable(WDTO_8S);                               // Для тестов не рекомендуется устанавливать значение менее 8 сек.
+	//wdt_enable(WDTO_8S);                               // Для тестов не рекомендуется устанавливать значение менее 8 сек.
 	MsTimer2::set(300, flash_time);                    // 30ms период таймера прерывани
 	start_init();
 	
@@ -846,8 +853,8 @@ void setup()
 		}
 		EEPROM.write(0,33);
 		EEPROM.put(Address_interval, interval);                  // строка начальной установки интервалов
-		//EEPROM.put(Address_tel1, "+79162632701");      
-		EEPROM.put(Address_tel1, "+79852517615");
+		EEPROM.put(Address_tel1, "+79162632701");      
+		//EEPROM.put(Address_tel1, "+79852517615");
 		EEPROM.put(Address_SMS_center, "4556w6072556w6");
 		EEPROM.write(Address_ssl, true);
 		con.println (F("Clear EEPROM End"));                              
@@ -880,7 +887,7 @@ void setup()
 void loop()
 {
  if(digitalRead(STATUS) == LOW)  resetFunc();                                 // Что то пошло не так, питание отключено
-
+ 
  if (gprs.checkSMS()) 
   {
 	con.print(F("SMS:"));                    

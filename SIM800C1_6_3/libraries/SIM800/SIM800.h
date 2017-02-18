@@ -67,7 +67,8 @@ public:
 	// check if there is available serial data
 	bool available();
 	void cleanStr(String & str);
-	char buffer[150];
+
+	char buffer[170];
 	char buffer1[22];
 	byte httpState;
 	String val = "";
@@ -90,5 +91,6 @@ private:
 	byte operator_Num     = 0;                                  // Порядковый номер оператора
 	int ch                = 0;
 	FONAStreamType *SIM_SERIAL;
+	void(*resetFunc) (void) = 0;                           // объявляем функцию reset
 };
 

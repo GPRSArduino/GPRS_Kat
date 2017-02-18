@@ -8,6 +8,8 @@
 #include "SIM800.h"
 #include <SoftwareSerial.h>
 
+//void(*resetFunc) (void) = 0;                           // объявляем функцию reset
+
 bool CGPRS_SIM800::begin(Stream &port)
 {
 	SIM_SERIAL = &port;
@@ -64,7 +66,7 @@ bool CGPRS_SIM800::begin(Stream &port)
 
 byte CGPRS_SIM800::connect_GPRS()
 {
-	for (byte n = 0; n < 30; n++)
+	for (byte n = 0; n < 10; n++)
 	{
 		if (!sendCommandS(F("AT+SAPBR=3,1,\"Contype\",\"GPRS\""))) return 1;           
 
@@ -88,7 +90,8 @@ byte CGPRS_SIM800::connect_GPRS()
 		SIM_SERIAL->println('\"');
 		if (!sendCommandS(no))   return 2;
 
-		timeout = 10000;
+		timeout = 15000;
+		Serial.print(F("Connect GPRS..")); Serial.println(n+1);
 		sendCommandS(F("AT+SAPBR=1,1"));  timeout = 2000;   return 0;                 // установка GPRS связи
 	}
 	return 3;                                                                         // Неуспешная регистрация
@@ -98,7 +101,9 @@ bool CGPRS_SIM800::connect_IP_GPRS()
 {
 	for (byte n = 0; n < 30; n++)
 	{
-		if (sendCommandS(F("AT+SAPBR=2,1"))) return true;                             // получить IP адрес
+		timeout = 15000;
+		if (sendCommandS(F("AT+SAPBR=2,1"))) timeout = 2000;  return true;                             // получить IP адрес
+		delay(500);
 	}
 	return false;
 }
@@ -260,13 +265,13 @@ byte CGPRS_SIM800::ping_connect_internet()
 			Serial.println(F("\nNo GPRS connection"));
 			delay(1000);
 		}
-		delay(1000);                                                  // Подождать секунду.
+		delay(1000);                                                     // Подождать секунду.
 		count_connect++;
-		if (count_connect > 60)  break;                          //вызываем reset при отсутствии доступа к сетевому оператору в течении 60 секунд
+		if (count_connect > 60)  resetFunc(); //break;                                   //вызываем reset при отсутствии доступа к сетевому оператору в течении 60 секунд
 	}
-	delay(2000);
-	count_connect = 0;                                                // Счетчик количества попыток проверки подключения Attach from GPRS service
-	for (;;)                                                          // Бесконечный цикл пока не наступит, какое то состояние для выхода
+	delay(1000);
+	count_connect = 0;                                                 // Счетчик количества попыток проверки подключения Attach from GPRS service
+	for (;;)                                                           // Бесконечный цикл пока не наступит, какое то состояние для выхода
 	{
 		if (sendCommandS(F("AT+CGATT?")) == 1) break;                  // Все нормально, модуль подключен к GPRS service , Прервать попытки и выйти из цикла
 		Serial.print(F(">"));
@@ -277,9 +282,9 @@ byte CGPRS_SIM800::ping_connect_internet()
 			Serial.println(F("\nNo GPRS connection"));
 			delay(1000);
 		}
-		delay(1000);                                                  // Подождать секунду.
+		delay(1000);                                                     // Подождать секунду.
 		count_connect++;
-		if (count_connect > 60)  break;  // resetFunc();                            //вызываем reset при отсутствии доступа к  GPRS service в течении 60 секунд
+		if (count_connect > 60)  resetFunc(); //break;  // resetFunc();                  //вызываем reset при отсутствии доступа к  GPRS service в течении 60 секунд
 	}
 
 	//++++++++++++++++ Проверки пройдены, подключаемся к интернету по протоколу TCP для проверки ping ++++++++++++
