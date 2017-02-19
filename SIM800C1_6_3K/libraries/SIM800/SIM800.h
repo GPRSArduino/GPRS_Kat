@@ -68,7 +68,7 @@ public:
 	bool available();
 	void cleanStr(String & str);
 
-	char buffer[170];
+	char buffer[150];
 	char buffer1[22];
 	byte httpState;
 	String val = "";
