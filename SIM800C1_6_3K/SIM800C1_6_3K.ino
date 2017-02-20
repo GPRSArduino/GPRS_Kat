@@ -337,7 +337,7 @@ bool gprs_send(String data)
    String val = gprs.buffer;               // Получить строку данных с сервера
    send_ok = true;                         // Команда принята успешно
    int p0[8];
- 										   // Команда принята успешно
+										   // Команда принята успешно
 
    if (val.indexOf("&") > -1)              // Определить адреса (позиции) команд в строке 
    {
@@ -705,7 +705,7 @@ void start_init()
 		digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
 		while (digitalRead(STATUS) != LOW) 
 		{
-   		    delay(100);
+			delay(100);
 		}
 		delay(1000);
 		digitalWrite(LED13, HIGH);
