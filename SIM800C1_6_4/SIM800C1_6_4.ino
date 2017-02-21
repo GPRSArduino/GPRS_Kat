@@ -171,6 +171,12 @@ void sendTemps()
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
 
+
+	String temp123;
+	if (t1 != -127) temp123 += "D1=" + String(t1);
+	if (t2 != -127) temp123 += "D2=" + String(t2);
+	if (t3 != -127) temp123 += "D3=" + String(t3);
+
 	String imei              = "861445030362268";           // Тест IMEI
 	if (gprs.getIMEI())                                     // Получить IMEI
 	{
@@ -180,12 +186,16 @@ void sendTemps()
 		con.println(imei);
 	}
 
+
+
+
 	//int dev1 = analogRead(analog_dev1);                   // Аналоговый вход 1
 	//bool dev2 = digitalRead(digital_inDev2);              // Цифровой вход 2
 	//dev3 = EEPROM.read(Address_Dev3);                     // Состояние исполнительного устройства
 
-	String toSend = "IM=" + imei + DELIM + "D1=" + String(t1) + DELIM + "D2=" + String(t2) + DELIM + "D3=" + String(t3) + DELIM + "S=" + String(signal) + DELIM + "E=" + String(errors) + DELIM + "EA=" + String(error_All) + formEnd() + DELIM + "SM=" + String(tsumma);// +DELIM + "In1=" + String(dev1) + DELIM + "In2=" + String(dev2) + DELIM + "Out=" + String(dev3);
-		
+	//String toSend = "IM=" + imei + DELIM + "D1=" + String(t1) + DELIM + "D2=" + String(t2) + DELIM + "D3=" + String(t3) + DELIM + "S=" + String(signal) + DELIM + "E=" + String(errors) + DELIM + "EA=" + String(error_All) + formEnd() + DELIM + "SM=" + String(tsumma);// +DELIM + "In1=" + String(dev1) + DELIM + "In2=" + String(dev2) + DELIM + "Out=" + String(dev3);
+	String toSend = "IM=" + imei + DELIM + temp123+ DELIM + "S=" + String(signal) + DELIM + "E=" + String(errors) + DELIM + "EA=" + String(error_All) + formEnd() + DELIM + "SM=" + String(tsumma);// +DELIM + "In1=" + String(dev1) + DELIM + "In2=" + String(dev2) + DELIM + "Out=" + String(dev3);
+
 	Serial.print(F("toSend.length: "));
 	Serial.println(toSend.length());
 	int count_send = 0;
@@ -205,6 +215,11 @@ void sendTemps()
 	}
 
 }
+
+
+
+
+
 
 String formEnd() 
 {
