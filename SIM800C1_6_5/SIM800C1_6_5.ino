@@ -167,7 +167,7 @@ void sendTemps()
 	if (t1 != -127) temp123 += DELIM; temp123 += "D1=" + String(t1);
 	if (t2 != -127) temp123 += DELIM; temp123 += "D2=" + String(t2);
 	if (t3 != -127) temp123 += DELIM; temp123 += "D3=" + String(t3);
-
+	delay(1000);
 	String imei              = "861445030362268";           // Тест IMEI
 	if (gprs.getIMEI())                                     // Получить IMEI
 	{
