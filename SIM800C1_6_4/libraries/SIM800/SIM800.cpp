@@ -8,7 +8,6 @@
 #include "SIM800.h"
 #include <SoftwareSerial.h>
 
-//void(*resetFunc) (void) = 0;                           // объявляем функцию reset
 
 bool CGPRS_SIM800::begin(Stream &port)
 {
@@ -267,7 +266,7 @@ byte CGPRS_SIM800::ping_connect_internet()
 		}
 		delay(1000);                                                     // Подождать секунду.
 		count_connect++;
-		if (count_connect > 60)  resetFunc(); //break;                                   //вызываем reset при отсутствии доступа к сетевому оператору в течении 60 секунд
+		if (count_connect > 60)  reboot(); //break;                                   //вызываем reset при отсутствии доступа к сетевому оператору в течении 60 секунд
 	}
 	delay(1000);
 	count_connect = 0;                                                 // Счетчик количества попыток проверки подключения Attach from GPRS service
@@ -284,7 +283,7 @@ byte CGPRS_SIM800::ping_connect_internet()
 		}
 		delay(1000);                                                     // Подождать секунду.
 		count_connect++;
-		if (count_connect > 60)  resetFunc(); //break;  // resetFunc();                  //вызываем reset при отсутствии доступа к  GPRS service в течении 60 секунд
+		if (count_connect > 60)  reboot();                          //вызываем reset при отсутствии доступа к  GPRS service в течении 60 секунд
 	}
 
 	//++++++++++++++++ Проверки пройдены, подключаемся к интернету по протоколу TCP для проверки ping ++++++++++++
@@ -652,4 +651,10 @@ void CGPRS_SIM800::purgeSerial()    // Очистить приемный буффер
 bool CGPRS_SIM800::available()
 {
 	return SIM_SERIAL->available(); 
+}
+void CGPRS_SIM800::reboot()
+{
+	wdt_disable();
+	wdt_enable(WDTO_15MS);
+	while (1) {}
 }

@@ -95,7 +95,6 @@ DallasTemperature sensor1(&ds18x20_1);
 DallasTemperature sensor2(&ds18x20_2);
 DallasTemperature sensor3(&ds18x20_3);
 
-void(* resetFunc) (void) = 0;                           // объявляем функцию reset
 
 void flash_time()                                       // Программа обработчик прерывистого свечения светодиодов при старте
 {
@@ -259,8 +258,11 @@ bool gprs_send(String data)
 	  gprs.httpUninit();                                 // Не получилось, разединить и  попробовать снова 
 	  delay(1000);                                       // Подождать секунду.
 	  count_init++;
-	  if(count_init > 10)   digitalWrite(PWR_On, HIGH);  // отключаем питание модуля GPRS. Вызываем срабатывание по Watchdog  
-	  //  resetFunc();                                 //вызываем reset при отсутствии доступа к серверу в течении 60 секунд
+	  if (count_init > 10)
+	  {
+		  digitalWrite(PWR_On, HIGH); 
+		  gprs.reboot();   // отключаем питание модуля GPRS. Вызываем срабатывание по Watchdog  
+	  }
   }
 
   if (ssl_set == true)
@@ -324,7 +326,7 @@ bool gprs_send(String data)
 			con.println(F("Errors exceeded"));
 			delay(3000);
 			digitalWrite(PWR_On, HIGH);                  // отключаем питание модуля GPRS. Вызываем срабатывание по Watchdog  
-			//resetFunc();                                              // вызываем reset после 10 ошибок
+			gprs.reboot();                               // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
 	return; 
@@ -347,7 +349,7 @@ bool gprs_send(String data)
 			con.println(F("The number of server errors exceeded 10"));
 			delay(3000);                     // Время для чтения сообщения
 			digitalWrite(PWR_On, HIGH);      // отключаем питание модуля GPRS. Вызываем срабатывание по Watchdog  
-			//resetFunc();                   // вызываем reset после 10 ошибок
+			gprs.reboot();                   // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
 	return; 
@@ -428,9 +430,12 @@ void connect_internet_HTTP()
 		else                                                    // Модуль не подключиля к интернету
 		{
 			count_init++;                                        // Увеличить счетчик количества попыток
-			if(count_init > 10)
-				digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
-				//resetFunc();                    // вызываем reset после 10 ошибок
+			if (count_init > 10)
+			{
+				digitalWrite(PWR_On, HIGH); 
+				gprs.reboot();    // Кратковременно отключаем питание модуля GPRS
+															   // вызываем reset после 10 ошибок
+			}
 
 			Serial.println(F("\nFailed connect internet"));
 			delay(1000);
@@ -580,7 +585,7 @@ void setTime(String val, String f_phone)
 	  Serial.println(F("Restart"));
 	  delay(2000);
 	  digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
-	  resetFunc();                                     //вызываем reset
+	  gprs.reboot();                                     //вызываем reset
   } 
   else if (val.indexOf(F("Timeoff")) > -1) 
   {
@@ -593,7 +598,7 @@ void setTime(String val, String f_phone)
 	  Serial.println(F("HTTP SSL ON"));
 	  delay(2000);
 	  digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
-	  resetFunc();
+	  gprs.reboot();
   }
   else if (val.indexOf(F("Ssloff")) > -1)
   {
@@ -601,7 +606,7 @@ void setTime(String val, String f_phone)
 	  Serial.println(F("HTTP SSL OFF"));
 	  delay(2000);
 	  digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
-	  resetFunc();
+	  gprs.reboot();
   }
   else if (val.indexOf(F("Devon")) > -1)
   {
@@ -637,7 +642,7 @@ void check_blink()
 		{
 			state_device = 0;
 			MsTimer2::stop();                                                 // Включить таймер прерывания
-			resetFunc();                                                      // Что то пошло не так с регистрацией на станции
+			gprs.reboot();                                                    // Что то пошло не так с регистрацией на станции
 		}
 	}
 	else if (metering_NETLIGHT > 855 && metering_NETLIGHT < 870)
@@ -648,8 +653,8 @@ void check_blink()
 		{
 			state_device = 0;
 			MsTimer2::stop();                                                 // Включить таймер прерывания
-			digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
-			resetFunc();                                                      // Что то пошло не так с регистрацией на станции
+			digitalWrite(PWR_On, HIGH);                                       // отключаем питание модуля GPRS
+			gprs.reboot();                                                    // Что то пошло не так с регистрацией на станции
 		}
 	}
 	else if (metering_NETLIGHT > 350 && metering_NETLIGHT < 370)
@@ -666,25 +671,33 @@ void ping()
 	int count_wait = 0;                                               // Счетчик количества попыток проверки подключения Network registration (сетевому оператору)
 	byte ret = gprs.ping_connect_internet();                     
 
-	if(ret !=0)  
-		digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
-		//resetFunc();                                        // Что то пошло не так с интернетом
+	if (ret != 0)
+	{
+		digitalWrite(PWR_On, HIGH); 
+		gprs.reboot();                              // отключаем питание модуля GPRS
+	        									   // Что то пошло не так с интернетом
+	}
 
 	while (state_device != 3)                                         // Ожидание подключения к интернету
 	{
 		delay(50);
 		count_wait++;
-		if (count_wait > 3000) 
-			digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
-		//resetFunc();                          //вызываем reset при отсутствии доступа к  интернету
+		if (count_wait > 3000)
+		{
+			digitalWrite(PWR_On, HIGH);                               // отключаем питание модуля GPRS
+			gprs.reboot();                                            //вызываем reset при отсутствии доступа к  интернету
+	    }
 	}
 
 	while (1)
 	{
 
-		if(state_device != 3) 
-			digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS	
-			//resetFunc();                           //вызываем reset при отсутствии доступа к  интернету
+		if (state_device != 3)
+		{
+			digitalWrite(PWR_On, HIGH); 
+			gprs.reboot();                        //  отключаем питание модуля GPRS	
+												//вызываем reset при отсутствии доступа к  интернету
+		}
 		if (check_ping())
 		{
 			return;
@@ -692,9 +705,12 @@ void ping()
 		else
 		{
 			count_ping++;
-			if (count_ping > 7) 
-				digitalWrite(PWR_On, HIGH);            // Кратковременно отключаем питание модуля GPRS
-				resetFunc();                           // 7 попыток. Что то пошло не так с интернетом
+			if (count_ping > 7)
+			{
+				digitalWrite(PWR_On, HIGH); 
+				gprs.reboot();           //  отключаем питание модуля GPRS
+																					// 7 попыток. Что то пошло не так с интернетом
+			}
 		}
 		delay(1000);
 	}
@@ -807,7 +823,7 @@ void start_init()
 		while (digitalRead(STATUS) == LOW)
 		{
 			count_status++;
-			if (count_status > 100) resetFunc();                // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
+			if (count_status > 100) gprs.reboot();                // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
 			delay(100);
 		}
 	
@@ -970,7 +986,7 @@ void setup()
 
 void loop()
 {
- if(digitalRead(STATUS) == LOW)  resetFunc();                                 // Что то пошло не так, питание отключено
+ if(digitalRead(STATUS) == LOW)   gprs.reboot();                                // Что то пошло не так, питание отключено
 
  check_SMS();                   // Проверить приход новых СМС
 
@@ -1017,6 +1033,6 @@ void loop()
 	//	}
 	//}
 
-	if(millis() - time > time_day*1000) resetFunc();       // вызываем reset интервалом в сутки
+	if(millis() - time > time_day*1000)  gprs.reboot();       // вызываем reset интервалом в сутки
 	delay(500);
 }

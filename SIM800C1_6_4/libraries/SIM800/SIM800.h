@@ -6,12 +6,13 @@
 *************************************************************************/
 
 #include <Arduino.h>
+#include <avr/wdt.h>
 
 typedef	Stream 						FONAStreamType;
 
 
 // define DEBUG to one serial UART to enable debug information output
-#define DEBUG Serial
+// #define DEBUG Serial
 
 typedef enum {
 	HTTP_DISABLED = 0,
@@ -67,6 +68,7 @@ public:
 	// check if there is available serial data
 	bool available();
 	void cleanStr(String & str);
+	void reboot();
 
 	char buffer[150];
 	char buffer1[22];
@@ -91,6 +93,6 @@ private:
 	byte operator_Num     = 0;                                  // Порядковый номер оператора
 	int ch                = 0;
 	FONAStreamType *SIM_SERIAL;
-	void(*resetFunc) (void) = 0;                           // объявляем функцию reset
+	
 };
 
