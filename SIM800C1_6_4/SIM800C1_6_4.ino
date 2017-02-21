@@ -64,14 +64,15 @@ uint32_t count           = 0;
 uint32_t errors          = 0;
 String SMS_center        = "";
 //String imei;                             //  IMEI
-#define DELIM "@"
-
+#define DELIM "&"
+//#define DELIM "@"
 unsigned long time             = 0;                     // Переменная для суточного сброса
 unsigned long time_day         = 86400;                 // Переменная секунд в сутках
 unsigned long previousMillis   = 0;                     //  
-unsigned long interval         = 300;                   // Интервал передачи данных 5 минут
+unsigned long interval         = 60;                   // Интервал передачи данных 5 минут
 bool time_set                  = false;                 // Фиксировать интервал заданный СМС
 bool ssl_set                   = true;                  // Признак шифрования 
+bool watch_dog                 = false;                 // Признак проверки сторожевого таймера
 unsigned long time_ping        = 380;                   // Интервал проверки ping 6 минут. 
 unsigned long previousPing     = 0;                     // Временный Интервал проверки ping
 
@@ -169,14 +170,22 @@ void sendTemps()
 	int signal = gprs.getSignalQuality();
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
+
 	String imei              = "861445030362268";           // Тест IMEI
+	if (gprs.getIMEI())                                     // Получить IMEI
+	{
+		con.print(F("\nIMEI:"));
+		//imei = gprs.buffer;                                 // Отключить на время отладки
+		gprs.cleanStr(imei);                                // Отключить на время отладки
+		con.println(imei);
+	}
 
 	//int dev1 = analogRead(analog_dev1);                   // Аналоговый вход 1
 	//bool dev2 = digitalRead(digital_inDev2);              // Цифровой вход 2
 	//dev3 = EEPROM.read(Address_Dev3);                     // Состояние исполнительного устройства
 
 	String toSend = "IM=" + imei + DELIM + "D1=" + String(t1) + DELIM + "D2=" + String(t2) + DELIM + "D3=" + String(t3) + DELIM + "S=" + String(signal) + DELIM + "E=" + String(errors) + DELIM + "EA=" + String(error_All) + formEnd() + DELIM + "SM=" + String(tsumma);// +DELIM + "In1=" + String(dev1) + DELIM + "In2=" + String(dev2) + DELIM + "Out=" + String(dev3);
-
+		
 	Serial.print(F("toSend.length: "));
 	Serial.println(toSend.length());
 	int count_send = 0;
@@ -226,6 +235,7 @@ bool gprs_send(String data)
   setColor(COLOR_BLUE); 
   static const char* url1   = "http://trm7.xyz/r.php";
   static const char* urlssl = "https://trm7.xyz/r.php";
+  
   connect_internet_HTTP();                               // Подключиться к интернету с учетом стека HTTP
   
   int count_init = 0;                                    // Счетчик количества попыток подключиться к HTTP
@@ -817,7 +827,6 @@ void setup()
 	delay(300);
 	setColor(COLOR_RED);
 
-
 	
 	DeviceAddress deviceAddress;
 	sensor1.setOneWire(&ds18x20_1);
@@ -830,37 +839,43 @@ void setup()
 	if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 	if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 
-	attachInterrupt(1,check_blink, RISING);                    // Включить прерывания. Индикация состояния модема
 	wdt_enable(WDTO_8S);                                       // Для тестов не рекомендуется устанавливать значение менее 8 сек.
 
-	if(EEPROM.read(0)!=33)                                     // Программа записи начальных установок при первом включении устройства после монтажа.
+	if(EEPROM.read(0)!=32)                                     // Программа записи начальных установок при первом включении устройства после монтажа.
 	{
 		con.println (F("Start clear EEPROM"));                 //  
 		for(int i = 0; i<1023;i++)
 		{
 			EEPROM.write(i,0); 
 		}
-		EEPROM.write(0,33);
-		EEPROM.put(Address_interval, interval);                  // строка начальной установки интервалов
+		EEPROM.write(0,32);                                    // Произвольное число.
+		EEPROM.put(Address_interval, interval);                // строка начальной установки интервалов
 		//EEPROM.put(Address_tel1, "+79852517615");
 		EEPROM.put(Address_tel1, "+79162632701");
 		EEPROM.put(Address_SMS_center, "4556w6072556w6");
 		EEPROM.write(Address_ssl, true);
-		con.println(F("Test Watchdog"));
-		for (int i = 0; i < 20; i++)
-		{
-			EEPROM.write(Address_watchdog, i);
-			con.println(i);
-			delay(1000);
-		}
 		con.println (F("Clear EEPROM End"));                              
 	}
 	
-	byte watchdog = EEPROM.read(Address_watchdog);
+	watch_dog = EEPROM.read(Address_watchdog + 1);           // Проверка Watchdog
+	if (watch_dog == false)                                   // поисходит в 2 этапа 
+	{
+		con.println(F("Test Watchdog"));
+		EEPROM.write(Address_watchdog + 1, !watch_dog);      // Отметка начальной проверки, исключить вхождение в циклическую проверку 
+		for (int i = 0; i < 15; i++)                         // Если счетчик досчитает больше 9, значит  Watchdog не работает
+		{
+			EEPROM.write(Address_watchdog, i);               // Если произойдет перезагрузка до 9 - Watchdog работает
+			con.println(i);
+			delay(1000);
+		}
+	}
 
+	byte watchdog = EEPROM.read(Address_watchdog);
 	if (watchdog > 10)  con.println(F("Watchdog off"));
-	else  con.println(F("Watchdog on"));
-	
+	else  con.println(F("\n** Watchdog on **"));
+	EEPROM.write(Address_watchdog + 1, !watch_dog);            // Разрешить проверку при следующей перезагрузке
+
+	attachInterrupt(1, check_blink, RISING);                     // Включить прерывания. Индикация состояния модема
 	EEPROM.get(Address_interval, interval);                      // Получить из EEPROM интервал
 	ssl_set = EEPROM.read(Address_ssl);							 // Устанивить признак шифрования
 	con.print(F("Interval sec:"));
@@ -888,7 +903,7 @@ void setup()
 	MsTimer2::stop();
 	setColor(COLOR_GREEN);                                      // Включить зеленый светодиод
 	sendTemps();
-	time = millis();                                              // Старт отсчета суток
+	time = millis();                                            // Старт отсчета суток
 	con.println(F("\nSIM800 setup end"));
 }
 
