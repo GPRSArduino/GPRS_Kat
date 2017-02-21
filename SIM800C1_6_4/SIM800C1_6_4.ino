@@ -61,7 +61,7 @@ bool temp_dev3                       = false;           // Переменная 
 CGPRS_SIM800 gprs;
 int count                     = 0;
 unsigned long errors          = 0;
-//String SMS_center             = "";
+byte signal = 0;
 #define DELIM "&"
 unsigned long time             = 0;                     // Переменная для суточного сброса
 unsigned long time_day         = 86400;                 // Переменная секунд в сутках
@@ -164,8 +164,9 @@ void sendTemps()
 	float t2 = sensor2.getTempCByIndex(0);
 	float t3 = sensor3.getTempCByIndex(0);
 	float tsumma = t1 + t2 + t3 + 88.88;
-	int signal = gprs.getSignalQuality();
-	con.println(signal);
+
+	signal = gprs.getSignalQuality();
+
 	int error_All = 0;
 	EEPROM.get(Address_errorAll, error_All);
 	
@@ -188,7 +189,6 @@ void sendTemps()
 	//bool dev2 = digitalRead(digital_inDev2);              // Цифровой вход 2
 	//dev3 = EEPROM.read(Address_Dev3);                     // Состояние исполнительного устройства
 
-	//String toSend = "IM=" + imei + DELIM + "D1=" + String(t1) + DELIM + "D2=" + String(t2) + DELIM + "D3=" + String(t3) + DELIM + "S=" + String(signal) + DELIM + "E=" + String(errors) + DELIM + "EA=" + String(error_All) + formEnd() + DELIM + "SM=" + String(tsumma);// +DELIM + "In1=" + String(dev1) + DELIM + "In2=" + String(dev2) + DELIM + "Out=" + String(dev3);
 	String toSend = "IM=" + imei + temp123 + DELIM + "S=" + String(signal) + DELIM + "E=" + String(errors) + DELIM + "EA=" + String(error_All) + formEnd() + DELIM + "SM=" + String(tsumma);// +DELIM + "In1=" + String(dev1) + DELIM + "In2=" + String(dev2) + DELIM + "Out=" + String(dev3);
 
 	Serial.print(F("toSend.length: "));
@@ -846,7 +846,7 @@ void start_init()
 			{
 				do
 				{
-					int signal = gprs.getSignalQuality();
+					signal = gprs.getSignalQuality();
 					Serial.print(F("rssi ..")); Serial.println(signal);
 					delay(1000);
 					Serial.println(F("GPRS connect .."));
@@ -974,56 +974,7 @@ void loop()
 
  check_SMS();                   // Проверить приход новых СМС
 
-
- //
- //if (gprs.checkSMS()) 
- // {
-	//con.print(F("SMS:"));                    
-	//con.println(gprs.val); 
-	//
-	//if (gprs.val.indexOf("REC UNREAD") > -1)  //если обнаружена новая  СМС 
-	//{    
-	//	//------------- поиск кодового слова в СМС 
-	//	char buf[16] ;
-
-	//	EEPROM.get(Address_tel1, buf);                                         // Восстановить телефон хозяина 1
-	//	String master_tel1(buf);
-
-	//	EEPROM.get(Address_SMS_center, buf);                                 // Восстановить телефон СМС центра
-	//	String master_SMS_center(buf);
-	//
-	//	if (gprs.deleteSMS(1))
-	//	{
-	//		con.println(F("SMS delete"));                    //      con.print("SMS:");
-	//	}
-
-	//	if (gprs.val.indexOf(master_tel1) > -1)                              //если СМС от хозяина 1
-	//	{   
-	//	con.println(F("Commanda tel1"));
-	//	setTime(gprs.val, master_tel1);
-	//	}
-	//	else if(gprs.val.indexOf(master_SMS_center) > -1)                    //если СМС от хозяина 2
-	//	{
-	//	con.println(F("SMS centr"));
-	//	setTime(gprs.val, master_SMS_center);
-	//	}
-	//	else
-	//	{
-	//		con.println(F("phone ignored"));            
-	//	}
-	//}
-	//
-	//if (gprs.val.indexOf("REC READ") > -1)                   //если обнаружена старая  СМС 
-	//{
-	//	if (gprs.deleteSMS(0))
-	//	{
-	//		con.println(F("SMS delete"));                    //  con.print("SMS:");
-	//	}
-	//}
-	//gprs.val = "";
- // }
- // 
-	unsigned long currentMillis = millis();
+ unsigned long currentMillis = millis();
 	if(!time_set)                                                               // 
 	{
 		 EEPROM.get( Address_interval, interval);                               // Получить интервал из EEPROM Address_interval

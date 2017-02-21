@@ -379,11 +379,13 @@ int CGPRS_SIM800::getSignalQuality()
 {
   sendCommandS(F("AT+CSQ"));                                      // Уровень сигнала
   char *p = strstr(buffer, "CSQ:");
-  if (p) {
+  if (p) 
+  {
 	int n = atoi(p+5);
 	if (n == 99 || n == -1) return 0;
 	return n ;
-  } else {
+  } else 
+  {
    return 0; 
   }
 }

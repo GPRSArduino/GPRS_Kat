@@ -11,7 +11,7 @@ typedef	Stream 						FONAStreamType;
 
 
 // define DEBUG to one serial UART to enable debug information output
-//#define DEBUG Serial
+#define DEBUG Serial
 
 typedef enum {
 	HTTP_DISABLED = 0,
