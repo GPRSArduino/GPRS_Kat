@@ -982,7 +982,7 @@ void loop()
 
 	if(millis() - time > time_day*1000)
 	{
-		digitalWrite(PWR_On, HIGH);                       //  отключаем питание модуля GPRS
+		digitalWrite(PWR_On, HIGH);                       // отключаем питание модуля GPRS 
 		gprs.reboot();                                    // вызываем reset интервалом в сутки
 	}
 	delay(500);
