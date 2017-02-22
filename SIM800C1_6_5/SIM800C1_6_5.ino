@@ -53,7 +53,7 @@ volatile int count_blink1            = 0;               // Счетчик поп
 volatile int count_blink2            = 0;               // Счетчик попыток подключиться к базовой станции
 bool send_ok                         = false;           // Признак успешной передачи данных
 bool count_All_reset                 = false;           // Признак выполнения команды сброса счетчика ошибок.
-bool temp_dev3                       = false;           // Переменная для временного хранения состояния исполнительного устройства
+String imei = "861445030362268";                        // Тест IMEI
 
 CGPRS_SIM800 gprs;
 int count                     = 0;
@@ -78,6 +78,7 @@ int Address_Dev3          = 260;                        // Адрес в EEPROM 
 int Address_Dev3_ind      = 264;                        // Адрес в EEPROM признак управления сполнительного устройства Dev3
 int Address_num_site_ping = 268;                        // Адрес в EEPROM признак управления сполнительного устройства Dev3
 int Address_watchdog      = 270;                        // Адрес в EEPROM счетчик проверки Watchdog
+
 
 byte dev3                 = 0;                          // признак управления сполнительного устройства Dev3
 uint8_t oneWirePins[]={16, 17, 4};                      //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
@@ -164,17 +165,20 @@ void sendTemps()
 	EEPROM.get(Address_errorAll, error_All);
 	
 	String temp123;
-	if (t1 != -127) temp123 += DELIM; temp123 += "D1=" + String(t1);
-	if (t2 != -127) temp123 += DELIM; temp123 += "D2=" + String(t2);
-	if (t3 != -127) temp123 += DELIM; temp123 += "D3=" + String(t3);
-	delay(1000);
-	String imei              = "861445030362268";           // Тест IMEI
-	if (gprs.getIMEI())                                     // Получить IMEI
+	if (t1 != -127)
 	{
-		con.print(F("\nIMEI:"));
-		imei = gprs.buffer;                               // Отключить на время отладки
-		gprs.cleanStr(imei);                                // Отключить на время отладки
-		con.println(imei);
+		temp123 += DELIM; 
+		temp123 += "D1=" + String(t1);
+	}
+	if (t2 != -127)
+	{
+		temp123 += DELIM;
+		temp123 += "D2=" + String(t2);
+	}
+	if (t3 != -127)
+	{
+		temp123 += DELIM;
+		temp123 += "D3=" + String(t3);
 	}
 
 	byte signal = gprs.getSignalQuality();
@@ -251,8 +255,8 @@ bool gprs_send(String data)
 	  count_init++;
 	  if (count_init > 10)
 	  {
-		  digitalWrite(PWR_On, HIGH); 
-		  gprs.reboot();   // отключаем питание модуля GPRS. Вызываем срабатывание по Watchdog  
+		  digitalWrite(PWR_On, HIGH);                    // отключаем питание модуля GPRS.
+		  gprs.reboot();                                 // Вызываем срабатывание по Watchdog  
 	  }
   }
 
@@ -316,7 +320,7 @@ bool gprs_send(String data)
 	  {
 			con.println(F("Errors exceeded"));
 			delay(3000);
-			digitalWrite(PWR_On, HIGH);                  // отключаем питание модуля GPRS. Вызываем срабатывание по Watchdog  
+			digitalWrite(PWR_On, HIGH);                  // отключаем питание модуля GPRS.  
 			gprs.reboot();                               // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
@@ -339,7 +343,7 @@ bool gprs_send(String data)
 	  {
 			con.println(F("The number of server errors exceeded 10"));
 			delay(3000);                     // Время для чтения сообщения
-			digitalWrite(PWR_On, HIGH);      // отключаем питание модуля GPRS. Вызываем срабатывание по Watchdog  
+			digitalWrite(PWR_On, HIGH);      // отключаем питание модуля GPRS. 
 			gprs.reboot();                   // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
@@ -423,9 +427,8 @@ void connect_internet_HTTP()
 			count_init++;                                        // Увеличить счетчик количества попыток
 			if (count_init > 10)
 			{
-				digitalWrite(PWR_On, HIGH); 
-				gprs.reboot();    // Кратковременно отключаем питание модуля GPRS
-															   // вызываем reset после 10 ошибок
+				digitalWrite(PWR_On, HIGH);                     // отключаем питание модуля GPRS.
+				gprs.reboot();                                  // вызываем reset после 10 ошибок
 			}
 
 			Serial.println(F("\nFailed connect internet"));
@@ -556,46 +559,33 @@ void setTime(String val, String f_phone)
 	  Serial.print("..");
 	  Serial.println(F("Restart"));
 	  delay(2000);
-	  digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
-	  gprs.reboot();                                     //вызываем reset
+	  digitalWrite(PWR_On, HIGH);                       // отключаем питание модуля GPRS
+	  gprs.reboot();                                    // вызываем reset
   } 
   else if (val.indexOf(F("Timeoff")) > -1) 
   {
-	 time_set = false;                              // Снять фиксацию интервала заданного СМС
+	 time_set = false;                                  // Снять фиксацию интервала заданного СМС
 	 Serial.println(F("Timeoff"));
   } 
   else if (val.indexOf(F("Sslon")) > -1)
   {
-	  EEPROM.write(Address_ssl, true);                // Включить шифрование
+	  EEPROM.write(Address_ssl, true);                 // Включить шифрование
 	  Serial.println(F("HTTP SSL ON"));
 	  delay(2000);
-	  digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
-	  gprs.reboot();
+	  digitalWrite(PWR_On, HIGH);                      // отключаем питание модуля GPRS
+	  gprs.reboot();                                   // вызываем reset  
   }
   else if (val.indexOf(F("Ssloff")) > -1)
   {
-	  EEPROM.write(Address_ssl, false);                  // Отключить шифрование
+	  EEPROM.write(Address_ssl, false);                // Отключить шифрование
 	  Serial.println(F("HTTP SSL OFF"));
 	  delay(2000);
-	  digitalWrite(PWR_On, HIGH);                               // Кратковременно отключаем питание модуля GPRS
-	  gprs.reboot();
+	  digitalWrite(PWR_On, HIGH);                      // отключаем питание модуля GPRS
+	  gprs.reboot();                                   // вызываем reset п
   }
-  else if (val.indexOf(F("Devon")) > -1)
+   else
   {
-	  EEPROM.write(Address_Dev3, 1);                  // Включить исполнительное устройство
-	  EEPROM.write(Address_Dev3_ind, 1);
-	  con.println(F("Device ON"));
-  }
-  else if (val.indexOf(F("Devoff")) > -1)
-  {
-	  EEPROM.write(Address_Dev3, 0);                  // Отключить исполнительное устройство
-	  EEPROM.write(Address_Dev3_ind, 0);                  // 
-	  con.println(F("Device OFF"));
-  }
-
-  else
-  {
-	  Serial.println(F("Unknown command"));         // Serial.println("Unknown command");
+	  Serial.println(F("Unknown command"));            // Serial.println("Unknown command");
   }
 }
 
@@ -645,9 +635,8 @@ void ping()
 
 	if (ret != 0)
 	{
-		digitalWrite(PWR_On, HIGH); 
-		gprs.reboot();                              // отключаем питание модуля GPRS
-	        									   // Что то пошло не так с интернетом
+		digitalWrite(PWR_On, HIGH);                                   // отключаем питание модуля GPRS
+		gprs.reboot();                                                // Что то пошло не так с интернетом
 	}
 
 	while (state_device != 3)                                         // Ожидание подключения к интернету
@@ -666,9 +655,8 @@ void ping()
 
 		if (state_device != 3)
 		{
-			digitalWrite(PWR_On, HIGH); 
-			gprs.reboot();                        //  отключаем питание модуля GPRS	
-												//вызываем reset при отсутствии доступа к  интернету
+			digitalWrite(PWR_On, HIGH);                             //  отключаем питание модуля GPRS	
+			gprs.reboot();                                          //вызываем reset при отсутствии доступа к  интернету
 		}
 		if (check_ping())
 		{
@@ -679,9 +667,8 @@ void ping()
 			count_ping++;
 			if (count_ping > 7)
 			{
-				digitalWrite(PWR_On, HIGH); 
-				gprs.reboot();           //  отключаем питание модуля GPRS
-																					// 7 попыток. Что то пошло не так с интернетом
+				digitalWrite(PWR_On, HIGH);                         //  отключаем питание модуля GPRS
+				gprs.reboot();                                      // 7 попыток. Что то пошло не так с интернетом
 			}
 		}
 		delay(1000);
@@ -795,7 +782,11 @@ void start_init()
 		while (digitalRead(STATUS) == LOW)
 		{
 			count_status++;
-			if (count_status > 100) gprs.reboot();                // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
+			if (count_status > 100)
+			{
+				digitalWrite(PWR_On, HIGH);                        //  отключаем питание модуля GPRS
+				gprs.reboot();                                     // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
+			}
 			delay(100);
 		}
 	
@@ -815,7 +806,14 @@ void start_init()
 			delay(1000);
 		}
 		delay(1000);
-	
+
+		if (gprs.getIMEI())                                     // Получить IMEI
+		{
+			con.print(F("\nIMEI:"));
+			//imei = gprs.buffer;                                 // Отключить на время отладки
+			gprs.cleanStr(imei);                                // Отключить на время отладки
+			con.println(imei);
+		}
 		char n = gprs.getNetworkStatus();
 		
 		Serial.print(F("\nNetwork status "));
@@ -883,17 +881,18 @@ void setup()
 	if (sensor1.getAddress(deviceAddress, 0)) sensor1.setResolution(deviceAddress, 12);
 	if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 	if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
-	delay(5000);
+	delay(5000);                                               // Задержка 5 сек для перезаписи загрузчика, если что то не так.
 	wdt_enable(WDTO_8S);                                       // Для тестов не рекомендуется устанавливать значение менее 8 сек.
 
-	if(EEPROM.read(0)!=33)                                     // Программа записи начальных установок при первом включении устройства после монтажа.
+	int setup_EEPROM = 38;                                     // Произвольное число. Программа записи начальных установок при первом включении устройства после монтажа.
+	if(EEPROM.read(0)!= setup_EEPROM)                          // Программа записи начальных установок при первом включении устройства после монтажа.
 	{
 		con.println (F("Start clear EEPROM"));                 //  
 		for(int i = 0; i<1023;i++)
 		{
 			EEPROM.write(i,0); 
 		}
-		EEPROM.write(0,33);                                    // Произвольное число.
+		EEPROM.write(0, setup_EEPROM);                         //Записать для предотвращения повторной записи установок
 		EEPROM.put(Address_interval, interval);                // строка начальной установки интервалов
 		//EEPROM.put(Address_tel1, "+79852517615");
 		EEPROM.put(Address_tel1, "+79162632701");
@@ -946,7 +945,11 @@ void setup()
 
 void loop()
 {
- if(digitalRead(STATUS) == LOW)   gprs.reboot();                                // Что то пошло не так, питание отключено
+	if (digitalRead(STATUS) == LOW)
+	{
+		digitalWrite(PWR_On, HIGH);                        //  отключаем питание модуля GPRS
+		gprs.reboot();                                     // Что то пошло не так программа перезапуска  если модуль не включился
+	}
 
  check_SMS();                   // Проверить приход новых СМС
 
@@ -977,6 +980,10 @@ void loop()
 		setColor(COLOR_GREEN);
 	}
 
-	if(millis() - time > time_day*1000)  gprs.reboot();       // вызываем reset интервалом в сутки
+	if(millis() - time > time_day*1000)
+	{
+		digitalWrite(PWR_On, HIGH);                       //  отключаем питание модуля GPRS
+		gprs.reboot();                                    // вызываем reset интервалом в сутки
+	}
 	delay(500);
 }

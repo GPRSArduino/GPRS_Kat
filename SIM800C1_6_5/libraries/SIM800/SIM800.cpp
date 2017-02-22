@@ -47,7 +47,7 @@ bool CGPRS_SIM800::begin(Stream &port)
 		delay(100);														
 		sendCommandS(F("AT+CLIP=1"));                        // включаем АОН
 		delay(100);													
-		sendCommandS(F("AT+CSCS=\"GSM\""));                  // режим кодировки текста
+		sendCommandS(F("AT+CSCS=\"GSM\""));                   // режим кодировки текста
 		delay(100);															
 		//sendCommandS(F("AT+CNMI=2,2"));                    // отображение смс в терминале сразу после приема (без этого сообщения молча падают в память)tln("AT+CSCS=\"GSM\""); 
 		delay(100);									 
