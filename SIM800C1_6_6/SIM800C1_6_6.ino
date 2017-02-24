@@ -58,7 +58,7 @@ String SIMCCID = "";
 
 CGPRS_SIM800 gprs;
 int count                     = 0;
-unsigned long errors          = 0;
+//unsigned int errors           = 0;
 #define DELIM "&"
 unsigned long time             = 0;                     // Переменная для суточного сброса
 unsigned long time_day         = 86400;                 // Переменная секунд в сутках
@@ -70,20 +70,19 @@ bool watch_dog                 = false;                 // Признак про
 unsigned long time_ping        = 380;                   // Интервал проверки ping 6 минут. 
 unsigned long previousPing     = 0;                     // Временный Интервал проверки ping
 
-int Address_tel1          = 100;                        // Адрес в EEPROM телефона 1
-int Address_ssl           = 120;                        // Адрес в EEPROM признака шифрования
-int Address_errorAll      = 160;                        // Адрес в EEPROM счетчика общих ошибок
-int Address_interval      = 200;                        // Адрес в EEPROM величины интервала
-int Address_SMS_center    = 220;                        // Адрес в EEPROM SMS центра
-int Address_Dev3          = 260;                        // Адрес в EEPROM состояния исполнительного устройства Dev3
-int Address_Dev3_ind      = 264;                        // Адрес в EEPROM признак управления сполнительного устройства Dev3
-int Address_num_site_ping = 268;                        // Адрес в EEPROM признак управления сполнительного устройства Dev3
-int Address_watchdog      = 270;                        // Адрес в EEPROM счетчик проверки Watchdog
+int Address_tel1            = 100;                        // Адрес в EEPROM телефона 1
+int Address_ssl             = 120;                        // Адрес в EEPROM признака шифрования
+//int Address_errorAll      = 160;                        // Адрес в EEPROM счетчика общих ошибок
+int Address_interval        = 200;                        // Адрес в EEPROM величины интервала
+int Address_SMS_center      = 220;                        // Адрес в EEPROM SMS центра
+int Address_Dev3            = 260;                        // Адрес в EEPROM состояния исполнительного устройства Dev3
+int Address_Dev3_ind        = 264;                        // Адрес в EEPROM признак управления сполнительного устройства Dev3
+int Address_num_site_ping   = 268;                        // Адрес в EEPROM признак управления сполнительного устройства Dev3
+int Address_watchdog        = 270;                        // Адрес в EEPROM счетчик проверки Watchdog
+int Address_EEPROM_off      = 280;                           // Адрес в EEPROM запрет записи в EEPROM
 
-
-byte dev3                 = 0;                          // признак управления сполнительного устройства Dev3
 uint8_t oneWirePins[]={16, 17, 4};                      //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
-														// Сейчас первым идет внутренний датчик.
+  												    	// Сейчас первым идет внутренний датчик.
 uint8_t oneWirePinsCount=sizeof(oneWirePins)/sizeof(int);
 
 OneWire ds18x20_1(oneWirePins[0]);
@@ -162,7 +161,8 @@ void sendTemps()
 	float t3 = sensor3.getTempCByIndex(0);
 	float tsumma = t1 + t2 + t3 + 88.88;
 
-	unsigned long error_All = 0;
+	unsigned int error_All = 0;
+	int Address_errorAll = 160;                        // Адрес в EEPROM счетчика общих ошибок
 	EEPROM.get(Address_errorAll, error_All);
 	
 	String temp123;
@@ -184,7 +184,7 @@ void sendTemps()
 
 	byte signal = gprs.getSignalQuality();
 
-	String toSend = "IM=" + imei + temp123 + DELIM + "S=" + String(signal) + DELIM + "E=" + String(errors) + DELIM + "EA=" + String(error_All) + formEnd() + DELIM + "SM=" + String(tsumma);// +DELIM + "In1=" + String(dev1) + DELIM + "In2=" + String(dev2) + DELIM + "Out=" + String(dev3);
+	String toSend = "IM=" + imei + temp123 + DELIM + "S=" + String(signal) + DELIM + "E=" + String(gprs.errors) + DELIM + "EA=" + String(error_All+ gprs.errors) + formEnd() + DELIM + "SM=" + String(tsumma);// +DELIM + "In1=" + String(dev1) + DELIM + "In2=" + String(dev2) + DELIM + "Out=" + String(dev3);
 
 	Serial.print(F("toSend.length: "));
 	Serial.println(toSend.length());
@@ -202,7 +202,7 @@ void sendTemps()
 			Serial.print("Attempt to transfer data .."); Serial.println(count_send);
 			if (count_send>7)  ping();                     // 7 попыток. Что то пошло не так с интернетом
 		}
-		delay(5000);                                       // Подождать 5 секунд
+		delay(2000);                                       // Подождать 5 секунд
 	}
 
 }
@@ -246,10 +246,10 @@ bool gprs_send(String data)
 	  gprs.httpUninit();                                 // Не получилось, разединить и  попробовать снова 
 	  delay(1000);                                       // Подождать секунду.
 	  count_init++;
-	  if (count_init > 10)
+	  if (count_init > 7)
 	  {
 		  digitalWrite(PWR_On, HIGH);                    // отключаем питание модуля GPRS.
-		  gprs.reboot();                                 // Вызываем срабатывание по Watchdog  
+		  gprs.reboot(gprs.errors);                                 // Вызываем срабатывание по Watchdog  
 	  }
   }
 
@@ -306,15 +306,15 @@ bool gprs_send(String data)
   if (gprs.httpState == HTTP_ERROR) 
   {
 	con.println(F("Connect error HTTP"));
-		errors++;
-		errorAllmem();
+	gprs.errors++;
+		//errorAllmem();
 	
-	if (errors > 10)
+	if (gprs.errors > 10)
 	  {
 			con.println(F("Errors exceeded"));
 			delay(3000);
 			digitalWrite(PWR_On, HIGH);                  // отключаем питание модуля GPRS.  
-			gprs.reboot();                               // вызываем reset после 10 ошибок
+			gprs.reboot(gprs.errors);                               // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
 	return; 
@@ -330,14 +330,14 @@ bool gprs_send(String data)
 
   if (gprs.httpState == HTTP_ERROR)          // Ответ не пришел
   {
-	errors++;
-	errorAllmem();
-	if (errors > 10)                         // вызываем reset после 10 ошибок
+	  gprs.errors++;
+	//errorAllmem();
+	if (gprs.errors > 10)                         // вызываем reset после 10 ошибок
 	  {
 			con.println(F("The number of server errors exceeded 10"));
 			delay(3000);                     // Время для чтения сообщения
 			digitalWrite(PWR_On, HIGH);      // отключаем питание модуля GPRS. 
-			gprs.reboot();                   // вызываем reset после 10 ошибок
+			gprs.reboot(gprs.errors);                   // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
 	return; 
@@ -380,10 +380,10 @@ bool gprs_send(String data)
   // Показать статистику
   con.print(F("Total: "));                                   
   con.print(count);
-  if (errors)                                                 // Если есть ошибки - сообщить
+  if (gprs.errors)                                                 // Если есть ошибки - сообщить
   {
 	con.print(F(" Errors: "));                                
-	con.print(errors);
+	con.print(gprs.errors);
   }
   con.println();
   Serial.print("Inteval: ");
@@ -421,7 +421,7 @@ void connect_internet_HTTP()
 			if (count_init > 10)
 			{
 				digitalWrite(PWR_On, HIGH);                     // отключаем питание модуля GPRS.
-				gprs.reboot();                                  // вызываем reset после 10 ошибок
+				gprs.reboot(gprs.errors);                                  // вызываем reset после 10 ошибок
 			}
 
 			Serial.println(F("\nFailed connect internet"));
@@ -500,6 +500,7 @@ void run_command(int command, String data)
 				{
 					if (count_All_reset = false)                   // Признак выполнения команды сброса счетчика ошибок
 					{
+						int Address_errorAll = 160;                // Адрес в EEPROM счетчика общих ошибок
 						count_All_reset == true;                   // Команда сброса выполнена. Повторный сброс возможен после перезагрузки
 						EEPROM.put(Address_errorAll, 0);           // Сбросить счетчик ошибок Предусмотреть блокировку повторной записи???
 					}
@@ -521,14 +522,6 @@ void run_command(int command, String data)
 			// выполняется, если не выбрана ни одна альтернатива
 			// default необязателен
 	}
-}
-
-void errorAllmem()                                // Запись всех ошибок в память EEPROM
-{
-  int error_All;
-  EEPROM.get(Address_errorAll, error_All);
-  error_All++;
-  EEPROM.put(Address_errorAll, error_All);            
 }
 
 int freeRam()                                   // Определить свободную память
@@ -553,7 +546,7 @@ void setTime(String val, String f_phone)
 	  Serial.println(F("Restart"));
 	  delay(2000);
 	  digitalWrite(PWR_On, HIGH);                       // отключаем питание модуля GPRS
-	  gprs.reboot();                                    // вызываем reset
+	  gprs.reboot(gprs.errors);                         // вызываем reset
   } 
   else if (val.indexOf(F("Timeoff")) > -1) 
   {
@@ -566,7 +559,7 @@ void setTime(String val, String f_phone)
 	  Serial.println(F("HTTP SSL ON"));
 	  delay(2000);
 	  digitalWrite(PWR_On, HIGH);                      // отключаем питание модуля GPRS
-	  gprs.reboot();                                   // вызываем reset  
+	  gprs.reboot(gprs.errors);                                   // вызываем reset  
   }
   else if (val.indexOf(F("Ssloff")) > -1)
   {
@@ -574,9 +567,19 @@ void setTime(String val, String f_phone)
 	  Serial.println(F("HTTP SSL OFF"));
 	  delay(2000);
 	  digitalWrite(PWR_On, HIGH);                      // отключаем питание модуля GPRS
-	  gprs.reboot();                                   // вызываем reset п
+	  gprs.reboot(gprs.errors);                                   // вызываем reset п
   }
-   else
+  else if (val.indexOf(F("Eon")) > -1)
+  {
+	  EEPROM.write(Address_EEPROM_off, true);         // Включить 
+	  Serial.println(F("EEPROM ON"));
+  }
+  else if (val.indexOf(F("Eoff")) > -1)
+  {
+	  EEPROM.write(Address_EEPROM_off, false);        // Отключить
+	  Serial.println(F("EEPROM OFF"));
+  }
+  else
   {
 	  Serial.println(F("Unknown command"));            // Serial.println("Unknown command");
   }
@@ -597,7 +600,7 @@ void check_blink()
 		{
 			state_device = 0;
 			MsTimer2::stop();                                                 // Включить таймер прерывания
-			gprs.reboot();                                                    // Что то пошло не так с регистрацией на станции
+			gprs.reboot(gprs.errors);                                                    // Что то пошло не так с регистрацией на станции
 		}
 	}
 	else if (metering_NETLIGHT > 855 && metering_NETLIGHT < 870)
@@ -609,12 +612,12 @@ void check_blink()
 			state_device = 0;
 			MsTimer2::stop();                                                 // Включить таймер прерывания
 			digitalWrite(PWR_On, HIGH);                                       // отключаем питание модуля GPRS
-			gprs.reboot();                                                    // Что то пошло не так с регистрацией на станции
+			gprs.reboot(gprs.errors);                                                    // Что то пошло не так с регистрацией на станции
 		}
 	}
 	else if (metering_NETLIGHT > 350 && metering_NETLIGHT < 370)
 	{
-		state_device = 3;                                                      // 3 - GPRS связь установлена
+		state_device = 3;                                                     // 3 - GPRS связь установлена
 									  
 	}
 }
@@ -629,7 +632,7 @@ void ping()
 	if (ret != 0)
 	{
 		digitalWrite(PWR_On, HIGH);                                   // отключаем питание модуля GPRS
-		gprs.reboot();                                                // Что то пошло не так с интернетом
+		gprs.reboot(gprs.errors);                                                // Что то пошло не так с интернетом
 	}
 
 	while (state_device != 3)                                         // Ожидание подключения к интернету
@@ -639,7 +642,7 @@ void ping()
 		if (count_wait > 3000)
 		{
 			digitalWrite(PWR_On, HIGH);                               // отключаем питание модуля GPRS
-			gprs.reboot();                                            //вызываем reset при отсутствии доступа к  интернету
+			gprs.reboot(gprs.errors);                                            //вызываем reset при отсутствии доступа к  интернету
 	    }
 	}
 
@@ -649,7 +652,7 @@ void ping()
 		if (state_device != 3)
 		{
 			digitalWrite(PWR_On, HIGH);                             //  отключаем питание модуля GPRS	
-			gprs.reboot();                                          //вызываем reset при отсутствии доступа к  интернету
+			gprs.reboot(gprs.errors);                                          //вызываем reset при отсутствии доступа к  интернету
 		}
 		if (check_ping())
 		{
@@ -661,7 +664,7 @@ void ping()
 			if (count_ping > 7)
 			{
 				digitalWrite(PWR_On, HIGH);                         //  отключаем питание модуля GPRS
-				gprs.reboot();                                      // 7 попыток. Что то пошло не так с интернетом
+				gprs.reboot(gprs.errors);                                      // 7 попыток. Что то пошло не так с интернетом
 			}
 		}
 		delay(1000);
@@ -778,7 +781,7 @@ void start_init()
 			if (count_status > 100)
 			{
 				digitalWrite(PWR_On, HIGH);                        //  отключаем питание модуля GPRS
-				gprs.reboot();                                     // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
+				gprs.reboot(gprs.errors);                                     // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
 			}
 			delay(100);
 		}
@@ -938,9 +941,8 @@ void setup()
 	}
 
 	ping();
-	delay(2000);
+    sendTemps();
 	MsTimer2::stop();
-	sendTemps();
 	setColor(COLOR_GREEN);                                      // Включить зеленый светодиод
 	time = millis();                                            // Старт отсчета суток
 	con.println(F("\nSIM800 setup end"));
@@ -951,7 +953,7 @@ void loop()
 	if (digitalRead(STATUS) == LOW)
 	{
 		digitalWrite(PWR_On, HIGH);                        //  отключаем питание модуля GPRS
-		gprs.reboot();                                     // Что то пошло не так программа перезапуска  если модуль не включился
+		gprs.reboot(gprs.errors);                                     // Что то пошло не так программа перезапуска  если модуль не включился
 	}
 
  check_SMS();                   // Проверить приход новых СМС
@@ -986,7 +988,7 @@ void loop()
 	if(millis() - time > time_day*1000)
 	{
 		digitalWrite(PWR_On, HIGH);                       // отключаем питание модуля GPRS 
-		gprs.reboot();                                    // вызываем reset интервалом в сутки
+		gprs.reboot(gprs.errors);                                    // вызываем reset интервалом в сутки
 	}
 	delay(500);
 }
