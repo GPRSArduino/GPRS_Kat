@@ -187,7 +187,7 @@ bool CGPRS_SIM800::getSIMCCID()
 
 			for (i=0;i<120;i++)
 			{
-				if (buffer[i] == "f")  break;
+				if (buffer[i] == 'f')  break;
 				if (buffer[i] >= '0'&&buffer[i] <= '9') // если цифру найдено - то выводим ее
 				{
 					buffer1[i] = buffer[i];
@@ -618,29 +618,29 @@ byte CGPRS_SIM800::sendCommandS(String cmd)
 	DEBUG.print("[0]");
 	DEBUG.println(buffer);
 #endif
-	return 0;                      // Строка expected1 или expected2 не найдена.
+	return 0;                                            // Строка expected1 или expected2 не найдена.
 }
 
 
 byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, unsigned int timeout)
 {
 	// Поиск в тексте, пришедшем из модуля текстов, указанных в expected1 и expected2, ожидание не дольше чем в timeout
-	while (SIM_SERIAL->available())                  // Ждем появления данных с модуля, читаем если поступают символы 
+	while (SIM_SERIAL->available())                      // Ждем появления данных с модуля, читаем если поступают символы 
 	{
 		char c = SIM_SERIAL->read();
-		if (m_bytesRecv >= sizeof(buffer) - 1)        // При вызове подпрограммы m_bytesRecv сбрасывается в"0" (при применении http)
+		if (m_bytesRecv >= sizeof(buffer) - 1)           // При вызове подпрограммы m_bytesRecv сбрасывается в"0" (при применении http)
 		{
-													  // Если количество символов больше размера буфера - половина текста удаляется.
-			m_bytesRecv = sizeof(buffer) / 2 - 1;    // buffer full, discard first half буфер заполнен, выбросьте первую половину
+													     // Если количество символов больше размера буфера - половина текста удаляется.
+			m_bytesRecv = sizeof(buffer) / 2 - 1;        // buffer full, discard first half буфер заполнен, выбросьте первую половину
 			memcpy(buffer, buffer + sizeof(buffer) / 2, m_bytesRecv);  // Скопировать оставшуюся половину в buffer
 		}
-		buffer[m_bytesRecv++] = c;                   // Записать символ в буфер на место, указанное в m_bytesRecv
-		buffer[m_bytesRecv] = 0;                     // Последним в буфере записать "0"
-		if (strstr(buffer, expected1))               // Найдено первое слово  return 1;
+		buffer[m_bytesRecv++] = c;                        // Записать символ в буфер на место, указанное в m_bytesRecv
+		buffer[m_bytesRecv] = 0;                          // Последним в буфере записать "0"
+		if (strstr(buffer, expected1))                    // Найдено первое слово  return 1;
 		{
 			return 1;
 		}
-		if (expected2 && strstr(buffer, expected2))  // Если текст в буфере равен expected2 return 2;
+		if (expected2 && strstr(buffer, expected2))       // Если текст в буфере равен expected2 return 2;
 		{
 			return 2;
 		}
@@ -649,7 +649,7 @@ byte CGPRS_SIM800::checkbuffer(const char* expected1, const char* expected2, uns
 														  // Два варианта окончания подпрограммы 0 - уложились вовремя или 3 время вышло при неуспешном
 }
 
-void CGPRS_SIM800::purgeSerial()    // Очистить приемный буффер
+void CGPRS_SIM800::purgeSerial()                          // Очистить приемный буффер
 {
    while (SIM_SERIAL->available()) SIM_SERIAL->read();
 }
@@ -659,6 +659,7 @@ bool CGPRS_SIM800::available()
 }
 void CGPRS_SIM800::reboot(int count_error)
 {
+	pinMode(PWR_On, OUTPUT);
 	int error_All;
 	EEPROM.get(Address_errorAll, error_All);                 // Получить количество общих ошибок
 	EEPROM_off = EEPROM.read(Address_EEPROM_off);            // Признак обновления счетчика общих ошибок 
@@ -669,6 +670,16 @@ void CGPRS_SIM800::reboot(int count_error)
 	sendCommandS(F("AT+HTTPTERM"));                          // Закрыть HTTP соединение
 	sendCommandS(F("AT+CIPSHUT"));                           // Deactivate GPRS PDP Context
 	wdt_disable();
+	//wdt_enable(WDTO_2S);                                     // Перезагрузка по сторожевому таймеру
+//	wdt_enable(WDTO_15MS);                                   // Перезагрузка по сторожевому 
+	digitalWrite(PWR_On, HIGH);                               // Oтключаем питание модуля GPRS
+	Serial.println("Wait reboot 60 sec");
+	for (int i = 0; i < 60; i++)
+	{
+		delay(1000);
+		wdt_reset();
+		Serial.print(".");
+	}
 	wdt_enable(WDTO_15MS);                                   // Перезагрузка по сторожевому таймеру
 	while (1) {}
 }

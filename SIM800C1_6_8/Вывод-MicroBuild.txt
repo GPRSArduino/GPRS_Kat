@@ -1,0 +1,4 @@
+﻿Compiling 'SIM800C1_6_8' for 'Arduino Mini w/ ATmega328'
+Program size: 26 816 bytes (used 94% of a 28 672 byte maximum) (2,73 secs)
+Minimum Memory Usage: 999 bytes (49% of a 2048 byte maximum)
+ 

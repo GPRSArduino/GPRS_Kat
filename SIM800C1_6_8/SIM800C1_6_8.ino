@@ -1,10 +1,11 @@
 /*
 Программа передачи данных по каналу GPRS
-20.02.2017г.
+31.03.2017г.
 
 
 
 */
+
 
 #include "SIM800.h"
 #include <SoftwareSerial.h>
@@ -245,10 +246,10 @@ bool gprs_send(String data)
 	  gprs.httpUninit();                                 // Не получилось, разединить и  попробовать снова 
 	  delay(1000);                                       // Подождать секунду.
 	  count_init++;
-	  if (count_init > 7)
+	  if (count_init > 5)
 	  {
-		  digitalWrite(PWR_On, HIGH);                    // отключаем питание модуля GPRS.
-		  gprs.reboot(gprs.errors);                                 // Вызываем срабатывание по Watchdog  
+		//  digitalWrite(PWR_On, HIGH);                    // отключаем питание модуля GPRS.
+		  gprs.reboot(gprs.errors);                      // Вызываем срабатывание по Watchdog  
 	  }
   }
 
@@ -307,11 +308,11 @@ bool gprs_send(String data)
 	con.println(F("Connect error HTTP"));
 	gprs.errors++;
 		
-	if (gprs.errors > 10)
+	if (gprs.errors > 5)
 	  {
 			con.println(F("Errors exceeded"));
 			delay(3000);
-			digitalWrite(PWR_On, HIGH);                  // отключаем питание модуля GPRS.  
+			//digitalWrite(PWR_On, HIGH);                  // отключаем питание модуля GPRS.  
 			gprs.reboot(gprs.errors);                               // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
@@ -330,11 +331,11 @@ bool gprs_send(String data)
   {
 	  gprs.errors++;
 	//errorAllmem();
-	if (gprs.errors > 10)                         // вызываем reset после 10 ошибок
+	if (gprs.errors > 5)                         // вызываем reset после 10 ошибок
 	  {
 			con.println(F("The number of server errors exceeded 10"));
 			delay(3000);                     // Время для чтения сообщения
-			digitalWrite(PWR_On, HIGH);      // отключаем питание модуля GPRS. 
+			//digitalWrite(PWR_On, HIGH);      // отключаем питание модуля GPRS. 
 			gprs.reboot(gprs.errors);                   // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
@@ -418,8 +419,8 @@ void connect_internet_HTTP()
 			count_init++;                                        // Увеличить счетчик количества попыток
 			if (count_init > 10)
 			{
-				digitalWrite(PWR_On, HIGH);                     // отключаем питание модуля GPRS.
-				gprs.reboot(gprs.errors);                                  // вызываем reset после 10 ошибок
+				//digitalWrite(PWR_On, HIGH);                     // отключаем питание модуля GPRS.
+				gprs.reboot(gprs.errors);                       // вызываем reset после 10 ошибок
 			}
 
 			Serial.println(F("\nFailed connect internet"));
@@ -543,7 +544,7 @@ void setTime(String val, String f_phone)
 	  Serial.print("..");
 	  Serial.println(F("Restart"));
 	  delay(2000);
-	  digitalWrite(PWR_On, HIGH);                       // отключаем питание модуля GPRS
+	 // digitalWrite(PWR_On, HIGH);                       // отключаем питание модуля GPRS
 	  gprs.reboot(gprs.errors);                         // вызываем reset
   } 
   else if (val.indexOf(F("Timeoff")) > -1) 
@@ -556,7 +557,7 @@ void setTime(String val, String f_phone)
 	  EEPROM.write(Address_ssl, true);                 // Включить шифрование
 	  Serial.println(F("HTTP SSL ON"));
 	  delay(2000);
-	  digitalWrite(PWR_On, HIGH);                      // отключаем питание модуля GPRS
+//digitalWrite(PWR_On, HIGH);                      // отключаем питание модуля GPRS
 	  gprs.reboot(gprs.errors);                                   // вызываем reset  
   }
   else if (val.indexOf(F("Ssloff")) > -1)
@@ -564,7 +565,7 @@ void setTime(String val, String f_phone)
 	  EEPROM.write(Address_ssl, false);                // Отключить шифрование
 	  Serial.println(F("HTTP SSL OFF"));
 	  delay(2000);
-	  digitalWrite(PWR_On, HIGH);                      // отключаем питание модуля GPRS
+	 // digitalWrite(PWR_On, HIGH);                      // отключаем питание модуля GPRS
 	  gprs.reboot(gprs.errors);                                   // вызываем reset п
   }
   else if (val.indexOf(F("Eon")) > -1)
@@ -609,7 +610,7 @@ void check_blink()
 		{
 			state_device = 0;
 			MsTimer2::stop();                                                 // Включить таймер прерывания
-			digitalWrite(PWR_On, HIGH);                                       // отключаем питание модуля GPRS
+		//	digitalWrite(PWR_On, HIGH);                                       // отключаем питание модуля GPRS
 			gprs.reboot(gprs.errors);                                                    // Что то пошло не так с регистрацией на станции
 		}
 	}
@@ -703,7 +704,7 @@ void start_init()
 			count_status++;
 			if (count_status > 100)
 			{
-				digitalWrite(PWR_On, HIGH);                        //  отключаем питание модуля GPRS
+				//digitalWrite(PWR_On, HIGH);                        //  отключаем питание модуля GPRS
 				gprs.reboot(gprs.errors);                                     // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
 			}
 			delay(100);
@@ -871,7 +872,7 @@ void loop()
 {
 	if (digitalRead(STATUS) == LOW)
 	{
-		digitalWrite(PWR_On, HIGH);                        //  отключаем питание модуля GPRS
+	//	digitalWrite(PWR_On, HIGH);                        //  отключаем питание модуля GPRS
 		gprs.reboot(gprs.errors);                                     // Что то пошло не так программа перезапуска  если модуль не включился
 	}
 
@@ -905,7 +906,7 @@ void loop()
 
 	if(millis() - time > time_day*1000)
 	{
-		digitalWrite(PWR_On, HIGH);                       // отключаем питание модуля GPRS 
+		//digitalWrite(PWR_On, HIGH);                       // отключаем питание модуля GPRS 
 		gprs.reboot(gprs.errors);                                    // вызываем reset интервалом в сутки
 	}
 	delay(500);

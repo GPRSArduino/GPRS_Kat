@@ -8,6 +8,7 @@
 #include <Arduino.h>
 #include <avr/wdt.h>
 #include <EEPROM.h>
+#define PWR_On           5                              // Включение питания модуля SIM800
 
 typedef	Stream 						FONAStreamType;
 
