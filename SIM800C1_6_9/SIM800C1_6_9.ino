@@ -31,6 +31,8 @@ SoftwareSerial *GPRSSerial = &SIM800CSS;
 #define LED13           13                              // Индикация светодиодом
 #define NETLIGHT         3                              // Индикация NETLIGHT
 #define STATUS           9                              // Индикация STATUS
+#define digital_outDev3  A5                             // Цифровой выход 3
+
 
 												
 //#define COMMON_ANODE                                  // Если светодиод с общим катодом - раскомментировать
@@ -54,6 +56,7 @@ volatile int count_blink1            = 0;               // Счетчик поп
 volatile int count_blink2            = 0;               // Счетчик попыток подключиться к базовой станции
 bool send_ok                         = false;           // Признак успешной передачи данных
 bool count_All_reset                 = false;           // Признак выполнения команды сброса счетчика ошибок.
+bool temp_dev3 = false;                                 // Переменная для временного хранения состояния исполнительного устройства
 String imei = "861445030362268";                        // Тест IMEI
 String SIMCCID = "";
 
@@ -76,14 +79,14 @@ int Address_ssl             = 120;                        // Адрес в EEPRO
 //int Address_errorAll      = 160;                        // Адрес в EEPROM счетчика общих ошибок
 int Address_interval        = 200;                        // Адрес в EEPROM величины интервала
 int Address_SMS_center      = 220;                        // Адрес в EEPROM SMS центра
-int Address_Dev3            = 260;                        // Адрес в EEPROM состояния исполнительного устройства Dev3
-int Address_Dev3_ind        = 264;                        // Адрес в EEPROM признак управления сполнительного устройства Dev3
-int Address_num_site_ping   = 268;                        // Адрес в EEPROM признак управления сполнительного устройства Dev3
+int Address_Dev3            = 260;                        // Адрес в EEPROM состояния исполнительного устройства Dev
+int Address_Dev3_ind        = 264;                        // Адрес в EEPROM признак управления сполнительного устройства Dev
+int Address_num_site_ping   = 268;                        // Адрес в EEPROM признак управления сполнительного устройства Dev
 int Address_watchdog        = 270;                        // Адрес в EEPROM счетчик проверки Watchdog
-int Address_EEPROM_off      = 280;                           // Адрес в EEPROM запрет записи в EEPROM
-
-uint8_t oneWirePins[]={16, 17, 4};                      //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
-  												    	// Сейчас первым идет внутренний датчик.
+int Address_EEPROM_off      = 280;                        // Адрес в EEPROM запрет записи в EEPROM
+byte dev3                   = 0;                          // признак управления сполнительного устройства Dev3
+uint8_t oneWirePins[]       ={16, 17, 4};                 //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
+  												    	  // Сейчас первым идет внутренний датчик.
 uint8_t oneWirePinsCount=sizeof(oneWirePins)/sizeof(int);
 
 OneWire ds18x20_1(oneWirePins[0]);
@@ -163,9 +166,9 @@ void sendTemps()
 	float tsumma = t1 + t2 + t3 + 88.88;
 
 	unsigned int error_All = 0;
-	int Address_errorAll = 160;                        // Адрес в EEPROM счетчика общих ошибок
+	int Address_errorAll = 160;                           // Адрес в EEPROM счетчика общих ошибок
 	EEPROM.get(Address_errorAll, error_All);
-	
+	dev3 = EEPROM.read(Address_Dev3);                     // Состояние исполнительного устройства
 	String temp123;
 	if (t1 != -127)
 	{
@@ -185,7 +188,7 @@ void sendTemps()
 
 	byte signal = gprs.getSignalQuality();
 
-	String toSend = "IM=" + imei + temp123 + DELIM + "S=" + String(signal) + DELIM + "E=" + String(gprs.errors) + DELIM + "EA=" + String(error_All+ gprs.errors) + formEnd() + DELIM + "SM=" + String(tsumma);// +DELIM + "In1=" + String(dev1) + DELIM + "In2=" + String(dev2) + DELIM + "Out=" + String(dev3);
+	String toSend = "IM=" + imei + temp123 + DELIM + "S=" + String(signal) + DELIM + "E=" + String(gprs.errors) + DELIM + "EA=" + String(error_All+ gprs.errors) + formEnd() + DELIM + "SM=" + String(tsumma) + DELIM + "Out=" + String(dev3);
 
 	Serial.print(F("toSend.length: "));
 	Serial.println(toSend.length());
@@ -513,6 +516,25 @@ void run_command(int command, String data)
 			
 			break;
 		case 6:
+			dev3_set = EEPROM.read(Address_Dev3_ind);
+			if (dev3_set == 0)
+			{
+				dev3_data = data.toInt();
+				dev3_set = EEPROM.read(Address_Dev3);
+				if (dev3_data != dev3_set)         // Если информиция не изменилась - не писать в EEPROM
+				{
+					EEPROM.write(Address_Dev3, dev3_data);
+					Serial.println(F("Device .."));
+					if (dev3_data == 0)
+					{
+						Serial.println(F("OFF"));
+					}
+					else
+					{
+						Serial.println(F("ON"));
+					}
+				}
+			}
 			break;
 		case 7:
 			break;
@@ -544,7 +566,6 @@ void setTime(String val, String f_phone)
 	  Serial.print("..");
 	  Serial.println(F("Restart"));
 	  delay(2000);
-	 // digitalWrite(PWR_On, HIGH);                       // отключаем питание модуля GPRS
 	  gprs.reboot(gprs.errors);                         // вызываем reset
   } 
   else if (val.indexOf(F("Timeoff")) > -1) 
@@ -557,7 +578,6 @@ void setTime(String val, String f_phone)
 	  EEPROM.write(Address_ssl, true);                 // Включить шифрование
 	  Serial.println(F("HTTP SSL ON"));
 	  delay(2000);
-//digitalWrite(PWR_On, HIGH);                      // отключаем питание модуля GPRS
 	  gprs.reboot(gprs.errors);                                   // вызываем reset  
   }
   else if (val.indexOf(F("Ssloff")) > -1)
@@ -565,7 +585,6 @@ void setTime(String val, String f_phone)
 	  EEPROM.write(Address_ssl, false);                // Отключить шифрование
 	  Serial.println(F("HTTP SSL OFF"));
 	  delay(2000);
-	 // digitalWrite(PWR_On, HIGH);                      // отключаем питание модуля GPRS
 	  gprs.reboot(gprs.errors);                                   // вызываем reset п
   }
   else if (val.indexOf(F("Eon")) > -1)
@@ -577,6 +596,18 @@ void setTime(String val, String f_phone)
   {
 	  EEPROM.write(Address_EEPROM_off, false);        // Отключить
 	  Serial.println(F("EEPROM OFF"));
+  }
+  else if (val.indexOf(F("Devon")) > -1)
+  {
+	  EEPROM.write(Address_Dev3, 1);                  // Включить исполнительное устройство
+	  EEPROM.write(Address_Dev3_ind, 1);
+	  con.println(F("Device ON"));
+  }
+  else if (val.indexOf(F("Devoff")) > -1)
+  {
+	  EEPROM.write(Address_Dev3, 0);                  // Отключить исполнительное устройство
+	  EEPROM.write(Address_Dev3_ind, 0);                  // 
+	  con.println(F("Device OFF"));
   }
   else
   {
@@ -655,6 +686,18 @@ void check_SMS()
 			{
 				con.println(F("SMS centr"));
 				setTime(gprs.val, master_SMS_center);
+			}
+			else if (gprs.val.indexOf(F("Devon")) > -1)
+			{
+				EEPROM.write(Address_Dev3, 1);                  // Включить исполнительное устройство
+				EEPROM.write(Address_Dev3_ind, 1);
+				con.println(F("Device ON"));
+			}
+			else if (gprs.val.indexOf(F("Devoff")) > -1)
+			{
+				EEPROM.write(Address_Dev3, 0);                  // Отключить исполнительное устройство
+				EEPROM.write(Address_Dev3_ind, 0);                  // 
+				con.println(F("Device OFF"));
 			}
 			else
 			{
@@ -792,6 +835,9 @@ void setup()
 	pinMode(NETLIGHT ,INPUT);                      // Индикация NETLIGHT
 	pinMode(STATUS ,INPUT);                        // Индикация STATUS
 
+	pinMode(digital_outDev3, OUTPUT); 	           // Цифровой выход
+	digitalWrite(digital_outDev3, HIGH); 	       // Цифровой выход
+
 	setColor(COLOR_RED);
 	delay(300);
 	setColor(COLOR_GREEN); 
@@ -904,10 +950,26 @@ void loop()
 		setColor(COLOR_GREEN);
 	}
 
+	dev3 = EEPROM.read(Address_Dev3);
+
+	if (dev3 != temp_dev3)
+	{
+		temp_dev3 = dev3;
+		if (dev3 == 0)
+		{
+			con.println(F("Device OFF"));
+			digitalWrite(digital_outDev3, HIGH); 	       // Цифровой выход
+		}
+		else
+		{
+			con.println(F("Device ON"));
+			digitalWrite(digital_outDev3, LOW); 	       // Цифровой выход
+		}
+	}
+
 	if(millis() - time > time_day*1000)
 	{
-		//digitalWrite(PWR_On, HIGH);                       // отключаем питание модуля GPRS 
-		gprs.reboot(gprs.errors);                                    // вызываем reset интервалом в сутки
+		gprs.reboot(gprs.errors);                         // вызываем reset интервалом в сутки
 	}
 	delay(500);
 }
