@@ -31,7 +31,9 @@ SoftwareSerial *GPRSSerial = &SIM800CSS;
 #define LED13           13                              // Индикация светодиодом
 #define NETLIGHT         3                              // Индикация NETLIGHT
 #define STATUS           9                              // Индикация STATUS
-#define digital_outDev3  A5                             // Цифровой выход 3
+#define analog_dev1      A5                             // Аналоговый вход 1
+#define digital_inDev2   12                             // Цифровой вход 12
+#define digital_outDev3  A4                             // Цифровой выход управления внешним устройством
 
 
 												
@@ -168,6 +170,9 @@ void sendTemps()
 	unsigned int error_All = 0;
 	int Address_errorAll = 160;                           // Адрес в EEPROM счетчика общих ошибок
 	EEPROM.get(Address_errorAll, error_All);
+
+	int dev1 = analogRead(analog_dev1);                   // Аналоговый вход 1
+	bool dev2 = digitalRead(digital_inDev2);              // Цифровой вход 2
 	dev3 = EEPROM.read(Address_Dev3);                     // Состояние исполнительного устройства
 	String temp123;
 	if (t1 != -127)
@@ -188,7 +193,7 @@ void sendTemps()
 
 	byte signal = gprs.getSignalQuality();
 
-	String toSend = "IM=" + imei + temp123 + DELIM + "S=" + String(signal) + DELIM + "E=" + String(gprs.errors) + DELIM + "EA=" + String(error_All+ gprs.errors) + formEnd() + DELIM + "SM=" + String(tsumma) + DELIM + "Out=" + String(dev3);
+	String toSend = "IM=" + imei + temp123 + DELIM + "S=" + String(signal) + DELIM + "E=" + String(gprs.errors) + DELIM + "EA=" + String(error_All+ gprs.errors) + formEnd() + DELIM + "SM=" + String(tsumma) + DELIM + "In1=" + String(dev1) + DELIM + "In2=" + String(dev2) + DELIM + "Out=" + String(dev3);
 
 	Serial.print(F("toSend.length: "));
 	Serial.println(toSend.length());
@@ -641,7 +646,6 @@ void check_blink()
 		{
 			state_device = 0;
 			MsTimer2::stop();                                                 // Включить таймер прерывания
-		//	digitalWrite(PWR_On, HIGH);                                       // отключаем питание модуля GPRS
 			gprs.reboot(gprs.errors);                                                    // Что то пошло не так с регистрацией на станции
 		}
 	}
@@ -835,6 +839,8 @@ void setup()
 	pinMode(NETLIGHT ,INPUT);                      // Индикация NETLIGHT
 	pinMode(STATUS ,INPUT);                        // Индикация STATUS
 
+	pinMode(digital_inDev2, INPUT);                // Цифровой вход 12
+	digitalWrite(digital_inDev2, HIGH);            // Цифровой вход 12
 	pinMode(digital_outDev3, OUTPUT); 	           // Цифровой выход
 	digitalWrite(digital_outDev3, HIGH); 	       // Цифровой выход
 
