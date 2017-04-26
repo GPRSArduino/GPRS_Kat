@@ -256,7 +256,6 @@ bool gprs_send(String data)
 	  count_init++;
 	  if (count_init > 5)
 	  {
-		//  digitalWrite(PWR_On, HIGH);                    // отключаем питание модуля GPRS.
 		  gprs.reboot(gprs.errors);                      // Вызываем срабатывание по Watchdog  
 	  }
   }
@@ -320,7 +319,6 @@ bool gprs_send(String data)
 	  {
 			con.println(F("Errors exceeded"));
 			delay(3000);
-			//digitalWrite(PWR_On, HIGH);                  // отключаем питание модуля GPRS.  
 			gprs.reboot(gprs.errors);                               // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
@@ -342,8 +340,7 @@ bool gprs_send(String data)
 	if (gprs.errors > 5)                         // вызываем reset после 10 ошибок
 	  {
 			con.println(F("The number of server errors exceeded 10"));
-			delay(3000);                     // Время для чтения сообщения
-			//digitalWrite(PWR_On, HIGH);      // отключаем питание модуля GPRS. 
+			delay(3000);                                // Время для чтения сообщения
 			gprs.reboot(gprs.errors);                   // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
@@ -427,7 +424,6 @@ void connect_internet_HTTP()
 			count_init++;                                        // Увеличить счетчик количества попыток
 			if (count_init > 10)
 			{
-				//digitalWrite(PWR_On, HIGH);                     // отключаем питание модуля GPRS.
 				gprs.reboot(gprs.errors);                       // вызываем reset после 10 ошибок
 			}
 
@@ -751,7 +747,6 @@ void start_init()
 			count_status++;
 			if (count_status > 100)
 			{
-				//digitalWrite(PWR_On, HIGH);                        //  отключаем питание модуля GPRS
 				gprs.reboot(gprs.errors);                                     // 100 попыток. Что то пошло не так программа перезапуска  если модуль не включился
 			}
 			delay(100);
@@ -924,7 +919,6 @@ void loop()
 {
 	if (digitalRead(STATUS) == LOW)
 	{
-	//	digitalWrite(PWR_On, HIGH);                        //  отключаем питание модуля GPRS
 		gprs.reboot(gprs.errors);                                     // Что то пошло не так программа перезапуска  если модуль не включился
 	}
 
