@@ -560,12 +560,14 @@ void setTime(String val, String f_phone)
 	 interval = 40;                                     // Установить интервал 40 секунд
 	 time_set = true;                                   // Установить фиксацию интервала заданного СМС
 	 Serial.println(interval);
+	 gprs.send_sms(val, f_phone);                         //процедура отправки СМС
   } 
   else if (val.indexOf(F("Restart")) > -1) 
   {
 	  Serial.print(f_phone);
 	  Serial.print("..");
 	  Serial.println(F("Restart"));
+	  gprs.send_sms(val, f_phone);                      //процедура отправки СМС
 	  delay(2000);
 	  gprs.reboot(gprs.errors);                         // вызываем reset
   } 
@@ -573,46 +575,54 @@ void setTime(String val, String f_phone)
   {
 	 time_set = false;                                  // Снять фиксацию интервала заданного СМС
 	 Serial.println(F("Timeoff"));
+	 gprs.send_sms(val, f_phone);                       //процедура отправки СМС
   } 
   else if (val.indexOf(F("Sslon")) > -1)
   {
-	  EEPROM.write(Address_ssl, true);                 // Включить шифрование
+	  EEPROM.write(Address_ssl, true);                  // Включить шифрование
 	  Serial.println(F("HTTP SSL ON"));
+	  gprs.send_sms("HTTP SSL ON", f_phone);            //процедура отправки СМС
 	  delay(2000);
-	  gprs.reboot(gprs.errors);                                   // вызываем reset  
+	  gprs.reboot(gprs.errors);                         // вызываем reset  
   }
   else if (val.indexOf(F("Ssloff")) > -1)
   {
-	  EEPROM.write(Address_ssl, false);                // Отключить шифрование
+	  EEPROM.write(Address_ssl, false);                 // Отключить шифрование
 	  Serial.println(F("HTTP SSL OFF"));
+	  gprs.send_sms("HTTP SSL OFF", f_phone);           //процедура отправки СМС
 	  delay(2000);
-	  gprs.reboot(gprs.errors);                                   // вызываем reset п
+	  gprs.reboot(gprs.errors);                         // вызываем reset
   }
   else if (val.indexOf(F("Eon")) > -1)
   {
-	  EEPROM.write(Address_EEPROM_off, true);         // Включить 
+	  EEPROM.write(Address_EEPROM_off, true);           // Включить 
 	  Serial.println(F("EEPROM ON"));
+	  gprs.send_sms("EEPROM ON", f_phone);              //процедура отправки СМС
   }
   else if (val.indexOf(F("Eoff")) > -1)
   {
-	  EEPROM.write(Address_EEPROM_off, false);        // Отключить
+	  EEPROM.write(Address_EEPROM_off, false);          // Отключить
 	  Serial.println(F("EEPROM OFF"));
+	  gprs.send_sms("EEPROM OFF", f_phone);             //процедура отправки СМС
   }
   else if (val.indexOf(F("Devon")) > -1)
   {
-	  EEPROM.write(Address_Dev3, 1);                  // Включить исполнительное устройство
+	  EEPROM.write(Address_Dev3, 1);                   // Включить исполнительное устройство
 	  EEPROM.write(Address_Dev3_ind, 1);
 	  con.println(F("Device ON"));
+	  gprs.send_sms("Device ON", f_phone);             //процедура отправки СМС
   }
   else if (val.indexOf(F("Devoff")) > -1)
   {
-	  EEPROM.write(Address_Dev3, 0);                  // Отключить исполнительное устройство
-	  EEPROM.write(Address_Dev3_ind, 0);                  // 
+	  EEPROM.write(Address_Dev3, 0);                   // Отключить исполнительное устройство
+	  EEPROM.write(Address_Dev3_ind, 0);               // 
 	  con.println(F("Device OFF"));
+	  gprs.send_sms("Device OFF", f_phone);            //процедура отправки СМС
   }
   else
   {
 	  Serial.println(F("Unknown command"));            // Serial.println("Unknown command");
+	  gprs.send_sms("Unknown command "+ val, f_phone); //процедура отправки СМС
   }
 }
 

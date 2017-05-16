@@ -43,6 +43,7 @@ public:
 	bool ping(const char* url);
 	// check for incoming SMS
 	bool checkSMS();
+	void send_sms(String text, String phone);  //процедура отправки СМС
 	bool deleteSMS(int n_sms);
 	// get signal quality level (in dB)
 	byte getSignalQuality();

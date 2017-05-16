@@ -364,6 +364,21 @@ bool CGPRS_SIM800::checkSMS()
 	 return false; 
 }
 
+void CGPRS_SIM800::send_sms(String text, String phone)  //процедура отправки СМС
+{
+	Serial.println(F("SMS send started"));
+	SIM_SERIAL->print("AT+CMGS=\"" + phone + "\"");                                // Отправить SMS
+	delay(500);
+	SIM_SERIAL->print(text);
+	delay(500);
+	SIM_SERIAL->println((char)26);
+	delay(500);
+	Serial.println(F("SMS send complete"));
+	delay(2000);
+}
+
+
+
 bool CGPRS_SIM800::deleteSMS(int n_sms)
 {
 
@@ -379,6 +394,9 @@ bool CGPRS_SIM800::deleteSMS(int n_sms)
 	}
 	return false;
 }
+
+
+
 byte CGPRS_SIM800::getSignalQuality()
 {
   sendCommandS(F("AT+CSQ"));                                      // Уровень сигнала
