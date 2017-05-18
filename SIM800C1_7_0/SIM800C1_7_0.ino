@@ -476,7 +476,7 @@ void run_command(int command, String data)
 				con.println(F("no compare"));               //Serial.println("no compare");
 				for (int i = 0; i<13; i++)
 				{
-					EEPROM.write(i + Address_tel1, data[i]);
+					//EEPROM.write(i + Address_tel1, data[i]);
 				}
 				EEPROM.get(Address_tel1, buf);
 				Serial.println(buf);
@@ -697,21 +697,10 @@ void check_SMS()
 				con.println(F("SMS centr"));
 				setTime(gprs.val, master_SMS_center);
 			}
-			else if (gprs.val.indexOf(F("Devon")) > -1)
-			{
-				EEPROM.write(Address_Dev3, 1);                  // Включить исполнительное устройство
-				EEPROM.write(Address_Dev3_ind, 1);
-				con.println(F("Device ON"));
-			}
-			else if (gprs.val.indexOf(F("Devoff")) > -1)
-			{
-				EEPROM.write(Address_Dev3, 0);                  // Отключить исполнительное устройство
-				EEPROM.write(Address_Dev3_ind, 0);                  // 
-				con.println(F("Device OFF"));
-			}
 			else
 			{
-				con.println(F("phone ignored"));
+				con.println(F("Phone ignored"));
+				gprs.send_sms("Phone ignored !! " + gprs.val, master_tel1);              //процедура отправки СМС Изменить в библиотеке
 			}
 		}
 
@@ -871,7 +860,7 @@ void setup()
 	delay(5000);                                               // Задержка 5 сек для перезаписи загрузчика, если что то не так.
 	wdt_enable(WDTO_8S);                                       // Для тестов не рекомендуется устанавливать значение менее 8 сек.
 
-	int setup_EEPROM = 41;                                     // Произвольное число. Программа записи начальных установок при первом включении устройства после монтажа.
+	int setup_EEPROM = 43;                                     // Произвольное число. Программа записи начальных установок при первом включении устройства после монтажа.
 	if(EEPROM.read(0)!= setup_EEPROM)                          // Программа записи начальных установок при первом включении устройства после монтажа.
 	{
 		con.println (F("Start clear EEPROM"));                 //  
@@ -881,8 +870,8 @@ void setup()
 		}
 		EEPROM.write(0, setup_EEPROM);                         //Записать для предотвращения повторной записи установок
 		EEPROM.put(Address_interval, interval);                // строка начальной установки интервалов
-		//EEPROM.put(Address_tel1, "+79852517615");
 		EEPROM.put(Address_tel1, "+79162632701");
+		//EEPROM.put(Address_tel1, "+79852517615");
 		EEPROM.put(Address_SMS_center, "4556w6072556w6");
 		EEPROM.write(Address_ssl, true);
 		con.println(F("Test Watchdog"));
