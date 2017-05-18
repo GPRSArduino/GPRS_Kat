@@ -1,5 +1,5 @@
-C:\Users\moseichuk\AppData\Local\Temp\VMBuilds\SIM800C1_7_0\nano_atmega328\Debug\SIM800C1_7_0.cpp.o: \
- C:\Users\moseichuk\AppData\Local\Temp\VMBuilds\SIM800C1_7_0\nano_atmega328\Debug\SIM800C1_7_0.cpp \
+C:\Users\moseichuk\AppData\Local\Temp\VMBuilds\SIM800C1_7_0\mini_atmega328\Debug\SIM800C1_7_0.cpp.o: \
+ C:\Users\moseichuk\AppData\Local\Temp\VMBuilds\SIM800C1_7_0\mini_atmega328\Debug\SIM800C1_7_0.cpp \
  C:\Users\moseichuk\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.18\cores\arduino/arduino.h \
  C:\Users\moseichuk\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.18\cores\arduino/binary.h \
  C:\Users\moseichuk\AppData\Local\arduino15\packages\arduino\hardware\avr\1.6.18\cores\arduino/WCharacter.h \

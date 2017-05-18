@@ -367,12 +367,17 @@ bool CGPRS_SIM800::checkSMS()
 void CGPRS_SIM800::send_sms(String text, String phone)  //процедура отправки СМС
 {
 	Serial.println(F("SMS send started"));
-	SIM_SERIAL->print("AT+CMGS=\"" + phone + "\"");                                // Отправить SMS
-	delay(500);
+	SIM_SERIAL->print("AT+CMGS=\"");                                // Отправить SMS
+	delay(100);
+	SIM_SERIAL->print(phone);                                // Отправить SMS
+	delay(100);
+	SIM_SERIAL->print("\"\r\n");                                // Отправить SMS
+	delay(1000);
 	SIM_SERIAL->print(text);
-	delay(500);
+	delay(100);
 	SIM_SERIAL->println((char)26);
-	delay(500);
+	delay(100);
+	Serial.println(phone);
 	Serial.println(F("SMS send complete"));
 	delay(2000);
 }
