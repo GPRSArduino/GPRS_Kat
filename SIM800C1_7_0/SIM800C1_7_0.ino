@@ -711,7 +711,7 @@ void check_SMS()
 				con.println(F("SMS delete"));                    //  con.print("SMS:");
 			}
 		}
-		gprs.val = "";
+		gprs.val = ""
 	}
 }
 
