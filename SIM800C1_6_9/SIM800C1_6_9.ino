@@ -322,7 +322,7 @@ bool gprs_send(String data)
 			gprs.reboot(gprs.errors);                               // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
-	return; 
+//	return; 
   }
   
   con.println();
@@ -344,7 +344,7 @@ bool gprs_send(String data)
 			gprs.reboot(gprs.errors);                   // вызываем reset после 10 ошибок
 	  }
 	delay(3000);
-	return; 
+//	return; 
   } 
 
   // Теперь мы получили сообщение от сайта.
