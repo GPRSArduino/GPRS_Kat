@@ -6,12 +6,12 @@
 *************************************************************************/
 
 #include "SIM800.h"
-#include <SoftwareSerial.h>
-#include <EEPROM.h>
+//#include <SoftwareSerial.h>
+//#include <EEPROM.h>
 
-bool CGPRS_SIM800::begin(Stream &port)
+bool CGPRS_SIM800::begin(Stream &Serial)
 {
-	SIM_SERIAL = &port;
+	SIM_SERIAL = Serial;
 	int16_t timeout = 7000;
 
 	while (timeout > 0)

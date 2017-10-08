@@ -5,12 +5,12 @@
 * For more information, please visit http://arduinodev.com
 *************************************************************************/
 
-#include <Arduino.h>
-#include <avr/wdt.h>
-#include <EEPROM.h>
+//#include <Arduino.h>
+//#include <avr/wdt.h>
+//#include <EEPROM.h>
 #define PWR_On           5                              // Включение питания модуля SIM800
 
-typedef	Stream 						FONAStreamType;
+//typedef	Stream 						FONAStreamType;
 
 
 // define DEBUG to one serial UART to enable debug information output
@@ -31,7 +31,7 @@ public:
 	CGPRS_SIM800():httpState(HTTP_DISABLED) {}
 	// initialize the module
   
-	bool begin(Stream &port);
+	bool begin(Stream &Serial);
 	uint8_t getNetworkStatus();
 	byte connect_GPRS();
 	bool connect_IP_GPRS();
@@ -99,7 +99,7 @@ private:
 	byte operator_Num     = 0;                                  // Порядковый номер оператора
 	int ch                = 0;
 	int Address_errorAll = 160;                        // Адрес в EEPROM счетчика общих ошибок
-	FONAStreamType *SIM_SERIAL;
+	//FONAStreamType *SIM_SERIAL;
 	
 };
 

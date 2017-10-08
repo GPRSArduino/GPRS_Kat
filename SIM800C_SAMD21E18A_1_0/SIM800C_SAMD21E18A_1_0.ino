@@ -8,13 +8,14 @@
 
 
 #include "SIM800.h"
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 #include <OneWire.h> 
 #include <DallasTemperature.h>
-#include <avr/pgmspace.h>
-#include <EEPROM.h>
-#include <avr/wdt.h>
-#include <MsTimer2.h> 
+
+//#include <avr/pgmspace.h>
+//#include <EEPROM.h>
+//#include <avr/wdt.h>
+//#include <MsTimer2.h> 
 
 #define con Serial
 #define speed_Serial 115200
@@ -22,9 +23,9 @@
 #define PIN_TX           7                              // Подключить  к выводу 7 сигнал RX модуля GPRS
 #define PIN_RX           8                              // Подключить  к выводу 8 сигнал TX модуля GPRS
 
-SoftwareSerial SIM800CSS = SoftwareSerial(PIN_RX, PIN_TX);
-SoftwareSerial *GPRSSerial = &SIM800CSS;
- 
+//SoftwareSerial SIM800CSS = SoftwareSerial(PIN_RX, PIN_TX);
+//SoftwareSerial *GPRSSerial = &SIM800CSS;
+// 
 
 #define PWR_On           5                              // Включение питания модуля SIM800
 #define SIM800_RESET_PIN 6                              // Сброс модуля SIM800
@@ -169,11 +170,11 @@ void sendTemps()
 
 	unsigned int error_All = 0;
 	int Address_errorAll = 160;                           // Адрес в EEPROM счетчика общих ошибок
-	EEPROM.get(Address_errorAll, error_All);
+	//EEPROM.get(Address_errorAll, error_All);
 
 	int dev1 = analogRead(analog_dev1);                   // Аналоговый вход 1
 	bool dev2 = digitalRead(digital_inDev2);              // Цифровой вход 2
-	dev3 = EEPROM.read(Address_Dev3);                     // Состояние исполнительного устройства
+	//dev3 = EEPROM.read(Address_Dev3);                     // Состояние исполнительного устройства
 	String temp123;
 	if (t1 != -127)
 	{
@@ -219,10 +220,10 @@ void sendTemps()
 String formEnd() 
 {
 	char buf[15] ;
-	EEPROM.get(Address_tel1, buf);
+	//EEPROM.get(Address_tel1, buf);
 	String master_tel1(buf);
 	master_tel1 = "Tel=" + master_tel1;
-	EEPROM.get(Address_SMS_center, buf);             //Получить из EEPROM СМС центр
+//	EEPROM.get(Address_SMS_center, buf);             //Получить из EEPROM СМС центр
 	String SMS_center(buf);
 	SMS_center = "SMSC=" + SMS_center;
 	return DELIM +  master_tel1 + DELIM + SMS_center + DELIM + "SIM="+SIMCCID;
@@ -462,14 +463,14 @@ void run_command(int command, String data)
 					if (!time_set)                                 // Если нет команды фиксации интервала от СМС 
 					{
 						interval = interval1;                      // Переключить интервал передачи на сервер
-						EEPROM.put(Address_interval, interval1);   // Записать интервал EEPROM , полученный от сервера
+						//EEPROM.put(Address_interval, interval1);   // Записать интервал EEPROM , полученный от сервера
 					}
 				}
 			}
 			con.println(interval);
 			break;
 		case 2:
-			EEPROM.get(Address_tel1, buf);             // Получить номер телефона из EEPROM
+			//EEPROM.get(Address_tel1, buf);             // Получить номер телефона из EEPROM
 			Serial.println(buf);
 			if (data != buf)                           // Если информиция не изменилась - не писать в EEPROM
 			{
@@ -478,7 +479,7 @@ void run_command(int command, String data)
 				{
 					//EEPROM.write(i + Address_tel1, data[i]);
 				}
-				EEPROM.get(Address_tel1, buf);
+				//EEPROM.get(Address_tel1, buf);
 				Serial.println(buf);
 			}
 			else
@@ -487,13 +488,13 @@ void run_command(int command, String data)
 			}
 			break;
 		case 3:
-			EEPROM.get(Address_SMS_center, buf);      // Получить из EEPROM СМС центр
+			//EEPROM.get(Address_SMS_center, buf);      // Получить из EEPROM СМС центр
 			if (data != buf)                          // Если информиция не изменилась - не писать в EEPROM
 			{
 				Serial.println(F("no compare"));
 				for (int i = 0; i<13; i++)
 				{
-					EEPROM.write(i + Address_SMS_center, data[i]);
+					//EEPROM.write(i + Address_SMS_center, data[i]);
 				}
 			}
 
@@ -505,7 +506,7 @@ void run_command(int command, String data)
 					{
 						int Address_errorAll = 160;                // Адрес в EEPROM счетчика общих ошибок
 						count_All_reset == true;                   // Команда сброса выполнена. Повторный сброс возможен после перезагрузки
-						EEPROM.put(Address_errorAll, 0);           // Сбросить счетчик ошибок Предусмотреть блокировку повторной записи???
+						//EEPROM.put(Address_errorAll, 0);           // Сбросить счетчик ошибок Предусмотреть блокировку повторной записи???
 					}
 				}
 			break;
@@ -517,14 +518,14 @@ void run_command(int command, String data)
 			
 			break;
 		case 6:
-			dev3_set = EEPROM.read(Address_Dev3_ind);
+			//dev3_set = EEPROM.read(Address_Dev3_ind);
 			if (dev3_set == 0)
 			{
 				dev3_data = data.toInt();
-				dev3_set = EEPROM.read(Address_Dev3);
+			//	dev3_set = EEPROM.read(Address_Dev3);
 				if (dev3_data != dev3_set)         // Если информиция не изменилась - не писать в EEPROM
 				{
-					EEPROM.write(Address_Dev3, dev3_data);
+					//EEPROM.write(Address_Dev3, dev3_data);
 					Serial.println(F("Device .."));
 					if (dev3_data == 0)
 					{
@@ -579,7 +580,7 @@ void setTime(String val, String f_phone)
   } 
   else if (val.indexOf(F("Sslon")) > -1)
   {
-	  EEPROM.write(Address_ssl, true);                  // Включить шифрование
+	//  EEPROM.write(Address_ssl, true);                  // Включить шифрование
 	  Serial.println(F("HTTP SSL ON"));
 	  gprs.send_sms("HTTP SSL ON", f_phone);            //процедура отправки СМС
 	  delay(2000);
@@ -587,7 +588,7 @@ void setTime(String val, String f_phone)
   }
   else if (val.indexOf(F("Ssloff")) > -1)
   {
-	  EEPROM.write(Address_ssl, false);                 // Отключить шифрование
+	 // EEPROM.write(Address_ssl, false);                 // Отключить шифрование
 	  Serial.println(F("HTTP SSL OFF"));
 	  gprs.send_sms("HTTP SSL OFF", f_phone);           //процедура отправки СМС
 	  delay(2000);
@@ -595,27 +596,27 @@ void setTime(String val, String f_phone)
   }
   else if (val.indexOf(F("Eon")) > -1)
   {
-	  EEPROM.write(Address_EEPROM_off, true);           // Включить 
+	 // EEPROM.write(Address_EEPROM_off, true);           // Включить 
 	  Serial.println(F("EEPROM ON"));
 	  gprs.send_sms("EEPROM ON", f_phone);              //процедура отправки СМС
   }
   else if (val.indexOf(F("Eoff")) > -1)
   {
-	  EEPROM.write(Address_EEPROM_off, false);          // Отключить
+	//  EEPROM.write(Address_EEPROM_off, false);          // Отключить
 	  Serial.println(F("EEPROM OFF"));
 	  gprs.send_sms("EEPROM OFF", f_phone);             //процедура отправки СМС
   }
   else if (val.indexOf(F("Devon")) > -1)
   {
-	  EEPROM.write(Address_Dev3, 1);                   // Включить исполнительное устройство
-	  EEPROM.write(Address_Dev3_ind, 1);
+	//  EEPROM.write(Address_Dev3, 1);                   // Включить исполнительное устройство
+	//  EEPROM.write(Address_Dev3_ind, 1);
 	  con.println(F("Device ON"));
 	  gprs.send_sms("Device ON", f_phone);             //процедура отправки СМС
   }
   else if (val.indexOf(F("Devoff")) > -1)
   {
-	  EEPROM.write(Address_Dev3, 0);                   // Отключить исполнительное устройство
-	  EEPROM.write(Address_Dev3_ind, 0);               // 
+	//  EEPROM.write(Address_Dev3, 0);                   // Отключить исполнительное устройство
+	//  EEPROM.write(Address_Dev3_ind, 0);               // 
 	  con.println(F("Device OFF"));
 	  gprs.send_sms("Device OFF", f_phone);            //процедура отправки СМС
   }
@@ -629,7 +630,7 @@ void setTime(String val, String f_phone)
 void check_blink()
 {
 	unsigned long current_M = millis();
-	wdt_reset();
+	//wdt_reset();
 	metering_NETLIGHT = current_M - metering_temp;                            // переделать для  
 	metering_temp = current_M;
 
@@ -640,7 +641,7 @@ void check_blink()
 		if (count_blink2 > 250)
 		{
 			state_device = 0;
-			MsTimer2::stop();                                                 // Включить таймер прерывания
+		//	MsTimer2::stop();                                                 // Включить таймер прерывания
 			gprs.reboot(gprs.errors);                                                    // Что то пошло не так с регистрацией на станции
 		}
 	}
@@ -651,7 +652,7 @@ void check_blink()
 		if (count_blink1 > 250) 
 		{
 			state_device = 0;
-			MsTimer2::stop();                                                 // Включить таймер прерывания
+		//	MsTimer2::stop();                                                 // Включить таймер прерывания
 			gprs.reboot(gprs.errors);                                                    // Что то пошло не так с регистрацией на станции
 		}
 	}
@@ -676,10 +677,10 @@ void check_SMS()
 			//------------- поиск кодового слова в СМС 
 			char buf[16];
 
-			EEPROM.get(Address_tel1, buf);                                         // Восстановить телефон хозяина 1
+		//	EEPROM.get(Address_tel1, buf);                                         // Восстановить телефон хозяина 1
 			String master_tel1(buf);
 
-			EEPROM.get(Address_SMS_center, buf);                                 // Восстановить телефон СМС центра
+		//	EEPROM.get(Address_SMS_center, buf);                                 // Восстановить телефон СМС центра
 			String master_SMS_center(buf);
 
 			if (gprs.deleteSMS(1))
@@ -721,7 +722,7 @@ void start_init()
 {
 	bool setup_ok = false;
 	int count_init = 0;
-	MsTimer2::start();                                                 // Включить таймер прерывания
+//	MsTimer2::start();                                                 // Включить таймер прерывания
 	do
 	{
 		con.println(F("Initializing....(May take 5-10 seconds)"));
@@ -752,13 +753,13 @@ void start_init()
 		}
 	
 		con.println(F("Power SIM800 On"));
-		GPRSSerial->begin(19200);                               // Скорость обмена с модемом SIM800C
+	//	GPRSSerial->begin(19200);                               // Скорость обмена с модемом SIM800C
 
-		while (!gprs.begin(*GPRSSerial))                        // Настройка модуля SIM800C
-		{
-			Serial.println(F("Couldn't find module GPRS"));
-			while (1);
-		}
+		//while (!gprs.begin(*GPRSSerial))                        // Настройка модуля SIM800C
+		//{
+		//	Serial.println(F("Couldn't find module GPRS"));
+		//	while (1);
+		//}
 		con.println(F("OK"));
 		Serial.print(F("\nSetting up mobile network..."));
 		while (state_device != 2)                                // Ожидание регистрации в сети
@@ -818,7 +819,7 @@ void start_init()
 
 void setup()
 {
-	wdt_disable(); // бесполезна¤ строка до которой не доходит выполнение при bootloop Не уверен!!
+//	wdt_disable(); // бесполезна¤ строка до которой не доходит выполнение при bootloop Не уверен!!
 	con.begin(speed_Serial);
 	con.println(F("\nSIM800 setup start"));     
 
@@ -858,45 +859,45 @@ void setup()
 	if (sensor2.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 	if (sensor3.getAddress(deviceAddress, 0)) sensor2.setResolution(deviceAddress, 12);
 	delay(5000);                                               // Задержка 5 сек для перезаписи загрузчика, если что то не так.
-	wdt_enable(WDTO_8S);                                       // Для тестов не рекомендуется устанавливать значение менее 8 сек.
+	//wdt_enable(WDTO_8S);                                       // Для тестов не рекомендуется устанавливать значение менее 8 сек.
 
 	int setup_EEPROM = 43;                                     // Произвольное число. Программа записи начальных установок при первом включении устройства после монтажа.
-	if(EEPROM.read(0)!= setup_EEPROM)                          // Программа записи начальных установок при первом включении устройства после монтажа.
-	{
-		con.println (F("Start clear EEPROM"));                 //  
-		for(int i = 0; i<1023;i++)
-		{
-			EEPROM.write(i,0); 
-		}
-		EEPROM.write(0, setup_EEPROM);                         //Записать для предотвращения повторной записи установок
-		EEPROM.put(Address_interval, interval);                // строка начальной установки интервалов
-		EEPROM.put(Address_tel1, "+79162632701");
-		//EEPROM.put(Address_tel1, "+79852517615");
-		EEPROM.put(Address_SMS_center, "4556w6072556w6");
-		EEPROM.write(Address_ssl, true);
-		con.println(F("Test Watchdog"));
-		for (int i = 0; i < 15; i++)                         // Если счетчик досчитает больше 9, значит  Watchdog не работает
-		{
-			EEPROM.write(Address_watchdog, i);               // Если произойдет перезагрузка до 9 - Watchdog работает
-			con.println(i);
-			delay(1000);
-		}
-		con.println (F("Clear EEPROM End"));                              
-	}
+	//if(EEPROM.read(0)!= setup_EEPROM)                          // Программа записи начальных установок при первом включении устройства после монтажа.
+	//{
+	//	con.println (F("Start clear EEPROM"));                 //  
+	//	for(int i = 0; i<1023;i++)
+	//	{
+	//		EEPROM.write(i,0); 
+	//	}
+	//	EEPROM.write(0, setup_EEPROM);                         //Записать для предотвращения повторной записи установок
+	//	EEPROM.put(Address_interval, interval);                // строка начальной установки интервалов
+	//	EEPROM.put(Address_tel1, "+79162632701");
+	//	//EEPROM.put(Address_tel1, "+79852517615");
+	//	EEPROM.put(Address_SMS_center, "4556w6072556w6");
+	//	EEPROM.write(Address_ssl, true);
+	//	con.println(F("Test Watchdog"));
+	//	for (int i = 0; i < 15; i++)                         // Если счетчик досчитает больше 9, значит  Watchdog не работает
+	//	{
+	//		EEPROM.write(Address_watchdog, i);               // Если произойдет перезагрузка до 9 - Watchdog работает
+	//		con.println(i);
+	//		delay(1000);
+	//	}
+	//	con.println (F("Clear EEPROM End"));                              
+	//}
 	
-	byte watchdog = EEPROM.read(Address_watchdog);
-	if (watchdog > 10)  con.println(F("Watchdog off"));
-	else  con.println(F("\n** Watchdog on **"));
-	
-	attachInterrupt(1, check_blink, RISING);                     // Включить прерывания. Индикация состояния модема
-	EEPROM.get(Address_interval, interval);                      // Получить из EEPROM интервал
-	ssl_set = EEPROM.read(Address_ssl);							 // Устанивить признак шифрования
-	con.print(F("Interval sec:"));
-	con.println(interval);
-	con.print(F("\nfree memory: "));
-	con.println(freeRam());
+	//byte watchdog = EEPROM.read(Address_watchdog);
+	//if (watchdog > 10)  con.println(F("Watchdog off"));
+	//else  con.println(F("\n** Watchdog on **"));
+	//
+	//attachInterrupt(1, check_blink, RISING);                     // Включить прерывания. Индикация состояния модема
+	//EEPROM.get(Address_interval, interval);                      // Получить из EEPROM интервал
+	//ssl_set = EEPROM.read(Address_ssl);							 // Устанивить признак шифрования
+	//con.print(F("Interval sec:"));
+	//con.println(interval);
+	//con.print(F("\nfree memory: "));
+	//con.println(freeRam());
 
-	MsTimer2::set(300, flash_time);                            // 300ms период таймера прерывани
+	//MsTimer2::set(300, flash_time);                            // 300ms период таймера прерывани
 	start_init();
 
 	int count_init = 0;                                        // Счетчик количества попыток подключиться к HTTP
@@ -908,7 +909,7 @@ void setup()
 		}
 	
     sendTemps();
-	MsTimer2::stop();
+	//MsTimer2::stop();
 	setColor(COLOR_GREEN);                                      // Включить зеленый светодиод
 	time = millis();                                            // Старт отсчета суток
 	con.println(F("\nSIM800 setup end"));
@@ -926,7 +927,7 @@ void loop()
  unsigned long currentMillis = millis();
 	if(!time_set)                                                               // 
 	{
-		 EEPROM.get( Address_interval, interval);                               // Получить интервал из EEPROM Address_interval
+		// EEPROM.get( Address_interval, interval);                               // Получить интервал из EEPROM Address_interval
 	}
 	if ((unsigned long)(currentMillis - previousMillis) >= interval*1000) 
 	{
@@ -949,7 +950,7 @@ void loop()
 		setColor(COLOR_GREEN);
 	}
 
-	dev3 = EEPROM.read(Address_Dev3);
+	//dev3 = EEPROM.read(Address_Dev3);
 
 	if (dev3 != temp_dev3)
 	{
