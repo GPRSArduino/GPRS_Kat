@@ -8,14 +8,23 @@
 
 
 
-#include <OneWire.h> 
-#include <DallasTemperature.h>
+//#include <OneWire.h> 
+
+//#include <DallasTemperature.h>
 
 //#include <avr/pgmspace.h>
 //#include <EEPROM.h>
 //#include <avr/wdt.h>
 //#include <MsTimer2.h> 
 
+<<<<<<< .mine
+
+#include <Wire.h>
+
+#define Serial SERIAL_PORT_USBVIRTUAL   // Подключаем USB порт в качестве COM порта
+
+||||||| .r270
+=======
 #include <SAMD21_SIM800C.h>
 
 // what's the name of the hardware serial port?
@@ -27,6 +36,7 @@ SAMD21_SIM800C SIM800C(&SIM800CSerial);
 #define Serial SERIAL_PORT_USBVIRTUAL
 
 
+>>>>>>> .r273
 #define con Serial
 #define speed_Serial 115200
 
@@ -101,13 +111,13 @@ byte dev3                   = 0;                          // признак уп
 uint8_t oneWirePins[]       ={16, 17, 4};                 //номера датчиков температуры DS18x20. Переставляя номера можно устанавливать очередность передачи в строке.
   												    	  // Сейчас первым идет внутренний датчик.
 uint8_t oneWirePinsCount=sizeof(oneWirePins)/sizeof(int);
-
-OneWire ds18x20_1(oneWirePins[0]);
-OneWire ds18x20_2(oneWirePins[1]);
-OneWire ds18x20_3(oneWirePins[2]);
-DallasTemperature sensor1(&ds18x20_1);
-DallasTemperature sensor2(&ds18x20_2);
-DallasTemperature sensor3(&ds18x20_3);
+//
+//OneWire ds18x20_1(oneWirePins[0]);
+//OneWire ds18x20_2(oneWirePins[1]);
+//OneWire ds18x20_3(oneWirePins[2]);
+//DallasTemperature sensor1(&ds18x20_1);
+//DallasTemperature sensor2(&ds18x20_2);
+//DallasTemperature sensor3(&ds18x20_3);
 
 
 void flash_time()                                       // Программа обработчик прерывистого свечения светодиодов при старте
@@ -170,6 +180,7 @@ void flash_time()                                       // Программа о
  
 void sendTemps()
 {
+	/*
 	sensor1.requestTemperatures();
 	sensor2.requestTemperatures();
 	sensor3.requestTemperatures();
@@ -223,7 +234,7 @@ void sendTemps()
 		}
 		delay(2000);                                       // Подождать 5 секунд
 	}
-
+	*/
 }
 
 
