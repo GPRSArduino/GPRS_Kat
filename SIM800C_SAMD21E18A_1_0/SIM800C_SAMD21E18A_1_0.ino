@@ -7,8 +7,7 @@
 */
 
 
-#include "SIM800.h"
-//#include <SoftwareSerial.h>
+
 #include <OneWire.h> 
 #include <DallasTemperature.h>
 
@@ -16,6 +15,17 @@
 //#include <EEPROM.h>
 //#include <avr/wdt.h>
 //#include <MsTimer2.h> 
+
+#include <SAMD21_SIM800C.h>
+
+// what's the name of the hardware serial port?
+#define SIM800CSerial Serial1
+
+// Connect to the GPS on the hardware port
+SAMD21_SIM800C SIM800C(&SIM800CSerial);
+
+#define Serial SERIAL_PORT_USBVIRTUAL
+
 
 #define con Serial
 #define speed_Serial 115200
@@ -820,8 +830,15 @@ void start_init()
 void setup()
 {
 //	wdt_disable(); // бесполезна¤ строка до которой не доходит выполнение при bootloop Не уверен!!
-	con.begin(speed_Serial);
+
+	 Serial.begin(115200);
+     Serial.println("SAMD21 SIM800C library basic test!");
+    // 	con.begin(speed_Serial);
 	con.println(F("\nSIM800 setup start"));     
+	
+  
+  SIM800C.begin(19200);
+	
 
 	pinMode(SIM800_RESET_PIN, OUTPUT);
 	digitalWrite(SIM800_RESET_PIN, LOW);            // Сигнал сброс в исходное состояние
