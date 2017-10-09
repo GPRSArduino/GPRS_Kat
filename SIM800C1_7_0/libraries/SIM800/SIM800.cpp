@@ -383,7 +383,6 @@ void CGPRS_SIM800::send_sms(String text, String phone)  //процедура отправки СМС
 }
 
 
-
 bool CGPRS_SIM800::deleteSMS(int n_sms)
 {
 
@@ -400,8 +399,6 @@ bool CGPRS_SIM800::deleteSMS(int n_sms)
 	return false;
 }
 
-
-
 byte CGPRS_SIM800::getSignalQuality()
 {
   sendCommandS(F("AT+CSQ"));                                      // Уровень сигнала
@@ -416,7 +413,6 @@ byte CGPRS_SIM800::getSignalQuality()
    return 0; 
   }
 }
-
 
 void CGPRS_SIM800::httpUninit()
 {
