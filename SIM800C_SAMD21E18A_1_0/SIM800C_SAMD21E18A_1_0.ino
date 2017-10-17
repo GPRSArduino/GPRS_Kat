@@ -17,14 +17,11 @@
 //#include <avr/wdt.h>
 //#include <MsTimer2.h> 
 
-<<<<<<< .mine
 
 #include <Wire.h>
 
 #define Serial SERIAL_PORT_USBVIRTUAL   // Подключаем USB порт в качестве COM порта
 
-||||||| .r270
-=======
 #include <SAMD21_SIM800C.h>
 
 // what's the name of the hardware serial port?
@@ -36,7 +33,7 @@ SAMD21_SIM800C SIM800C(&SIM800CSerial);
 #define Serial SERIAL_PORT_USBVIRTUAL
 
 
->>>>>>> .r273
+
 #define con Serial
 #define speed_Serial 115200
 
