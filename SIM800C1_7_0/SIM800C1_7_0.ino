@@ -665,7 +665,6 @@ void check_blink()
 
 void check_SMS()
 {
-
 	if (gprs.checkSMS())
 	{
 		con.print(F("SMS:"));
